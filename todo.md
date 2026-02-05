@@ -111,3 +111,8 @@
 - [x] Verificar lógica de cálculo de reincidências
 - [x] Verificar query getReincidents no backend
 - [x] Reescrever getReincidentsWithWarnings para buscar reincidências (não apenas advertências registradas)
+
+## Melhorias na Tela de Reincidentes
+- [x] Adicionar painel de histórico de advertências no dialog de cadastro
+- [x] Mostrar informações de reincidências (7 e 30 dias) no dialog
+- [x] Indicar próximo nível de aviso recomendado

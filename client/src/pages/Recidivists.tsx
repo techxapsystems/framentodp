@@ -88,6 +88,10 @@ export default function Recidivists() {
     return <AlertCircle className="w-4 h-4 text-orange-600" />;
   };
 
+  const selectedConductorData = data?.reincidents?.find(
+    (r: any) => r.conductorName === selectedConductor
+  );
+
   if (isLoading) {
     return (
       <div className="p-8">
@@ -135,93 +139,183 @@ export default function Recidivists() {
                 + Nova Advertência
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Registrar Nova Advertência</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Motorista:
-                  </label>
-                  <Select value={selectedConductor} onValueChange={setSelectedConductor}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o motorista" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {data?.reincidents?.map((r: any) => (
-                        <SelectItem key={r.conductorName} value={r.conductorName}>
-                          {r.conductorName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="grid grid-cols-2 gap-6">
+                {/* Coluna esquerda: Formulário */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Motorista:
+                    </label>
+                    <Select value={selectedConductor} onValueChange={setSelectedConductor}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o motorista" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {data?.reincidents?.map((r: any) => (
+                          <SelectItem key={r.conductorName} value={r.conductorName}>
+                            {r.conductorName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Tipo:
+                    </label>
+                    <Select value={selectedType} onValueChange={(v: any) => setSelectedType(v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pouco_rodado">Pouco Rodado</SelectItem>
+                        <SelectItem value="horas_extras">Horas Extras</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Nível de Advertência:
+                    </label>
+                    <Select value={warningLevel} onValueChange={(v: any) => setWarningLevel(v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Aviso 1</SelectItem>
+                        <SelectItem value="2">Aviso 2</SelectItem>
+                        <SelectItem value="3">Aviso 3 (Crítico)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Motivo:
+                    </label>
+                    <textarea
+                      value={warningReason}
+                      onChange={(e) => setWarningReason(e.target.value)}
+                      placeholder="Descreva o motivo da advertência"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Observação (opcional):
+                    </label>
+                    <textarea
+                      value={warningNote}
+                      onChange={(e) => setWarningNote(e.target.value)}
+                      placeholder="Adicione observações adicionais"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      rows={2}
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleCreateWarning}
+                    disabled={createWarningMutation.isPending}
+                    className="w-full bg-red-600 hover:bg-red-700"
+                  >
+                    {createWarningMutation.isPending ? "Registrando..." : "Registrar Advertência"}
+                  </Button>
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Tipo:
-                  </label>
-                  <Select value={selectedType} onValueChange={(v: any) => setSelectedType(v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pouco_rodado">Pouco Rodado</SelectItem>
-                      <SelectItem value="horas_extras">Horas Extras</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Coluna direita: Histórico e Informações */}
+                <div className="space-y-4 border-l border-slate-200 pl-6">
+                  <div>
+                    <h3 className="font-semibold text-slate-900 mb-3">Informações do Motorista</h3>
+                    {selectedConductorData ? (
+                      <div className="space-y-3">
+                        <div className="bg-slate-50 p-3 rounded-lg">
+                          <p className="text-sm text-slate-600">Motorista</p>
+                          <p className="font-medium text-slate-900">{selectedConductorData.conductorName}</p>
+                        </div>
 
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Nível de Advertência:
-                  </label>
-                  <Select value={warningLevel} onValueChange={(v: any) => setWarningLevel(v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Aviso 1</SelectItem>
-                      <SelectItem value="2">Aviso 2</SelectItem>
-                      <SelectItem value="3">Aviso 3 (Crítico)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-yellow-50 p-3 rounded-lg">
+                            <p className="text-xs text-slate-600">Pouco Rodado (7d)</p>
+                            <p className="font-bold text-yellow-700">
+                              {selectedConductorData.reincidencias?.poucoRodado7d || 0}x
+                            </p>
+                          </div>
+                          <div className="bg-orange-50 p-3 rounded-lg">
+                            <p className="text-xs text-slate-600">Pouco Rodado (30d)</p>
+                            <p className="font-bold text-orange-700">
+                              {selectedConductorData.reincidencias?.poucoRodado30d || 0}x
+                            </p>
+                          </div>
+                          <div className="bg-blue-50 p-3 rounded-lg">
+                            <p className="text-xs text-slate-600">HE (7d)</p>
+                            <p className="font-bold text-blue-700">
+                              {selectedConductorData.reincidencias?.horasExtras7d || 0}x
+                            </p>
+                          </div>
+                          <div className="bg-purple-50 p-3 rounded-lg">
+                            <p className="text-xs text-slate-600">HE (30d)</p>
+                            <p className="font-bold text-purple-700">
+                              {selectedConductorData.reincidencias?.horasExtras30d || 0}x
+                            </p>
+                          </div>
+                        </div>
 
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Motivo:
-                  </label>
-                  <textarea
-                    value={warningReason}
-                    onChange={(e) => setWarningReason(e.target.value)}
-                    placeholder="Descreva o motivo da advertência"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    rows={3}
-                  />
-                </div>
+                        <div className="bg-slate-50 p-3 rounded-lg">
+                          <p className="text-sm text-slate-600 mb-2">Nível Atual</p>
+                          <div className="flex gap-2">
+                            {selectedConductorData.avisosPoucoRodado > 0 && (
+                              <Badge className={getWarningBadgeColor(selectedConductorData.avisosPoucoRodado)}>
+                                Pouco Rodado: Aviso {selectedConductorData.avisosPoucoRodado}
+                              </Badge>
+                            )}
+                            {selectedConductorData.avisosHorasExtras > 0 && (
+                              <Badge className={getWarningBadgeColor(selectedConductorData.avisosHorasExtras)}>
+                                HE: Aviso {selectedConductorData.avisosHorasExtras}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">Selecione um motorista para ver detalhes</p>
+                    )}
+                  </div>
 
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Observação (opcional):
-                  </label>
-                  <textarea
-                    value={warningNote}
-                    onChange={(e) => setWarningNote(e.target.value)}
-                    placeholder="Adicione observações adicionais"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    rows={2}
-                  />
+                  <div>
+                    <h3 className="font-semibold text-slate-900 mb-3">Histórico de Advertências</h3>
+                    {selectedConductorData?.historico && selectedConductorData.historico.length > 0 ? (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {selectedConductorData.historico.map((w: any, idx: number) => (
+                          <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <div className="flex justify-between items-start mb-1">
+                              <Badge className={getWarningBadgeColor(w.nivelAdvertencia)}>
+                                Aviso {w.nivelAdvertencia}
+                              </Badge>
+                              <span className="text-xs text-slate-500">
+                                {new Date(w.criadoEm).toLocaleDateString("pt-BR")}
+                              </span>
+                            </div>
+                            <p className="text-sm font-medium text-slate-900">{w.tipo === "pouco_rodado" ? "Pouco Rodado" : "Horas Extras"}</p>
+                            <p className="text-xs text-slate-600 mt-1">{w.motivo}</p>
+                            {w.observacao && (
+                              <p className="text-xs text-slate-500 mt-1 italic">Obs: {w.observacao}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">Nenhuma advertência registrada</p>
+                    )}
+                  </div>
                 </div>
-
-                <Button
-                  onClick={handleCreateWarning}
-                  disabled={createWarningMutation.isPending}
-                  className="w-full bg-red-600 hover:bg-red-700"
-                >
-                  {createWarningMutation.isPending ? "Registrando..." : "Registrar Advertência"}
-                </Button>
               </div>
             </DialogContent>
           </Dialog>
