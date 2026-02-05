@@ -38,6 +38,7 @@
 - [x] Preview de linhas novas
 - [x] Histórico de importações
 - [x] Validação de estrutura
+- [x] Importação automática ao selecionar arquivo
 
 ## Tela de Configurações
 - [x] Ajuste de LIMITE_POUCO_RODADO_MIN (padrão 120)

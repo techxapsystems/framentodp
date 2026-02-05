@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,43 +11,55 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Upload, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { Upload, CheckCircle2, AlertCircle, Clock, Loader } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Import() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isValidating, setIsValidating] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [validationResult, setValidationResult] = useState<any>(null);
+  const [importResult, setImportResult] = useState<any>(null);
 
   const importMutation = trpc.import.importFile.useMutation({
     onSuccess: (result) => {
+      setImportResult(result);
       if (result.success) {
         toast.success(result.message);
-        setSelectedFile(null);
-        setValidationResult(null);
         refetchHistory();
       } else {
         toast.error(result.message);
       }
+      setIsProcessing(false);
     },
     onError: (error) => {
       toast.error(`Erro: ${error.message}`);
+      setIsProcessing(false);
     },
   });
 
   const validateMutation = trpc.import.validateFile.useMutation({
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       setValidationResult(result);
-      if (!result.success) {
-        toast.error(result.message);
+      if (result.success) {
+        toast.success("Arquivo válido! Importando...");
+        // Importar automaticamente se validação passou
+        if (selectedFile) {
+          setIsProcessing(true);
+          const buffer = await selectedFile.arrayBuffer();
+          const base64 = Buffer.from(buffer).toString("base64");
+          importMutation.mutate({
+            fileName: selectedFile.name,
+            fileBuffer: base64,
+          });
+        }
       } else {
-        toast.success("Arquivo válido!");
+        toast.error(result.message);
+        setIsProcessing(false);
       }
-      setIsValidating(false);
     },
     onError: (error) => {
       toast.error(`Erro na validação: ${error.message}`);
-      setIsValidating(false);
+      setIsProcessing(false);
     },
   });
 
@@ -60,26 +72,15 @@ export default function Import() {
 
     setSelectedFile(file);
     setValidationResult(null);
+    setImportResult(null);
+    setIsProcessing(true);
 
     // Validar arquivo
-    setIsValidating(true);
     const buffer = await file.arrayBuffer();
     const base64 = Buffer.from(buffer).toString("base64");
 
     validateMutation.mutate({
       fileName: file.name,
-      fileBuffer: base64,
-    });
-  };
-
-  const handleImport = async () => {
-    if (!selectedFile) return;
-
-    const buffer = await selectedFile.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString("base64");
-
-    importMutation.mutate({
-      fileName: selectedFile.name,
       fileBuffer: base64,
     });
   };
@@ -121,20 +122,41 @@ export default function Import() {
               onChange={handleFileSelect}
               className="hidden"
               id="file-input"
+              disabled={isProcessing}
             />
             <label
               htmlFor="file-input"
-              className="flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition"
+              className={`flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer transition ${
+                isProcessing
+                  ? "bg-slate-50 opacity-50 cursor-not-allowed"
+                  : "hover:bg-slate-50"
+              }`}
             >
-              <Upload className="w-8 h-8 text-slate-400" />
-              <div className="text-center">
-                <p className="font-medium text-slate-900">
-                  {selectedFile ? selectedFile.name : "Clique para selecionar arquivo"}
-                </p>
-                <p className="text-sm text-slate-500">
-                  ou arraste um arquivo aqui
-                </p>
-              </div>
+              {isProcessing ? (
+                <>
+                  <Loader className="w-8 h-8 text-blue-500 animate-spin" />
+                  <div className="text-center">
+                    <p className="font-medium text-slate-900">
+                      Processando arquivo...
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {selectedFile?.name}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-8 h-8 text-slate-400" />
+                  <div className="text-center">
+                    <p className="font-medium text-slate-900">
+                      {selectedFile ? selectedFile.name : "Clique para selecionar arquivo"}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      ou arraste um arquivo aqui
+                    </p>
+                  </div>
+                </>
+              )}
             </label>
           </div>
 
@@ -173,16 +195,42 @@ export default function Import() {
             </div>
           )}
 
-          {/* Import Button */}
-          {selectedFile && validationResult?.success && (
-            <Button
-              onClick={handleImport}
-              disabled={importMutation.isPending}
-              size="lg"
-              className="w-full"
+          {/* Import Result */}
+          {importResult && (
+            <div
+              className={`p-4 rounded-lg ${
+                importResult.success
+                  ? "bg-blue-50 border border-blue-200"
+                  : "bg-red-50 border border-red-200"
+              }`}
             >
-              {importMutation.isPending ? "Importando..." : "Importar Agora"}
-            </Button>
+              <div className="flex items-start gap-3">
+                {importResult.success ? (
+                  <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <p
+                    className={`font-medium ${
+                      importResult.success
+                        ? "text-blue-900"
+                        : "text-red-900"
+                    }`}
+                  >
+                    {importResult.message}
+                  </p>
+                  {importResult.totalRows && (
+                    <div className="text-sm text-slate-600 mt-2 space-y-1">
+                      <p>Total de linhas: {importResult.totalRows}</p>
+                      <p className="font-medium text-blue-600">
+                        Linhas novas: +{importResult.newRows}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -265,6 +313,9 @@ export default function Import() {
           </p>
           <p>
             • Tempos devem estar no formato HH:MM
+          </p>
+          <p>
+            • A importação ocorre automaticamente após a validação do arquivo
           </p>
         </CardContent>
       </Card>
