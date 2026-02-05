@@ -129,20 +129,6 @@ export async function getReincidentsWithWarnings() {
   const db = await getDb();
   if (!db) return [];
   
-  // Buscar reincidências (motoristas com múltiplas ocorrências)
-  const reincurrences = await db
-    .select()
-    .from(recurrences)
-    .where(
-      or(
-        gte(recurrences.ocorPoucoJanela, 2),
-        gte(recurrences.ocorPouco30d, 3),
-        gte(recurrences.ocorHeJanela, 2),
-        gte(recurrences.ocorHe30d, 3)
-      )
-    )
-    .orderBy(desc(recurrences.data));
-  
   // Buscar advertências já registradas
   const allWarnings = await db.select().from(warnings);
   const warningsByDriver = new Map<string, any[]>();
@@ -153,36 +139,60 @@ export async function getReincidentsWithWarnings() {
     warningsByDriver.get(w.conductorName)!.push(w);
   }
   
-  // Buscar última jornada de cada motorista para pegar placa
-  const journeysByDriver = new Map<string, any>();
-  const allJourneys = await db.select().from(journeys);
-  for (const j of allJourneys) {
-    const existing = journeysByDriver.get(j.conductorName);
+  // Buscar TODOS os motoristas com jornadas "pouco rodado" (ociosos)
+  // Independente de ter reincidências ou não
+  const ociosJourneys = await db
+    .select()
+    .from(journeys)
+    .where(eq(journeys.poucoRodado, true));
+  
+  // Agrupar motoristas únicos
+  const motoristasUnicos = new Set<string>();
+  const ultimaJornadaPorMotorista = new Map<string, any>();
+  
+  for (const j of ociosJourneys) {
+    motoristasUnicos.add(j.conductorName);
+    const existing = ultimaJornadaPorMotorista.get(j.conductorName);
     if (!existing || new Date(j.data) > new Date(existing.data)) {
-      journeysByDriver.set(j.conductorName, j);
+      ultimaJornadaPorMotorista.set(j.conductorName, j);
     }
   }
   
-  // Agrupar reincidências por motorista
+  // Buscar reincidências para cada motorista
   const grouped = new Map<string, any>();
-  for (const r of reincurrences) {
-    if (!grouped.has(r.conductorName)) {
-      const journey = journeysByDriver.get(r.conductorName);
-      grouped.set(r.conductorName, {
-        conductorName: r.conductorName,
-        placa: journey?.placa || "N/A",
-        avisosPoucoRodado: 0,
-        avisosHorasExtras: 0,
-        ultimoAviso: r.data,
-        historico: warningsByDriver.get(r.conductorName) || [],
-        reincidencias: {
-          poucoRodado7d: r.ocorPoucoJanela,
-          poucoRodado30d: r.ocorPouco30d,
-          horasExtras7d: r.ocorHeJanela,
-          horasExtras30d: r.ocorHe30d,
-        },
-      });
-    }
+  
+  for (const conductorName of motoristasUnicos) {
+    const journey = ultimaJornadaPorMotorista.get(conductorName)!;
+    
+    // Buscar reincidências se existirem
+    const recurrenceData = await db
+      .select()
+      .from(recurrences)
+      .where(eq(recurrences.conductorName, conductorName))
+      .orderBy(desc(recurrences.data))
+      .limit(1);
+    
+    const rec = recurrenceData.length > 0 ? recurrenceData[0] : null;
+    
+    grouped.set(conductorName, {
+      conductorName,
+      placa: journey.placa || "N/A",
+      avisosPoucoRodado: 0,
+      avisosHorasExtras: 0,
+      ultimoAviso: rec?.data || journey.data,
+      historico: warningsByDriver.get(conductorName) || [],
+      reincidencias: rec ? {
+        poucoRodado7d: rec.ocorPoucoJanela,
+        poucoRodado30d: rec.ocorPouco30d,
+        horasExtras7d: rec.ocorHeJanela,
+        horasExtras30d: rec.ocorHe30d,
+      } : {
+        poucoRodado7d: 0,
+        poucoRodado30d: 0,
+        horasExtras7d: 0,
+        horasExtras30d: 0,
+      },
+    });
   }
   
   // Calcular nível de aviso baseado em reincidências

@@ -136,9 +136,11 @@
   - Solução: Implementado handleConductorChange para auto-preencher placa
 
 ## Bug Crítico - Motoristas Não Listam
-- [ ] Motoristas não aparecem no dialog de nova advertência
-- [ ] Verificar se query getReincidents está retornando dados
-- [ ] Debugar data?.reincidents no frontend
+- [x] Motoristas não aparecem no dialog de nova advertência
+  - Causa: getReincidentsWithWarnings buscava apenas motoristas com reincidências registradas
+  - Solução: Reescrever função para buscar TODOS os motoristas com jornadas ociosas
+- [x] Verificar se query getReincidents está retornando dados
+- [x] Debugar data?.reincidents no frontend
 
 ## Branding Framento Transportes
 - [x] Extrair logo do site da Framento
@@ -149,6 +151,9 @@
 - [ ] Testar contraste e acessibilidade com novas cores
 
 ## Bugs & Melhorias Urgentes 2
-- [ ] Filtro de motorista não lista motoristas no dialog de nova advertência
-- [ ] Criar dashboard de advertências por motorista (tabela + gráfico)
-- [ ] Criar dashboard de advertências por operação (tabela + gráfico)
+- [x] Filtro de motorista não lista motoristas no dialog de nova advertência
+  - RESOLVIDO: 44 motoristas agora listam corretamente
+- [x] Criar dashboard de advertências por motorista (tabela + gráfico)
+  - Implementado: Tela "Advertências" com gráficos por motorista e operação
+- [x] Criar dashboard de advertências por operação (tabela + gráfico)
+  - Implementado: Tela "Advertências" com estatísticas por operação
