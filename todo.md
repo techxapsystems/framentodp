@@ -157,3 +157,12 @@
   - Implementado: Tela "Advertências" com gráficos por motorista e operação
 - [x] Criar dashboard de advertências por operação (tabela + gráfico)
   - Implementado: Tela "Advertências" com estatísticas por operação
+
+## Bug: Reload de Página ao Registrar Advertência
+- [x] Ao registrar nova advertência, página faz reload completo e volta para página inicial
+  - Causa: Estado compartilhado entre filtro superior e dialog
+  - Solução: Separar estado (selectedType vs dialogWarningType) e adicionar controle de abertura/fechamento do dialog
+- [x] Filtro de motoristas buga após o reload
+  - Resolvido: Agora o dialog fecha sem reload e dados são atualizados localmente
+- [x] Solução: Remover reload e atualizar estado localmente (invalidar query, fechar dialog)
+  - Implementado: Dialog fecha automaticamente com setDialogOpen(false), refetch() atualiza dados sem reload

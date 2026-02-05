@@ -36,6 +36,8 @@ export default function Recidivists() {
   const [warningNote, setWarningNote] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [infrationDays, setInfrationDays] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogWarningType, setDialogWarningType] = useState<"pouco_rodado" | "horas_extras">("pouco_rodado");
 
   const { data, isLoading, refetch } = trpc.dashboard.getReincidents.useQuery(
     {
@@ -55,12 +57,17 @@ export default function Recidivists() {
   const createWarningMutation = trpc.dashboard.createWarning.useMutation({
     onSuccess: () => {
       toast.success("Advertência registrada com sucesso");
+      // Fechar dialog sem reload
+      setDialogOpen(false);
+      // Limpar formulário
       setSelectedConductor("");
       setWarningLevel("1");
       setWarningReason("");
       setWarningNote("");
       setLicensePlate("");
       setInfrationDays("");
+      setDialogWarningType("pouco_rodado");
+      // Refetch dados sem reload de página
       refetch();
     },
     onError: (error) => {
@@ -76,7 +83,7 @@ export default function Recidivists() {
 
     createWarningMutation.mutate({
       conductorName: selectedConductor,
-      tipo: selectedType || "pouco_rodado",
+      tipo: dialogWarningType,
       nivelAdvertencia: parseInt(warningLevel),
       motivo: warningReason,
       observacao: warningNote,
@@ -206,7 +213,7 @@ export default function Recidivists() {
           </div>
 
           {/* Dialog para nova advertência */}
-          <Dialog>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button className="mt-6 bg-red-600 hover:bg-red-700">
                 + Nova Advertência
@@ -267,7 +274,7 @@ export default function Recidivists() {
                     <label className="text-sm font-medium text-slate-700 block mb-2">
                       Tipo:
                     </label>
-                    <Select value={selectedType} onValueChange={(v: any) => setSelectedType(v)}>
+                    <Select value={dialogWarningType} onValueChange={(v: any) => setDialogWarningType(v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o tipo" />
                       </SelectTrigger>
