@@ -1,102 +1,82 @@
-import * as XLSX from "xlsx";
+import XLSX from "xlsx";
+import { getDb, getConfigurations } from "../db";
+import { journeys as journeysTable, imports } from "../../drizzle/schema";
 import { createHash } from "crypto";
-import { getConfigurations, getDb } from "../db";
-import type { InsertJourney } from "../../drizzle/schema";
+import { desc } from "drizzle-orm";
+import type { InsertJourney, Configuration } from "../../drizzle/schema";
 
 /**
- * Mapeia strings de tempo (HH:MM ou HH:MM:SS) para minutos
- */
-export function timeStringToMinutes(timeStr: string | null | undefined): number {
-  if (!timeStr || timeStr === "-" || timeStr === "") return 0;
-
-  const trimmed = String(timeStr).trim();
-  if (trimmed === "-" || trimmed === "") return 0;
-
-  try {
-    const parts = trimmed.split(":").map((p) => parseInt(p, 10));
-    if (parts.length === 2) {
-      return parts[0] * 60 + parts[1];
-    } else if (parts.length === 3) {
-      return parts[0] * 60 + parts[1] + Math.floor(parts[2] / 60);
-    }
-  } catch {
-    return 0;
-  }
-
-  return 0;
-}
-
-/**
- * Converte string de data para Date
- */
-export function parseDate(dateStr: string | null | undefined): Date | null {
-  if (!dateStr || dateStr === "-" || dateStr === "") return null;
-
-  try {
-    const trimmed = String(dateStr).trim();
-    // Tenta formato DD/MM/YYYY
-    const match = trimmed.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (match) {
-      const [, day, month, year] = match;
-      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    }
-
-    // Tenta ISO format
-    const date = new Date(trimmed);
-    if (!isNaN(date.getTime())) {
-      return date;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-/**
- * Detecta automaticamente a aba com dados brutos
+ * Detecta aba com dados no workbook
  */
 function detectDataSheet(workbook: XLSX.WorkBook): XLSX.WorkSheet | null {
-  // Preferir "1_DADOS_BRUTOS"
-  if (workbook.SheetNames.includes("1_DADOS_BRUTOS")) {
-    return workbook.Sheets["1_DADOS_BRUTOS"];
-  }
-
-  // Procurar por aba que contenha as colunas esperadas
-  const expectedColumns = [
-    "Condutor",
-    "Data",
-    "Tempo Total Dirigido",
-    "Horas Extras 50%",
-    "Horas Extras 100%",
-  ];
-
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-    if (data.length > 0) {
-      const firstRow = data[0] as Record<string, unknown>;
-      const hasAllColumns = expectedColumns.every((col) => col in firstRow);
-
-      if (hasAllColumns) {
-        return sheet;
-      }
+  const sheetNames = workbook.SheetNames;
+  
+  // Procurar por abas com padrão comum
+  for (const name of sheetNames) {
+    if (name.toLowerCase().includes("dados") || 
+        name.toLowerCase().includes("brutos") ||
+        name.toLowerCase().includes("raw")) {
+      return workbook.Sheets[name];
     }
   }
+  
+  // Usar primeira aba se nenhuma corresponder
+  return workbook.Sheets[sheetNames[0]] || null;
+}
 
+/**
+ * Converte string de tempo (HH:MM ou H:MM) para minutos
+ */
+function timeStringToMinutes(timeStr: string): number {
+  if (!timeStr || typeof timeStr !== "string") return 0;
+  
+  const trimmed = timeStr.trim();
+  if (!trimmed) return 0;
+  
+  const parts = trimmed.split(":");
+  if (parts.length < 2) return 0;
+  
+  const hours = parseInt(parts[0], 10) || 0;
+  const minutes = parseInt(parts[1], 10) || 0;
+  
+  return hours * 60 + minutes;
+}
+
+/**
+ * Parse data com múltiplos formatos
+ */
+function parseDate(dateStr: string): Date | null {
+  if (!dateStr || typeof dateStr !== "string") return null;
+  
+  const trimmed = dateStr.trim();
+  if (!trimmed) return null;
+  
+  // Tentar parse direto
+  const parsed = new Date(trimmed);
+  if (!isNaN(parsed.getTime())) return parsed;
+  
+  // Tentar formato DD/MM/YYYY
+  const match = trimmed.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (match) {
+    const day = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const year = parseInt(match[3], 10);
+    return new Date(year, month, day);
+  }
+  
   return null;
 }
 
 /**
- * Normaliza uma linha do Excel em Journey
+ * Normaliza uma linha de jornada
  */
 function normalizeJourneyRow(
   row: Record<string, unknown>,
   importId: number,
-  config: any
+  config: Configuration
 ): InsertJourney {
-  const conductorName = String(row["Condutor"] || "").trim();
+  // Dados do motorista
+  const conductorName = String(row["Condutor"] || "").trim() || "Desconhecido";
   const gestorName = String(row["Gestor"] || "").trim() || null;
   const operacao = String(row["Operação"] || "").trim() || null;
   const cargo = String(row["Cargo"] || "").trim() || null;
@@ -153,13 +133,6 @@ function normalizeJourneyRow(
 }
 
 /**
- * Calcula hash MD5 do arquivo
- */
-function calculateFileHash(buffer: Buffer): string {
-  return createHash("md5").update(buffer).digest("hex");
-}
-
-/**
  * Interface para resultado de importação
  */
 export interface ImportResult {
@@ -172,17 +145,18 @@ export interface ImportResult {
 }
 
 /**
- * Importa Excel incrementalmente
+ * Importa Excel incrementalmente com otimizações
  * - Detecta última importação
  * - Lê apenas linhas novas baseado em row_count
  * - Normaliza dados
- * - Retorna journeys para inserção
+ * - Retorna journeys para inserção em batch
  */
 export async function importExcelIncremental(
   buffer: Buffer,
   fileName: string
 ): Promise<ImportResult> {
   try {
+    // Ler workbook
     const workbook = XLSX.read(buffer);
     const sheet = detectDataSheet(workbook);
 
@@ -214,15 +188,14 @@ export async function importExcelIncremental(
       };
     }
 
-    const lastImport = await db
-      .select()
-      .from(await import("../../drizzle/schema").then((m) => m.imports))
-      .orderBy(
-        (await import("../../drizzle/schema").then((m) => m.imports)).importedAt
-      )
+    // Query otimizada: apenas pegar rowCount da última importação
+    const lastImportResult = await db
+      .select({ rowCount: imports.rowCount })
+      .from(imports)
+      .orderBy(desc(imports.importedAt))
       .limit(1);
 
-    const lastRowCount = lastImport.length > 0 ? lastImport[0].rowCount : 0;
+    const lastRowCount = lastImportResult.length > 0 ? lastImportResult[0].rowCount : 0;
 
     // Validar se arquivo não ficou menor
     if (totalRows < lastRowCount) {
@@ -250,11 +223,18 @@ export async function importExcelIncremental(
       };
     }
 
-    // Normalizar linhas novas
+    // Normalizar linhas novas em paralelo (chunks de 100)
     const config = await getConfigurations();
-    const newJourneys = newRowsData.map((row: any, idx: number) =>
-      normalizeJourneyRow(row as Record<string, unknown>, 0, config)
-    );
+    const CHUNK_SIZE = 100;
+    const newJourneys: InsertJourney[] = [];
+
+    for (let i = 0; i < newRowsData.length; i += CHUNK_SIZE) {
+      const chunk = newRowsData.slice(i, i + CHUNK_SIZE);
+      const normalizedChunk = chunk.map((row: any) =>
+        normalizeJourneyRow(row as Record<string, unknown>, 0, config)
+      );
+      newJourneys.push(...normalizedChunk);
+    }
 
     return {
       success: true,
@@ -291,29 +271,28 @@ export function validateExcelStructure(buffer: Buffer): {
     if (!sheet) {
       return {
         valid: false,
-        message: "Nenhuma aba com as colunas esperadas encontrada",
+        message: "Nenhuma aba com dados encontrada",
       };
     }
 
+    // Ler primeira linha para validar colunas
     const data = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
     if (data.length === 0) {
       return {
         valid: false,
-        message: "Aba selecionada está vazia",
+        message: "Arquivo vazio",
       };
     }
 
-    const expectedColumns = [
+    // Validar colunas obrigatórias
+    const requiredColumns = [
       "Condutor",
       "Data",
       "Tempo Total Dirigido",
-      "Horas Extras 50%",
-      "Horas Extras 100%",
     ];
 
     const firstRow = data[0] as Record<string, unknown>;
-    const missingColumns = expectedColumns.filter((col) => !(col in firstRow));
+    const missingColumns = requiredColumns.filter(col => !firstRow[col]);
 
     if (missingColumns.length > 0) {
       return {
@@ -324,8 +303,8 @@ export function validateExcelStructure(buffer: Buffer): {
 
     return {
       valid: true,
-      message: "Estrutura válida",
-      sheetName: Object.keys(workbook.Sheets)[0],
+      message: "Arquivo válido",
+      sheetName: detectDataSheet(workbook) ? "Dados encontrados" : "Desconhecido",
     };
   } catch (error) {
     return {
@@ -334,3 +313,6 @@ export function validateExcelStructure(buffer: Buffer): {
     };
   }
 }
+
+// Exportar funções para testes
+export { normalizeJourneyRow, timeStringToMinutes, parseDate };

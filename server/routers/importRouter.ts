@@ -150,9 +150,8 @@ export const importRouter = router({
         const result = await recalculateForDate(targetDate, config);
 
         return {
-          success: true,
-          message: "Análises recalculadas com sucesso",
-          ...result,
+          success: result.success,
+          message: result.message,
         };
       } catch (error) {
         return {

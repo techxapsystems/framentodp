@@ -180,7 +180,17 @@ export async function createJourneys(journeyList: typeof journeys.$inferInsert[]
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  return db.insert(journeys).values(journeyList);
+  // Batch insert em chunks de 500 para melhor performance
+  const BATCH_SIZE = 500;
+  const batches = [];
+  
+  for (let i = 0; i < journeyList.length; i += BATCH_SIZE) {
+    const batch = journeyList.slice(i, i + BATCH_SIZE);
+    batches.push(db.insert(journeys).values(batch));
+  }
+  
+  // Executar todos os batches em paralelo
+  return Promise.all(batches);
 }
 
 export async function getJourneysByDate(data: Date) {

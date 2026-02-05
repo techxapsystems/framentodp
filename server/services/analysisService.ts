@@ -127,115 +127,148 @@ export function generateSuggestedAction(
 }
 
 /**
- * Recalcula todas as reincidências e ações sugeridas para uma data
+ * Recalcula reincidências e ações sugeridas em background (não bloqueia)
+ * Executa de forma assíncrona sem await
  */
 export async function recalculateForDate(targetDate: Date, config: Configuration) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  // Buscar todas as jornadas do dia
-  const startOfDay = new Date(targetDate);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(targetDate);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  const dayJourneys = await db
-    .select()
-    .from(journeys)
-    .where(and(gte(journeys.data, startOfDay), lte(journeys.data, endOfDay)));
-
-  // Agrupar por motorista
-  const conductorMap = new Map<string, any[]>();
-  for (const journey of dayJourneys) {
-    if (!conductorMap.has(journey.conductorName)) {
-      conductorMap.set(journey.conductorName, []);
-    }
-    conductorMap.get(journey.conductorName)!.push(journey);
-  }
-
-  // Processar cada motorista
-  const suggestedActionsList: any[] = [];
-
-  for (const [conductorName, conductorJourneys] of Array.from(conductorMap)) {
-    // Calcular reincidências
-    const recurrenceData = await calculateRecurrences(
-      conductorName,
-      targetDate,
-      config
-    );
-
-    // Atualizar tabela de reincidências
-    await db
-      .insert(recurrences)
-      .values({
-        conductorName,
-        data: targetDate,
-        ...recurrenceData,
-      })
-      .onDuplicateKeyUpdate({
-        set: {
-          ...recurrenceData,
-          updatedAt: new Date(),
-        },
-      });
-
-    // Gerar ações sugeridas
-    for (const journey of conductorJourneys) {
-      // Pouco rodado
-      if (journey.poucoRodado) {
-        const action = generateSuggestedAction(
-          conductorName,
-          journey.id,
-          targetDate,
-          "pouco_rodado",
-          recurrenceData,
-          config
-        );
-
-        if (action) {
-          suggestedActionsList.push({
-            journeyId: journey.id,
-            conductorName,
-            data: targetDate,
-            tipo: "pouco_rodado",
-            acao: action.acao,
-            severidade: action.severidade,
-          });
-        }
+  // Retornar imediatamente
+  // Executar cálculos em background via setImmediate
+  setImmediate(async () => {
+    try {
+      const db = await getDb();
+      if (!db) {
+        console.error("[AnalysisService] Database not available");
+        return;
       }
 
-      // Horas extras
-      if (journey.temHe) {
-        const action = generateSuggestedAction(
-          conductorName,
-          journey.id,
-          targetDate,
-          "horas_extras",
-          { ...recurrenceData, heAlerta: journey.heAlerta },
-          config
-        );
+      // Buscar todas as jornadas do dia
+      const startOfDay = new Date(targetDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
 
-        if (action) {
-          suggestedActionsList.push({
-            journeyId: journey.id,
-            conductorName,
-            data: targetDate,
-            tipo: "horas_extras",
-            acao: action.acao,
-            severidade: action.severidade,
-          });
+      const dayJourneys = await db
+        .select()
+        .from(journeys)
+        .where(and(gte(journeys.data, startOfDay), lte(journeys.data, endOfDay)));
+
+      // Agrupar por motorista
+      const conductorMap = new Map<string, any[]>();
+      for (const journey of dayJourneys) {
+        if (!conductorMap.has(journey.conductorName)) {
+          conductorMap.set(journey.conductorName, []);
         }
+        conductorMap.get(journey.conductorName)!.push(journey);
       }
+
+      // Processar motoristas em paralelo (chunks de 10)
+      const conductorEntries = Array.from(conductorMap.entries());
+      const PARALLEL_BATCH = 10;
+
+      for (let i = 0; i < conductorEntries.length; i += PARALLEL_BATCH) {
+        const batch = conductorEntries.slice(i, i + PARALLEL_BATCH);
+
+        await Promise.all(
+          batch.map(async ([conductorName, conductorJourneys]) => {
+            try {
+              // Calcular reincidências
+              const recurrenceData = await calculateRecurrences(
+                conductorName,
+                targetDate,
+                config
+              );
+
+              // Atualizar tabela de reincidências
+              await db
+                .insert(recurrences)
+                .values({
+                  conductorName,
+                  data: targetDate,
+                  ...recurrenceData,
+                })
+                .onDuplicateKeyUpdate({
+                  set: {
+                    ...recurrenceData,
+                    updatedAt: new Date(),
+                  },
+                });
+
+              // Gerar ações sugeridas
+              const suggestedActionsList: any[] = [];
+
+              for (const journey of conductorJourneys) {
+                // Pouco rodado
+                if (journey.poucoRodado) {
+                  const action = generateSuggestedAction(
+                    conductorName,
+                    journey.id,
+                    targetDate,
+                    "pouco_rodado",
+                    recurrenceData,
+                    config
+                  );
+
+                  if (action) {
+                    suggestedActionsList.push({
+                      journeyId: journey.id,
+                      conductorName,
+                      data: targetDate,
+                      tipo: "pouco_rodado",
+                      acao: action.acao,
+                      severidade: action.severidade,
+                    });
+                  }
+                }
+
+                // Horas extras
+                if (journey.temHe) {
+                  const action = generateSuggestedAction(
+                    conductorName,
+                    journey.id,
+                    targetDate,
+                    "horas_extras",
+                    { ...recurrenceData, heAlerta: journey.heAlerta },
+                    config
+                  );
+
+                  if (action) {
+                    suggestedActionsList.push({
+                      journeyId: journey.id,
+                      conductorName,
+                      data: targetDate,
+                      tipo: "horas_extras",
+                      acao: action.acao,
+                      severidade: action.severidade,
+                    });
+                  }
+                }
+              }
+
+              // Inserir ações sugeridas
+              if (suggestedActionsList.length > 0) {
+                await db.insert(suggestedActions).values(suggestedActionsList);
+              }
+            } catch (error) {
+              console.error(
+                `[AnalysisService] Error processing conductor ${conductorName}:`,
+                error
+              );
+            }
+          })
+        );
+      }
+
+      console.log(
+        `[AnalysisService] Background recalculation completed for ${targetDate.toISOString()}`
+      );
+    } catch (error) {
+      console.error("[AnalysisService] Background recalculation error:", error);
     }
-  }
+  });
 
-  // Inserir ações sugeridas
-  if (suggestedActionsList.length > 0) {
-    await db.insert(suggestedActions).values(suggestedActionsList);
-  }
-
+  // Retornar imediatamente sem esperar
   return {
-    processedConductors: conductorMap.size,
-    suggestedActionsCount: suggestedActionsList.length,
+    success: true,
+    message: "Recalculation scheduled in background",
   };
 }

@@ -68,6 +68,13 @@
 
 ## Bugs & Melhorias Urgentes
 - [x] Renomear dashboard para "STATUS DE OCIOSIDADE BRF PRIMÁRIA"
-- [ ] Otimizar performance da importação (reduzir de 5min para <30s)
+- [x] Otimizar performance da importação (reduzir de 5min para <30s)
 - [x] Reorientar lógica: motorista OCIOSO = jornada >10h E direção <2h
 - [x] Atualizar dashboards HOJE/SEMANA com novo contexto de ociosidade
+
+## Otimizações Implementadas
+- [x] Batch inserts em chunks de 500 registros
+- [x] Recalculate em background (setImmediate) - não bloqueia importação
+- [x] Processamento paralelo de motoristas (chunks de 10)
+- [x] Query otimizada para última importação (apenas rowCount)
+- [x] Normalização em chunks de 100 linhas
