@@ -407,7 +407,28 @@ export const dashboardRouter = router({
     }),
 
   /**
-   * Cria nova advertência
+   * Busca todos os motoristas ociosos para o dialog de nova advertencia
+   */
+  getIdleDriversForWarning: protectedProcedure
+    .query(async () => {
+      try {
+        const { getAllIdleDrivers } = await import("../db");
+        const drivers = await getAllIdleDrivers();
+        return {
+          success: true,
+          drivers,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: String(error),
+          drivers: [],
+        };
+      }
+    }),
+
+  /**
+   * Cria nova advertencia
    */
   createWarning: protectedProcedure
     .input(

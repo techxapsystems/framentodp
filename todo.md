@@ -166,3 +166,16 @@
   - Resolvido: Agora o dialog fecha sem reload e dados são atualizados localmente
 - [x] Solução: Remover reload e atualizar estado localmente (invalidar query, fechar dialog)
   - Implementado: Dialog fecha automaticamente com setDialogOpen(false), refetch() atualiza dados sem reload
+
+
+## Bugs Criticos - Advertencias (RESOLVIDOS)
+- [x] Advertencias cadastradas nao aparecem na aba "Advertencias"
+  - Causa: Faltava campo `aplicadoPor` obrigatorio na funcao createWarning
+  - Solucao: Adicionar campo obrigatorio ao inserir advertencia
+- [x] Todos os motoristas mostravam "Advertencia Gerada: Sim"
+  - Causa: getReincidentsWithWarnings retornava dados invalidos do banco
+  - Solucao: Reescrever funcao para filtrar apenas motoristas com advertencias reais
+- [x] Logica de exibicao confusa - mistura motoristas com e sem advertencias
+  - Solucao: Criar nova funcao getAllIdleDrivers para o dialog de nova advertencia
+  - Tela Reincidentes: mostra apenas motoristas COM advertencias
+  - Dialog Nova Advertencia: mostra TODOS os motoristas ociosos disponiveis

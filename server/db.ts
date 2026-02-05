@@ -129,9 +129,16 @@ export async function getReincidentsWithWarnings() {
   const db = await getDb();
   if (!db) return [];
   
-  // Buscar advertências já registradas
+  // Buscar APENAS motoristas que têm advertências registradas
   const allWarnings = await db.select().from(warnings);
+  
+  if (allWarnings.length === 0) {
+    return [];
+  }
+  
+  const motoristasComAdvertencias = new Set(allWarnings.map(w => w.conductorName));
   const warningsByDriver = new Map<string, any[]>();
+  
   for (const w of allWarnings) {
     if (!warningsByDriver.has(w.conductorName)) {
       warningsByDriver.set(w.conductorName, []);
@@ -139,32 +146,21 @@ export async function getReincidentsWithWarnings() {
     warningsByDriver.get(w.conductorName)!.push(w);
   }
   
-  // Buscar TODOS os motoristas com jornadas "pouco rodado" (ociosos)
-  // Independente de ter reincidências ou não
-  const ociosJourneys = await db
-    .select()
-    .from(journeys)
-    .where(eq(journeys.poucoRodado, true));
-  
-  // Agrupar motoristas únicos
-  const motoristasUnicos = new Set<string>();
-  const ultimaJornadaPorMotorista = new Map<string, any>();
-  
-  for (const j of ociosJourneys) {
-    motoristasUnicos.add(j.conductorName);
-    const existing = ultimaJornadaPorMotorista.get(j.conductorName);
-    if (!existing || new Date(j.data) > new Date(existing.data)) {
-      ultimaJornadaPorMotorista.set(j.conductorName, j);
-    }
-  }
-  
-  // Buscar reincidências para cada motorista
+  // Buscar dados dos motoristas com advertências
   const grouped = new Map<string, any>();
   
-  for (const conductorName of motoristasUnicos) {
-    const journey = ultimaJornadaPorMotorista.get(conductorName)!;
+  for (const conductorName of motoristasComAdvertencias) {
+    // Buscar última jornada do motorista
+    const journeyData = await db
+      .select()
+      .from(journeys)
+      .where(eq(journeys.conductorName, conductorName))
+      .orderBy(desc(journeys.data))
+      .limit(1);
     
-    // Buscar reincidências se existirem
+    const journey = journeyData.length > 0 ? journeyData[0] : null;
+    
+    // Buscar reincidências
     const recurrenceData = await db
       .select()
       .from(recurrences)
@@ -174,43 +170,90 @@ export async function getReincidentsWithWarnings() {
     
     const rec = recurrenceData.length > 0 ? recurrenceData[0] : null;
     
+    // Calcular nível máximo de aviso por tipo
+    const driverWarnings = warningsByDriver.get(conductorName) || [];
+    const avisosPoucoRodado = Math.max(
+      ...driverWarnings
+        .filter(w => w.tipo === "pouco_rodado")
+        .map(w => w.nivelAdvertencia),
+      0
+    );
+    const avisosHorasExtras = Math.max(
+      ...driverWarnings
+        .filter(w => w.tipo === "horas_extras")
+        .map(w => w.nivelAdvertencia),
+      0
+    );
+    
     grouped.set(conductorName, {
       conductorName,
-      placa: journey.placa || "N/A",
-      avisosPoucoRodado: 0,
-      avisosHorasExtras: 0,
-      ultimoAviso: rec?.data || journey.data,
-      historico: warningsByDriver.get(conductorName) || [],
-      reincidencias: rec ? {
-        poucoRodado7d: rec.ocorPoucoJanela,
-        poucoRodado30d: rec.ocorPouco30d,
-        horasExtras7d: rec.ocorHeJanela,
-        horasExtras30d: rec.ocorHe30d,
-      } : {
-        poucoRodado7d: 0,
-        poucoRodado30d: 0,
-        horasExtras7d: 0,
-        horasExtras30d: 0,
-      },
+      placa: journey?.placa || "N/A",
+      avisosPoucoRodado,
+      avisosHorasExtras,
+      ultimoAviso:
+        driverWarnings.length > 0
+          ? new Date(
+              Math.max(
+                ...driverWarnings.map(w => new Date(w.criadoEm).getTime())
+              )
+            )
+          : journey?.data,
+      historico: driverWarnings,
+      reincidencias: rec
+        ? {
+            poucoRodado7d: rec.ocorPoucoJanela,
+            poucoRodado30d: rec.ocorPouco30d,
+            horasExtras7d: rec.ocorHeJanela,
+            horasExtras30d: rec.ocorHe30d,
+          }
+        : {
+            poucoRodado7d: 0,
+            poucoRodado30d: 0,
+            horasExtras7d: 0,
+            horasExtras30d: 0,
+          },
     });
   }
   
-  // Calcular nível de aviso baseado em reincidências
-  for (const item of grouped.values()) {
-    const r = item.reincidencias;
-    if (r.poucoRodado7d >= 2 || r.poucoRodado30d >= 3) {
-      item.avisosPoucoRodado = r.poucoRodado30d >= 3 ? 3 : (r.poucoRodado7d >= 2 ? 2 : 1);
-    }
-    if (r.horasExtras7d >= 2 || r.horasExtras30d >= 3) {
-      item.avisosHorasExtras = r.horasExtras30d >= 3 ? 3 : (r.horasExtras7d >= 2 ? 2 : 1);
-    }
-  }
-  
   return Array.from(grouped.values()).sort(
-    (a, b) => new Date(b.ultimoAviso).getTime() - new Date(a.ultimoAviso).getTime()
+    (a, b) =>
+      new Date(b.ultimoAviso).getTime() - new Date(a.ultimoAviso).getTime()
   );
 }
 
+
+/**
+ * Busca TODOS os motoristas com jornadas ociosas (pouco rodado)
+ * Usado para o dialog de nova advertencia
+ */
+export async function getAllIdleDrivers() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Buscar todos os motoristas com jornadas "pouco rodado" (ociosos)
+  const ociosJourneys = await db
+    .select()
+    .from(journeys)
+    .where(eq(journeys.poucoRodado, true));
+  
+  // Agrupar motoristas unicos com ultima jornada
+  const motoristasUnicos = new Map<string, any>();
+  
+  for (const j of ociosJourneys) {
+    const existing = motoristasUnicos.get(j.conductorName);
+    if (!existing || new Date(j.data) > new Date(existing.data)) {
+      motoristasUnicos.set(j.conductorName, {
+        conductorName: j.conductorName,
+        placa: j.placa || "N/A",
+        data: j.data,
+      });
+    }
+  }
+  
+  return Array.from(motoristasUnicos.values()).sort(
+    (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()
+  );
+}
 
 export async function getImportHistory() {
   const db = await getDb();
@@ -248,7 +291,8 @@ export async function createWarning(data: any) {
     tipo: data.tipo,
     nivelAdvertencia: data.nivelAdvertencia,
     motivo: data.motivo,
-    observacao: data.observacao,
+    observacao: data.observacao || "",
+    aplicadoPor: data.aplicadoPor,
     advertenciaGerada: true,
     advertenciaAplicada: false,
     criadoEm: new Date(),

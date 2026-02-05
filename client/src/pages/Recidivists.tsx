@@ -49,6 +49,15 @@ export default function Recidivists() {
     }
   );
 
+  // Query para buscar todos os motoristas ociosos no dialog
+  const { data: idleDriversData } = trpc.dashboard.getIdleDriversForWarning.useQuery(
+    {},
+    {
+      enabled: true,
+      staleTime: 0,
+    }
+  );
+
   // Debug: log dos dados
   useEffect(() => {
     console.log("Reincidents data:", data);
@@ -166,7 +175,7 @@ export default function Recidivists() {
   // Auto-preencher placa quando motorista é selecionado
   const handleConductorChange = (value: string) => {
     setSelectedConductor(value);
-    const conductor = data?.reincidents?.find((r: any) => r.conductorName === value);
+    const conductor = idleDriversData?.drivers?.find((d: any) => d.conductorName === value);
     if (conductor?.placa) {
       setLicensePlate(conductor.placa);
     }
@@ -235,9 +244,9 @@ export default function Recidivists() {
                         <SelectValue placeholder="Selecione o motorista" />
                       </SelectTrigger>
                       <SelectContent>
-                        {data?.reincidents?.map((r: any) => (
-                          <SelectItem key={r.conductorName} value={r.conductorName}>
-                            {r.conductorName}
+                        {idleDriversData?.drivers?.map((d: any) => (
+                          <SelectItem key={d.conductorName} value={d.conductorName}>
+                            {d.conductorName}
                           </SelectItem>
                         ))}
                       </SelectContent>
