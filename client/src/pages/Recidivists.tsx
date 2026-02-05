@@ -25,7 +25,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AlertTriangle, AlertCircle } from "lucide-react";
+import { AlertTriangle, AlertCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Recidivists() {
@@ -34,6 +34,8 @@ export default function Recidivists() {
   const [warningLevel, setWarningLevel] = useState<"1" | "2" | "3">("1");
   const [warningReason, setWarningReason] = useState("");
   const [warningNote, setWarningNote] = useState("");
+  const [licensePlate, setLicensePlate] = useState("");
+  const [infrationDays, setInfrationDays] = useState("");
 
   const { data, isLoading, refetch } = trpc.dashboard.getReincidents.useQuery({
     tipo: selectedType || undefined,
@@ -46,6 +48,8 @@ export default function Recidivists() {
       setWarningLevel("1");
       setWarningReason("");
       setWarningNote("");
+      setLicensePlate("");
+      setInfrationDays("");
       refetch();
     },
     onError: (error) => {
@@ -66,6 +70,55 @@ export default function Recidivists() {
       motivo: warningReason,
       observacao: warningNote,
     });
+  };
+
+  const generateEmailTemplate = () => {
+    if (!selectedConductor || !licensePlate || !infrationDays || !warningReason) {
+      return "";
+    }
+
+    const typeLabel = selectedType === "pouco_rodado" ? "Pouco Rodado" : "Horas Extras";
+    const date = new Date();
+    const dateStr = date.toLocaleDateString("pt-BR");
+    const timeStr = date.toLocaleTimeString("pt-BR");
+
+    const lines = [
+      "Solicitação de Advertência - Motorista Ocioso",
+      "",
+      "---",
+      "",
+      `Motorista: ${selectedConductor}`,
+      `Placa do Veículo: ${licensePlate}`,
+      `Dias de Infração: ${infrationDays}`,
+      `Tipo de Infração: ${typeLabel}`,
+      `Nível de Aviso: ${warningLevel}`,
+      "",
+      "Descrição da Infração:",
+      warningReason,
+    ];
+
+    if (warningNote) {
+      lines.push("");
+      lines.push("Observações Adicionais:");
+      lines.push(warningNote);
+    }
+
+    lines.push("");
+    lines.push("---");
+    lines.push("");
+    lines.push(`Solicitação gerada em: ${dateStr} às ${timeStr}`);
+
+    return lines.join("\n");
+  };
+
+  const handleCopyEmail = () => {
+    if (!selectedConductor || !licensePlate || !infrationDays || !warningReason) {
+      toast.error("Preencha todos os campos obrigatórios para gerar o email");
+      return;
+    }
+    const emailContent = generateEmailTemplate();
+    navigator.clipboard.writeText(emailContent);
+    toast.success("Email copiado para a área de transferência!");
   };
 
   const getWarningBadgeColor = (nivel: number) => {
@@ -139,7 +192,7 @@ export default function Recidivists() {
                 + Nova Advertência
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Registrar Nova Advertência</DialogTitle>
               </DialogHeader>
@@ -148,7 +201,7 @@ export default function Recidivists() {
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-slate-700 block mb-2">
-                      Motorista:
+                      Motorista: *
                     </label>
                     <Select value={selectedConductor} onValueChange={setSelectedConductor}>
                       <SelectTrigger>
@@ -162,6 +215,32 @@ export default function Recidivists() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Placa do Veículo: *
+                    </label>
+                    <input
+                      type="text"
+                      value={licensePlate}
+                      onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
+                      placeholder="Ex: ABC-1234"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Dias de Infração: *
+                    </label>
+                    <input
+                      type="text"
+                      value={infrationDays}
+                      onChange={(e) => setInfrationDays(e.target.value)}
+                      placeholder="Ex: 02/05/2026, 01/05/2026"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
 
                   <div>
@@ -197,7 +276,7 @@ export default function Recidivists() {
 
                   <div>
                     <label className="text-sm font-medium text-slate-700 block mb-2">
-                      Motivo:
+                      Motivo: *
                     </label>
                     <textarea
                       value={warningReason}
@@ -230,7 +309,7 @@ export default function Recidivists() {
                   </Button>
                 </div>
 
-                {/* Coluna direita: Histórico e Informações */}
+                {/* Coluna direita: Histórico e Email */}
                 <div className="space-y-4 border-l border-slate-200 pl-6">
                   <div>
                     <h3 className="font-semibold text-slate-900 mb-3">Informações do Motorista</h3>
@@ -270,7 +349,7 @@ export default function Recidivists() {
 
                         <div className="bg-slate-50 p-3 rounded-lg">
                           <p className="text-sm text-slate-600 mb-2">Nível Atual</p>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
                             {selectedConductorData.avisosPoucoRodado > 0 && (
                               <Badge className={getWarningBadgeColor(selectedConductorData.avisosPoucoRodado)}>
                                 Pouco Rodado: Aviso {selectedConductorData.avisosPoucoRodado}
@@ -292,7 +371,7 @@ export default function Recidivists() {
                   <div>
                     <h3 className="font-semibold text-slate-900 mb-3">Histórico de Advertências</h3>
                     {selectedConductorData?.historico && selectedConductorData.historico.length > 0 ? (
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
                         {selectedConductorData.historico.map((w: any, idx: number) => (
                           <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
                             <div className="flex justify-between items-start mb-1">
@@ -303,17 +382,35 @@ export default function Recidivists() {
                                 {new Date(w.criadoEm).toLocaleDateString("pt-BR")}
                               </span>
                             </div>
-                            <p className="text-sm font-medium text-slate-900">{w.tipo === "pouco_rodado" ? "Pouco Rodado" : "Horas Extras"}</p>
+                            <p className="text-sm font-medium text-slate-900">
+                              {w.tipo === "pouco_rodado" ? "Pouco Rodado" : "Horas Extras"}
+                            </p>
                             <p className="text-xs text-slate-600 mt-1">{w.motivo}</p>
-                            {w.observacao && (
-                              <p className="text-xs text-slate-500 mt-1 italic">Obs: {w.observacao}</p>
-                            )}
                           </div>
                         ))}
                       </div>
                     ) : (
                       <p className="text-sm text-slate-500">Nenhuma advertência registrada</p>
                     )}
+                  </div>
+
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                      <Copy className="w-4 h-4" />
+                      Template de Email
+                    </h4>
+                    <p className="text-xs text-blue-700 mb-3">
+                      Preencha todos os campos obrigatórios (*) para gerar o email
+                    </p>
+                    <Button
+                      onClick={handleCopyEmail}
+                      disabled={!selectedConductor || !licensePlate || !infrationDays || !warningReason}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      size="sm"
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copiar Email
+                    </Button>
                   </div>
                 </div>
               </div>

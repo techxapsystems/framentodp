@@ -116,3 +116,8 @@
 - [x] Adicionar painel de histórico de advertências no dialog de cadastro
 - [x] Mostrar informações de reincidências (7 e 30 dias) no dialog
 - [x] Indicar próximo nível de aviso recomendado
+
+## Gerador de Email de Advertência
+- [x] Adicionar campos de placa e dias de infração no dialog
+- [x] Criar gerador de template de email com dados obrigatórios
+- [x] Adicionar botão "Copiar Email" para área de transferência
