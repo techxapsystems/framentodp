@@ -134,3 +134,16 @@
   - Solução: Adicionada placa aos dados retornados de getReincidentsWithWarnings
 - [x] Placa não é auto-preenchida ao selecionar motorista
   - Solução: Implementado handleConductorChange para auto-preencher placa
+
+## Bug Crítico - Motoristas Não Listam
+- [ ] Motoristas não aparecem no dialog de nova advertência
+- [ ] Verificar se query getReincidents está retornando dados
+- [ ] Debugar data?.reincidents no frontend
+
+## Branding Framento Transportes
+- [x] Extrair logo do site da Framento
+- [x] Atualizar paleta de cores no index.css (verde neon, azul escuro, branco)
+- [x] Reestilizar sidebar com cores da Framento (azul escuro #001F3F)
+- [x] Reestilizar botões e cards com novo tema (verde neon #00FF00)
+- [x] Adicionar logo da Framento no header/sidebar
+- [ ] Testar contraste e acessibilidade com novas cores

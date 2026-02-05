@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,9 +37,20 @@ export default function Recidivists() {
   const [licensePlate, setLicensePlate] = useState("");
   const [infrationDays, setInfrationDays] = useState("");
 
-  const { data, isLoading, refetch } = trpc.dashboard.getReincidents.useQuery({
-    tipo: selectedType || undefined,
-  });
+  const { data, isLoading, refetch } = trpc.dashboard.getReincidents.useQuery(
+    {
+      tipo: selectedType && selectedType !== "" ? (selectedType as "pouco_rodado" | "horas_extras") : undefined,
+    },
+    {
+      enabled: true,
+      staleTime: 0,
+    }
+  );
+
+  // Debug: log dos dados
+  useEffect(() => {
+    console.log("Reincidents data:", data);
+  }, [data]);
 
   const createWarningMutation = trpc.dashboard.createWarning.useMutation({
     onSuccess: () => {

@@ -172,6 +172,7 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
+                  <img src="/framento_logo.webp" alt="Framento" className="h-8 w-auto" />
                   <div className="flex flex-col">
                     <span className="font-bold tracking-tight truncate text-white text-sm leading-tight">
                       Ociosidade
