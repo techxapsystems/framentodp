@@ -65,3 +65,9 @@
 - [ ] Testes de integração (fluxo completo)
 - [ ] Otimização de performance
 - [ ] Documentação de deploy
+
+## Bugs & Melhorias Urgentes
+- [x] Renomear dashboard para "STATUS DE OCIOSIDADE BRF PRIMÁRIA"
+- [ ] Otimizar performance da importação (reduzir de 5min para <30s)
+- [x] Reorientar lógica: motorista OCIOSO = jornada >10h E direção <2h
+- [x] Atualizar dashboards HOJE/SEMANA com novo contexto de ociosidade

@@ -90,9 +90,9 @@ export default function Today() {
     <div className="p-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Dashboard Hoje</h1>
+        <h1 className="text-3xl font-bold text-slate-900">Status de Ociosidade - Hoje</h1>
         <p className="text-slate-600 mt-2">
-          Acompanhamento de motoristas e infrações do dia
+          Motoristas com jornada acima de 10h e direção abaixo de 2h
         </p>
       </div>
 
@@ -130,7 +130,7 @@ export default function Today() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-slate-600">
-                Ofensores (Pouco Rodado)
+                Motoristas Ociosos
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -175,9 +175,9 @@ export default function Today() {
       {data?.ofensoresPoucoRodado && data.ofensoresPoucoRodado.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Ofensores - Pouco Rodado</CardTitle>
+            <CardTitle>Motoristas Ociosos</CardTitle>
             <p className="text-sm text-slate-600">
-              Motoristas que dirigiram menos de 2 horas
+              Jornada acima de 10h com direção abaixo de 2h
             </p>
           </CardHeader>
           <CardContent>

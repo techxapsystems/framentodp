@@ -117,8 +117,12 @@ function normalizeJourneyRow(
     String(row["Tempo Total Descanso"] || "")
   );
 
-  // Flags
-  const poucoRodado = dirigidoMin < config.limitePoucoRodadoMin;
+  // Flags - OCIOSIDADE: jornada > 10h E direcao < 2h (120 min)
+  const jornada = inicioJornada && fimJornada 
+    ? (fimJornada.getTime() - inicioJornada.getTime()) / (1000 * 60) 
+    : 0;
+  const ocioso = jornada > 600 && dirigidoMin < 120;
+  const poucoRodado = ocioso;
   const temHe = heMin > 0;
   const heAlerta = heMin >= config.limiteHeAlertaMin;
 

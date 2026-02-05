@@ -63,9 +63,9 @@ export default function Week() {
     <div className="p-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Análise da Semana</h1>
+        <h1 className="text-3xl font-bold text-slate-900">Status de Ociosidade - Semana</h1>
         <p className="text-slate-600 mt-2">
-          Evolução de infrações e tendências semanais
+          Evolução de motoristas ociosos e tendências semanais
         </p>
       </div>
 
@@ -90,7 +90,7 @@ export default function Week() {
           {/* % Pouco Rodado por Dia */}
           <Card>
             <CardHeader>
-              <CardTitle>% Pouco Rodado por Dia</CardTitle>
+              <CardTitle>% Motoristas Ociosos por Dia</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -111,7 +111,7 @@ export default function Week() {
                     stroke="#ef4444"
                     strokeWidth={2}
                     dot={{ fill: "#ef4444", r: 4 }}
-                    name="% Pouco Rodado"
+                    name="% Ociosos"
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -155,7 +155,7 @@ export default function Week() {
         {data?.topPoucoRodado && (
           <Card>
             <CardHeader>
-              <CardTitle>Top 10 - Reincidentes (Pouco Rodado)</CardTitle>
+              <CardTitle>Top 10 - Motoristas Ociosos</CardTitle>
               <p className="text-sm text-slate-600">Semana atual</p>
             </CardHeader>
             <CardContent>

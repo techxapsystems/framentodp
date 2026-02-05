@@ -171,9 +171,14 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-bold tracking-tight truncate text-white text-lg">
-                    Motoristas
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="font-bold tracking-tight truncate text-white text-sm leading-tight">
+                      Ociosidade
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      BRF Primária
+                    </span>
+                  </div>
                 </div>
               ) : null}
             </div>
