@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, or, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, journeys, recurrences, warnings, imports, configurations } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -89,37 +89,40 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
-
 export async function createJourneys(data: any[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-
-  const BATCH_SIZE = 500;
-  for (let i = 0; i < data.length; i += BATCH_SIZE) {
-    const batch = data.slice(i, i + BATCH_SIZE);
-    await db.insert(journeys).values(batch as any).onDuplicateKeyUpdate({
-      set: {
-        tempoTotalDirigido: journeys.tempoTotalDirigido,
-        poucoRodado: journeys.poucoRodado,
-        temHe: journeys.temHe,
-        heAlerta: journeys.heAlerta,
-      },
-    });
+  
+  // Batch insert em chunks de 500
+  const chunkSize = 500;
+  for (let i = 0; i < data.length; i += chunkSize) {
+    const chunk = data.slice(i, i + chunkSize);
+    await db.insert(journeys).values(chunk);
   }
 }
 
 export async function getLastImportRowCount() {
   const db = await getDb();
   if (!db) return 0;
-
+  
   const result = await db
-    .select({ rowCount: journeys.rowCount })
-    .from(journeys)
-    .orderBy(desc(journeys.data))
+    .select({ rowCount: imports.rowCount })
+    .from(imports)
+    .orderBy(desc(imports.criadoEm))
     .limit(1);
-
+  
   return result.length > 0 ? result[0].rowCount : 0;
+}
+
+export async function createImportLog(rowCount: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(imports).values({
+    rowCount,
+    status,
+    criadoEm: new Date(),
+  });
 }
 
 export async function getReincidentsWithWarnings() {
@@ -150,12 +153,24 @@ export async function getReincidentsWithWarnings() {
     warningsByDriver.get(w.conductorName)!.push(w);
   }
   
+  // Buscar última jornada de cada motorista para pegar placa
+  const journeysByDriver = new Map<string, any>();
+  const allJourneys = await db.select().from(journeys);
+  for (const j of allJourneys) {
+    const existing = journeysByDriver.get(j.conductorName);
+    if (!existing || new Date(j.data) > new Date(existing.data)) {
+      journeysByDriver.set(j.conductorName, j);
+    }
+  }
+  
   // Agrupar reincidências por motorista
   const grouped = new Map<string, any>();
   for (const r of reincurrences) {
     if (!grouped.has(r.conductorName)) {
+      const journey = journeysByDriver.get(r.conductorName);
       grouped.set(r.conductorName, {
         conductorName: r.conductorName,
+        placa: journey?.placa || "N/A",
         avisosPoucoRodado: 0,
         avisosHorasExtras: 0,
         ultimoAviso: r.data,
@@ -191,59 +206,120 @@ export async function getImportHistory() {
   const db = await getDb();
   if (!db) return [];
   
-  const imports = await db
-    .select()
-    .from(journeys)
-    .orderBy(desc(journeys.data))
-    .limit(100);
-  
-  return imports;
-}
-
-export async function getLastImport() {
-  const db = await getDb();
-  if (!db) return null;
-  
   const result = await db
     .select()
-    .from(journeys)
-    .orderBy(desc(journeys.data))
-    .limit(1);
+    .from(imports)
+    .orderBy(desc(imports.criadoEm))
+    .limit(20);
   
-  return result.length > 0 ? result[0] : null;
-}
-
-export async function getConfigurations() {
-  const db = await getDb();
-  if (!db) return {};
-  
-  const result = await db.select().from(configurations).limit(1);
-  return result.length > 0 ? result[0] : {};
-}
-
-
-export async function createImport(data: any) {
-  const db = await getDb();
-  if (!db) return null;
-  
-  const result = await db.insert(imports).values(data);
   return result;
 }
 
-export async function updateConfigurations(data: any) {
+export async function updateWarningStatus(warningId: number, advertenciaGerada: boolean, advertenciaAplicada: boolean, dataAplicacao?: Date) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(configurations).values(data).onDuplicateKeyUpdate({
-    set: data,
-  });
-  return result;
+  await db
+    .update(warnings)
+    .set({
+      advertenciaGerada,
+      advertenciaAplicada,
+      dataAplicacao: advertenciaAplicada ? (dataAplicacao || new Date()) : null,
+    })
+    .where(eq(warnings.id, warningId));
 }
 
 export async function createWarning(data: any) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(warnings).values({
+    conductorName: data.conductorName,
+    tipo: data.tipo,
+    nivelAdvertencia: data.nivelAdvertencia,
+    motivo: data.motivo,
+    observacao: data.observacao,
+    advertenciaGerada: true,
+    advertenciaAplicada: false,
+    criadoEm: new Date(),
+  });
+  
+  return result;
+}
+
+export async function getWarningsByConductor(conductorName: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select()
+    .from(warnings)
+    .where(eq(warnings.conductorName, conductorName))
+    .orderBy(desc(warnings.criadoEm));
+  
+  return result;
+}
+
+export async function getTodayData(dateFrom: Date, dateTo: Date, gestores?: string[], operacoes?: string[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  let query = db
+    .select()
+    .from(journeys)
+    .where(
+      and(
+        gte(journeys.data, dateFrom),
+        lte(journeys.data, dateTo),
+        eq(journeys.poucoRodado, true)
+      )
+    );
+  
+  if (gestores && gestores.length > 0) {
+    query = query.where(inArray(journeys.gestor, gestores));
+  }
+  
+  if (operacoes && operacoes.length > 0) {
+    query = query.where(inArray(journeys.operacao, operacoes));
+  }
+  
+  const result = await query;
+  return result;
+}
+
+export async function getConfigurations() {
+  const db = await getDb();
   if (!db) return null;
   
-  const result = await db.insert(warnings).values(data);
-  return result;
+  const result = await db.select().from(configurations).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateConfiguration(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await getConfigurations();
+  
+  if (existing) {
+    await db
+      .update(configurations)
+      .set(data)
+      .where(eq(configurations.id, existing.id));
+  } else {
+    await db.insert(configurations).values(data);
+  }
+}
+
+// Aliases para compatibilidade
+export async function createImport(rowCount: number, status: string) {
+  return createImportLog(rowCount, status);
+}
+
+export async function getLastImport() {
+  return getLastImportRowCount();
+}
+
+export async function updateConfigurations(data: any) {
+  return updateConfiguration(data);
 }

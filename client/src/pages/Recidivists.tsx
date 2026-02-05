@@ -145,6 +145,15 @@ export default function Recidivists() {
     (r: any) => r.conductorName === selectedConductor
   );
 
+  // Auto-preencher placa quando motorista é selecionado
+  const handleConductorChange = (value: string) => {
+    setSelectedConductor(value);
+    const conductor = data?.reincidents?.find((r: any) => r.conductorName === value);
+    if (conductor?.placa) {
+      setLicensePlate(conductor.placa);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-8">
@@ -203,7 +212,7 @@ export default function Recidivists() {
                     <label className="text-sm font-medium text-slate-700 block mb-2">
                       Motorista: *
                     </label>
-                    <Select value={selectedConductor} onValueChange={setSelectedConductor}>
+                    <Select value={selectedConductor} onValueChange={handleConductorChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o motorista" />
                       </SelectTrigger>

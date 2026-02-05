@@ -128,3 +128,9 @@
 - [ ] Adicionar filtros na tela SEMANA (Data DE/ATÉ, Gestor)
 - [ ] Adicionar filtros na tela REINCIDENTES (Data DE/ATÉ, Gestor)
 - [ ] Adicionar filtros na tela IMPORTAÇÃO
+
+## Bugs na Tela de Reincidentes
+- [x] Lista de motoristas não aparece no dialog de nova advertência
+  - Solução: Adicionada placa aos dados retornados de getReincidentsWithWarnings
+- [x] Placa não é auto-preenchida ao selecionar motorista
+  - Solução: Implementado handleConductorChange para auto-preencher placa
