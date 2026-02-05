@@ -149,25 +149,7 @@ export default function Today() {
             </Select>
           </div>
 
-          {/* Operação */}
-          <div>
-            <label className="text-sm font-medium text-slate-700 block mb-2">
-              Operação:
-            </label>
-            <Select value={selectedOperacao} onValueChange={setSelectedOperacao}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Todas as operações" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">Todas as operações</SelectItem>
-                {data?.filtros?.operacoes?.map((operacao: string | null) => (
-                  <SelectItem key={operacao} value={operacao || "__none__"}>
-                    {operacao || "Sem operação"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+
         </div>
       </div>
 

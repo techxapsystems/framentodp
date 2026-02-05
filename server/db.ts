@@ -12,6 +12,7 @@ import {
   emailLogs,
   aiInsights,
   suggestedActions,
+  warnings,
   type Journey,
   type Treatment,
   type Recurrence,
@@ -452,4 +453,63 @@ export async function getAiInsightsByConductor(
     .where(eq(aiInsights.conductorName, conductorName))
     .orderBy(desc(aiInsights.criadoEm))
     .limit(limit);
+}
+
+// ============ WARNINGS ============
+export async function createWarning(data: typeof warnings.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(warnings).values(data);
+}
+
+export async function getWarningsByConductor(conductorName: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(warnings)
+    .where(eq(warnings.conductorName, conductorName))
+    .orderBy(desc(warnings.criadoEm));
+}
+
+export async function getWarningsByType(tipo: "pouco_rodado" | "horas_extras") {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(warnings)
+    .where(eq(warnings.tipo, tipo))
+    .orderBy(desc(warnings.criadoEm));
+}
+
+export async function getReincidentsWithWarnings() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const allWarnings = await db.select().from(warnings);
+  
+  const grouped = new Map<string, any>();
+  for (const w of allWarnings) {
+    if (!grouped.has(w.conductorName)) {
+      grouped.set(w.conductorName, {
+        conductorName: w.conductorName,
+        avisosPoucoRodado: 0,
+        avisosHorasExtras: 0,
+        ultimoAviso: null,
+        historico: [],
+      });
+    }
+    const item = grouped.get(w.conductorName);
+    if (w.tipo === "pouco_rodado") {
+      item.avisosPoucoRodado = Math.max(item.avisosPoucoRodado, w.nivelAdvertencia);
+    } else {
+      item.avisosHorasExtras = Math.max(item.avisosHorasExtras, w.nivelAdvertencia);
+    }
+    item.ultimoAviso = w.criadoEm;
+    item.historico.push(w);
+  }
+  
+  return Array.from(grouped.values()).sort(
+    (a, b) => new Date(b.ultimoAviso).getTime() - new Date(a.ultimoAviso).getTime()
+  );
 }

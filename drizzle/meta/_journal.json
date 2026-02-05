@@ -15,6 +15,13 @@
       "when": 1770294774443,
       "tag": "0001_quick_karnak",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1770298145776,
+      "tag": "0002_workable_zaran",
+      "breakpoints": true
     }
   ]
 }

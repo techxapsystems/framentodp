@@ -369,4 +369,77 @@ export const dashboardRouter = router({
         };
       }
     }),
+
+  /**
+   * Obtém reincidentes com histórico de advertências
+   */
+  getReincidents: protectedProcedure
+    .input(z.object({ tipo: z.enum(["pouco_rodado", "horas_extras"]).optional() }))
+    .query(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const { getReincidentsWithWarnings } = await import("../db");
+        const reincidents = await getReincidentsWithWarnings();
+
+        let filtered = reincidents;
+        if (input.tipo === "pouco_rodado") {
+          filtered = reincidents.filter((r) => r.avisosPoucoRodado > 0);
+        } else if (input.tipo === "horas_extras") {
+          filtered = reincidents.filter((r) => r.avisosHorasExtras > 0);
+        }
+
+        return {
+          success: true,
+          reincidents: filtered,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: String(error),
+          reincidents: [],
+        };
+      }
+    }),
+
+  /**
+   * Cria nova advertência
+   */
+  createWarning: protectedProcedure
+    .input(
+      z.object({
+        conductorName: z.string(),
+        tipo: z.enum(["pouco_rodado", "horas_extras"]),
+        nivelAdvertencia: z.number().min(1).max(3),
+        motivo: z.string(),
+        observacao: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const { createWarning: createWarningDb } = await import("../db");
+        await createWarningDb({
+          conductorName: input.conductorName,
+          tipo: input.tipo,
+          nivelAdvertencia: input.nivelAdvertencia,
+          motivo: input.motivo,
+          observacao: input.observacao,
+          aplicadoPor: ctx.user.email || ctx.user.name || "Sistema",
+        });
+
+        return {
+          success: true,
+          message: "Advertência registrada com sucesso",
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: String(error),
+        };
+      }
+    }),
 });

@@ -294,3 +294,23 @@ export const aiInsights = mysqlTable(
 
 export type AiInsight = typeof aiInsights.$inferSelect;
 export type InsertAiInsight = typeof aiInsights.$inferInsert;
+
+export const warnings = mysqlTable(
+  "warnings",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    conductorName: varchar("conductorName", { length: 255 }).notNull(),
+    tipo: mysqlEnum("tipo", ["pouco_rodado", "horas_extras"]).notNull(),
+    nivelAdvertencia: int("nivelAdvertencia").notNull(),
+    motivo: text("motivo").notNull(),
+    observacao: text("observacao"),
+    aplicadoPor: varchar("aplicadoPor", { length: 320 }).notNull(),
+    criadoEm: timestamp("criadoEm").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_conductorTipo").on(table.conductorName, table.tipo),
+    index("idx_criadoEm").on(table.criadoEm),
+  ]
+);
+export type Warning = typeof warnings.$inferSelect;
+export type InsertWarning = typeof warnings.$inferInsert;

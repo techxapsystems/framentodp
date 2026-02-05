@@ -88,3 +88,11 @@
 - [x] Filtro de data com intervalo (DE: até ATÉ:) na tela HOJE
 - [x] Filtro por Gestor com dropdown na tela HOJE
 - [x] Filtro por Operação na tela HOJE
+
+## Tela de Reincidentes
+- [x] Remover filtro de Operação da tela HOJE
+- [x] Criar tabela de advertências no banco de dados
+- [x] Criar APIs para gerenciar advertências
+- [x] Criar tela REINCIDENTES com lista de motoristas reincidentes
+- [x] Implementar sistema de advertências (Aviso 1, 2, 3)
+- [x] Mostrar histórico de advertências por motorista
