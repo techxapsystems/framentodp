@@ -25,7 +25,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AlertTriangle, AlertCircle, Copy } from "lucide-react";
+import { AlertTriangle, AlertCircle, Copy, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Recidivists() {
@@ -38,6 +38,12 @@ export default function Recidivists() {
   const [infrationDays, setInfrationDays] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogWarningType, setDialogWarningType] = useState<"pouco_rodado" | "horas_extras">("pouco_rodado");
+  const [editingWarningId, setEditingWarningId] = useState<number | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editWarningLevel, setEditWarningLevel] = useState<"1" | "2" | "3">("1");
+  const [editWarningReason, setEditWarningReason] = useState("");
+  const [editWarningNote, setEditWarningNote] = useState("");
+  const [editWarningType, setEditWarningType] = useState<"pouco_rodado" | "horas_extras">("pouco_rodado");
 
   const { data, isLoading, refetch } = trpc.dashboard.getReincidents.useQuery(
     {
@@ -62,6 +68,21 @@ export default function Recidivists() {
   useEffect(() => {
     console.log("Reincidents data:", data);
   }, [data]);
+
+  const updateWarningMutation = trpc.dashboard.updateWarning.useMutation({
+    onSuccess: () => {
+      toast.success("Advertência atualizada com sucesso");
+      setEditDialogOpen(false);
+      setEditingWarningId(null);
+      setEditWarningLevel("1");
+      setEditWarningReason("");
+      setEditWarningNote("");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Erro: ${error.message}`);
+    },
+  });
 
   const createWarningMutation = trpc.dashboard.createWarning.useMutation({
     onSuccess: () => {
@@ -96,6 +117,30 @@ export default function Recidivists() {
       nivelAdvertencia: parseInt(warningLevel),
       motivo: warningReason,
       observacao: warningNote,
+    });
+  };
+
+  const handleEditWarning = (warning: any) => {
+    setEditingWarningId(warning.id);
+    setEditWarningType(warning.tipo);
+    setEditWarningLevel(String(warning.nivelAdvertencia) as "1" | "2" | "3");
+    setEditWarningReason(warning.motivo);
+    setEditWarningNote(warning.observacao || "");
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEditWarning = () => {
+    if (!editingWarningId || !editWarningReason) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    updateWarningMutation.mutate({
+      warningId: editingWarningId,
+      tipo: editWarningType,
+      nivelAdvertencia: parseInt(editWarningLevel),
+      motivo: editWarningReason,
+      observacao: editWarningNote,
     });
   };
 
@@ -475,6 +520,7 @@ export default function Recidivists() {
                     <TableHead>Último Aviso</TableHead>
                     <TableHead>Advertência Gerada</TableHead>
                     <TableHead>Advertência Aplicada</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -516,10 +562,105 @@ export default function Recidivists() {
                           ✓ Sim
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditWarning(item.historico?.[0])}
+                          disabled={!item.historico || item.historico.length === 0}
+                          className="gap-2"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          Editar
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+
+              {/* Dialog de Edição */}
+              <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Editar Advertência</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 block mb-2">
+                        Tipo:
+                      </label>
+                      <Select value={editWarningType} onValueChange={(v: any) => setEditWarningType(v)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pouco_rodado">Pouco Rodado</SelectItem>
+                          <SelectItem value="horas_extras">Horas Extras</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 block mb-2">
+                        Nível de Advertência:
+                      </label>
+                      <Select value={editWarningLevel} onValueChange={(v: any) => setEditWarningLevel(v)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Aviso 1</SelectItem>
+                          <SelectItem value="2">Aviso 2</SelectItem>
+                          <SelectItem value="3">Aviso 3 (Crítico)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 block mb-2">
+                        Motivo: *
+                      </label>
+                      <textarea
+                        value={editWarningReason}
+                        onChange={(e) => setEditWarningReason(e.target.value)}
+                        placeholder="Descreva o motivo da advertência"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        rows={3}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 block mb-2">
+                        Observação (opcional):
+                      </label>
+                      <textarea
+                        value={editWarningNote}
+                        onChange={(e) => setEditWarningNote(e.target.value)}
+                        placeholder="Adicione observações adicionais"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        rows={2}
+                      />
+                    </div>
+
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => setEditDialogOpen(false)}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={handleSaveEditWarning}
+                        disabled={updateWarningMutation.isPending}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {updateWarningMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           ) : (
             <p className="text-center text-slate-600 py-8">

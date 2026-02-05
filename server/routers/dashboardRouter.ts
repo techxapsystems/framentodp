@@ -468,7 +468,71 @@ export const dashboardRouter = router({
     }),
 
   /**
-   * Estatísticas de advertências por motorista
+   * Edita uma advertencia existente
+   */
+  updateWarning: protectedProcedure
+    .input(
+      z.object({
+        warningId: z.number(),
+        tipo: z.enum(["pouco_rodado", "horas_extras"]),
+        nivelAdvertencia: z.number().min(1).max(3),
+        motivo: z.string(),
+        observacao: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const { updateWarning: updateWarningDb } = await import("../db");
+        await updateWarningDb(input.warningId, {
+          tipo: input.tipo,
+          nivelAdvertencia: input.nivelAdvertencia,
+          motivo: input.motivo,
+          observacao: input.observacao,
+        });
+
+        return {
+          success: true,
+          message: "Advertência atualizada com sucesso",
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: String(error),
+        };
+      }
+    }),
+
+  /**
+   * Busca advertencias para relatorio com filtros
+   */
+  getWarningsReport: protectedProcedure
+    .input(
+      z.object({
+        dateStart: z.string().optional(),
+        dateEnd: z.string().optional(),
+        conductorName: z.string().optional(),
+        tipo: z.enum(["pouco_rodado", "horas_extras"]).optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const { getWarningsReport: getWarningsReportDb } = await import("../db");
+        const warnings = await getWarningsReportDb(input);
+        return {
+          success: true,
+          warnings,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: String(error),
+          warnings: [],
+        };
+      }
+    }),
+
+  /**
+   * Estatisticas de advertencias por motorista
    */
   getWarningsStatsByDriver: protectedProcedure.query(async () => {
     const { getWarningsStatsByDriver } = await import("../db");

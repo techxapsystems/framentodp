@@ -268,6 +268,22 @@ export async function getImportHistory() {
   return result;
 }
 
+export async function updateWarning(warningId: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .update(warnings)
+    .set({
+      tipo: data.tipo,
+      nivelAdvertencia: data.nivelAdvertencia,
+      motivo: data.motivo,
+      observacao: data.observacao,
+      atualizadoEm: new Date(),
+    })
+    .where(eq(warnings.id, warningId));
+}
+
 export async function updateWarningStatus(warningId: number, advertenciaGerada: boolean, advertenciaAplicada: boolean, dataAplicacao?: Date) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -280,6 +296,41 @@ export async function updateWarningStatus(warningId: number, advertenciaGerada: 
       dataAplicacao: advertenciaAplicada ? (dataAplicacao || new Date()) : null,
     })
     .where(eq(warnings.id, warningId));
+}
+
+/**
+ * Busca advertências para relatório com filtros
+ */
+export async function getWarningsReport(filters: any) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let query = db.select().from(warnings);
+  
+  // Filtrar por data
+  if (filters.dateStart) {
+    const startDate = new Date(filters.dateStart);
+    startDate.setHours(0, 0, 0, 0);
+    query = query.where(gte(warnings.criadoEm, startDate));
+  }
+  
+  if (filters.dateEnd) {
+    const endDate = new Date(filters.dateEnd);
+    endDate.setHours(23, 59, 59, 999);
+    query = query.where(lte(warnings.criadoEm, endDate));
+  }
+  
+  // Filtrar por motorista
+  if (filters.conductorName) {
+    query = query.where(eq(warnings.conductorName, filters.conductorName));
+  }
+  
+  // Filtrar por tipo
+  if (filters.tipo) {
+    query = query.where(eq(warnings.tipo, filters.tipo));
+  }
+  
+  return query.orderBy(desc(warnings.criadoEm));
 }
 
 export async function createWarning(data: any) {

@@ -179,3 +179,16 @@
   - Solucao: Criar nova funcao getAllIdleDrivers para o dialog de nova advertencia
   - Tela Reincidentes: mostra apenas motoristas COM advertencias
   - Dialog Nova Advertencia: mostra TODOS os motoristas ociosos disponiveis
+
+
+## Novas Features - Edição e Relatórios (IMPLEMENTADAS)
+- [x] Permitir usuário editar advertência (nível, motivo, observações)
+  - [x] Adicionar mutation updateWarning no backend
+  - [x] Implementar botão "Editar" na tabela de Reincidentes
+  - [x] Criar dialog de edição com mesmos campos do cadastro
+  - [x] Validar e salvar alterações sem reload
+- [x] Gerar relatório em PDF por motorista ou operação
+  - [x] Criar tela "Relatórios" com filtros (Data DE/ATÉ, Motorista, Operação)
+  - [x] Implementar query getWarningsReport no backend
+  - [x] Gerar PDF com dados filtrados (tabela + gráficos)
+  - [x] Permitir download do PDF
