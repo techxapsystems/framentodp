@@ -78,3 +78,8 @@
 - [x] Processamento paralelo de motoristas (chunks de 10)
 - [x] Query otimizada para última importação (apenas rowCount)
 - [x] Normalização em chunks de 100 linhas
+
+## Bug Crítico
+- [x] URGENTE: Importação travada - não completa mesmo após otimizações
+  - Causa: Conversão para base64 no frontend estava travando
+  - Solução: Usar btoa() nativo do navegador para conversão rápida
