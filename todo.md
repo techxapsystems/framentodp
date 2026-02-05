@@ -192,3 +192,18 @@
   - [x] Implementar query getWarningsReport no backend
   - [x] Gerar PDF com dados filtrados (tabela + gráficos)
   - [x] Permitir download do PDF
+
+
+## Melhorias na Tela de Relatórios (IMPLEMENTADAS)
+- [x] Adicionar filtro de busca de motoristas (autocomplete/search)
+  - Campo de texto com busca em tempo real
+  - Dropdown mostra motoristas que correspondem à busca
+  - Botão "Limpar" para remover seleção
+- [x] Remover reload ao mudar datas (usar debounce)
+  - Dados atualizados em tempo real conforme você muda os filtros
+  - Nenhum reload de página
+- [x] Adicionar filtro por Operação
+  - Dropdown com opções: "BRF Primária" e "BRF Secundária"
+  - Integrado ao backend para filtrar dados
+- [x] Testar filtros funcionando corretamente
+  - Todos os filtros testados e funcionando perfeitamente

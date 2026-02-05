@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,9 +24,16 @@ import { toast } from "sonner";
 export default function Reports() {
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
-  const [filterType, setFilterType] = useState<"" | "motorista" | "operacao">("");
   const [selectedMotorista, setSelectedMotorista] = useState("");
+  const [motoristaBusca, setMotoristaBusca] = useState("");
   const [selectedTipo, setSelectedTipo] = useState<"" | "pouco_rodado" | "horas_extras">("");
+  const [selectedOperacao, setSelectedOperacao] = useState("");
+
+  // Query para buscar lista de motoristas (DEVE VIR PRIMEIRO)
+  const { data: idleDriversData } = trpc.dashboard.getIdleDriversForWarning.useQuery(
+    {},
+    { enabled: true, staleTime: 0 }
+  );
 
   // Query para buscar dados do relatório
   const { data: reportData, isLoading } = trpc.dashboard.getWarningsReport.useQuery(
@@ -35,6 +42,7 @@ export default function Reports() {
       dateEnd: dateEnd || undefined,
       conductorName: selectedMotorista || undefined,
       tipo: selectedTipo || undefined,
+      operacao: selectedOperacao || undefined,
     },
     {
       enabled: true,
@@ -42,11 +50,13 @@ export default function Reports() {
     }
   );
 
-  // Query para buscar lista de motoristas
-  const { data: idleDriversData } = trpc.dashboard.getIdleDriversForWarning.useQuery(
-    {},
-    { enabled: true, staleTime: 0 }
-  );
+  // Filtrar motoristas baseado na busca
+  const motoristasFiltrados = useMemo(() => {
+    if (!idleDriversData?.drivers) return [];
+    return idleDriversData.drivers.filter((d: any) =>
+      d.conductorName.toLowerCase().includes(motoristaBusca.toLowerCase())
+    );
+  }, [idleDriversData?.drivers, motoristaBusca]);
 
   const generatePDF = async () => {
     if (!reportData?.warnings || reportData.warnings.length === 0) {
@@ -167,7 +177,7 @@ export default function Reports() {
           <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div>
               <label className="text-sm font-medium text-slate-700 block mb-2">
                 Data Início:
@@ -192,20 +202,57 @@ export default function Reports() {
               />
             </div>
 
-            <div>
+            <div className="relative">
               <label className="text-sm font-medium text-slate-700 block mb-2">
                 Motorista:
               </label>
-              <Select value={selectedMotorista} onValueChange={(v) => setSelectedMotorista(v === "" ? "" : v)}>
+              <input
+                type="text"
+                placeholder="Buscar motorista..."
+                value={motoristaBusca}
+                onChange={(e) => setMotoristaBusca(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              {motoristaBusca && motoristasFiltrados.length > 0 && (
+                <div className="absolute bg-white border border-slate-300 rounded-lg mt-1 max-h-48 overflow-y-auto w-full z-10 shadow-lg">
+                  {motoristasFiltrados.map((d: any) => (
+                    <button
+                      key={d.conductorName}
+                      onClick={() => {
+                        setSelectedMotorista(d.conductorName);
+                        setMotoristaBusca("");
+                      }}
+                      className="w-full text-left px-3 py-2 hover:bg-slate-100 text-sm border-b last:border-b-0"
+                    >
+                      {d.conductorName}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedMotorista && (
+                <div className="mt-2 text-sm text-slate-600">
+                  Selecionado: <span className="font-medium">{selectedMotorista}</span>
+                  <button
+                    onClick={() => setSelectedMotorista("")}
+                    className="ml-2 text-blue-600 hover:underline"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700 block mb-2">
+                Operação:
+              </label>
+              <Select value={selectedOperacao} onValueChange={(v) => setSelectedOperacao(v === "" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  {idleDriversData?.drivers?.map((d: any) => (
-                    <SelectItem key={d.conductorName} value={d.conductorName}>
-                      {d.conductorName}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="BRF Primária">BRF Primária</SelectItem>
+                  <SelectItem value="BRF Secundária">BRF Secundária</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -225,14 +272,14 @@ export default function Reports() {
               </Select>
             </div>
 
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <Button
                 onClick={generatePDF}
                 disabled={!reportData?.warnings || reportData.warnings.length === 0}
-                className="w-full bg-green-600 hover:bg-green-700 gap-2"
+                className="flex-1 bg-green-600 hover:bg-green-700 gap-2"
               >
                 <Download className="w-4 h-4" />
-                Gerar PDF
+                PDF
               </Button>
             </div>
           </div>
