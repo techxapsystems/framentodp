@@ -305,6 +305,9 @@ export const warnings = mysqlTable(
     motivo: text("motivo").notNull(),
     observacao: text("observacao"),
     aplicadoPor: varchar("aplicadoPor", { length: 320 }).notNull(),
+    advertenciaGerada: boolean("advertenciaGerada").notNull().default(true),
+    advertenciaAplicada: boolean("advertenciaAplicada").notNull().default(false),
+    dataAplicacao: timestamp("dataAplicacao"),
     criadoEm: timestamp("criadoEm").defaultNow().notNull(),
   },
   (table) => [

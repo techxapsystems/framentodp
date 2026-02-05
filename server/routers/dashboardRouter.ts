@@ -17,6 +17,7 @@ export const dashboardRouter = router({
     .input(
       z.object({
         date: z.string(),
+        dateEnd: z.string().optional(),
         gestores: z.array(z.string()).optional(),
         operacoes: z.array(z.string()).optional(),
       })
@@ -26,10 +27,12 @@ export const dashboardRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
-        const targetDate = new Date(input.date);
-        const startOfDay = new Date(targetDate);
+        const startDate = new Date(input.date);
+        const startOfDay = new Date(startDate);
         startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(targetDate);
+        
+        const endDate = input.dateEnd ? new Date(input.dateEnd) : new Date(startDate);
+        const endOfDay = new Date(endDate);
         endOfDay.setHours(23, 59, 59, 999);
 
         // Buscar jornadas do dia

@@ -96,3 +96,11 @@
 - [x] Criar tela REINCIDENTES com lista de motoristas reincidentes
 - [x] Implementar sistema de advertências (Aviso 1, 2, 3)
 - [x] Mostrar histórico de advertências por motorista
+
+## Bugs Críticos
+- [x] Filtros da tela HOJE não estão atualizando dados mesmo após importação
+  - Causa: Query só usava data inicial, não o intervalo
+  - Solução: Adicionar dateEnd ao backend e frontend
+- [x] Adicionar 2 checks na tela Reincidentes: "Advertência Gerada" e "Advertência Aplicada"
+  - Implementado com badges visuais (verde e azul)
+  - Campos no banco de dados: advertenciaGerada, advertenciaAplicada, dataAplicacao

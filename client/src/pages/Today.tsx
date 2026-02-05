@@ -33,6 +33,7 @@ export default function Today() {
   // Buscar dados para o intervalo de datas
   const { data, isLoading, refetch } = trpc.dashboard.getTodayData.useQuery({
     date: dateFrom,
+    dateEnd: dateTo,
     gestores: selectedGestor && selectedGestor !== "__all__" ? [selectedGestor === "__none__" ? "" : selectedGestor] : undefined,
     operacoes: selectedOperacao && selectedOperacao !== "__all__" ? [selectedOperacao === "__none__" ? "" : selectedOperacao] : undefined,
   });

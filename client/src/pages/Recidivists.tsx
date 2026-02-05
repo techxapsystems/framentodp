@@ -246,7 +246,8 @@ export default function Recidivists() {
                     <TableHead>Aviso Pouco Rodado</TableHead>
                     <TableHead>Aviso Horas Extras</TableHead>
                     <TableHead>Último Aviso</TableHead>
-                    <TableHead>Total de Avisos</TableHead>
+                    <TableHead>Advertência Gerada</TableHead>
+                    <TableHead>Advertência Aplicada</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -279,8 +280,13 @@ export default function Recidivists() {
                           : "-"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {item.historico?.length || 0}
+                        <Badge variant="outline" className="bg-green-50 text-green-700">
+                          ✓ Sim
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                          ✓ Sim
                         </Badge>
                       </TableCell>
                     </TableRow>
