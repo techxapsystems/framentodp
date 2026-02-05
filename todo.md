@@ -83,3 +83,8 @@
 - [x] URGENTE: Importação travada - não completa mesmo após otimizações
   - Causa: Conversão para base64 no frontend estava travando
   - Solução: Usar btoa() nativo do navegador para conversão rápida
+
+## Melhorias de Filtros
+- [x] Filtro de data com intervalo (DE: até ATÉ:) na tela HOJE
+- [x] Filtro por Gestor com dropdown na tela HOJE
+- [x] Filtro por Operação na tela HOJE

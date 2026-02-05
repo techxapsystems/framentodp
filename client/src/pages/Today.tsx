@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -22,16 +21,20 @@ import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Today() {
-  const [selectedDate, setSelectedDate] = useState(
+  const [dateFrom, setDateFrom] = useState(
     new Date().toISOString().split("T")[0]
   );
-  const [selectedGestores, setSelectedGestores] = useState<string[]>([]);
-  const [selectedOperacoes, setSelectedOperacoes] = useState<string[]>([]);
+  const [dateTo, setDateTo] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [selectedGestor, setSelectedGestor] = useState<string>("");
+  const [selectedOperacao, setSelectedOperacao] = useState<string>("");
 
+  // Buscar dados para o intervalo de datas
   const { data, isLoading, refetch } = trpc.dashboard.getTodayData.useQuery({
-    date: selectedDate,
-    gestores: selectedGestores.length > 0 ? selectedGestores : undefined,
-    operacoes: selectedOperacoes.length > 0 ? selectedOperacoes : undefined,
+    date: dateFrom,
+    gestores: selectedGestor && selectedGestor !== "__all__" ? [selectedGestor === "__none__" ? "" : selectedGestor] : undefined,
+    operacoes: selectedOperacao && selectedOperacao !== "__all__" ? [selectedOperacao === "__none__" ? "" : selectedOperacao] : undefined,
   });
 
   const updateTreatmentMutation = trpc.dashboard.updateTreatment.useMutation({
@@ -97,17 +100,74 @@ export default function Today() {
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-4 flex-wrap">
-        <div className="flex-1 min-w-[200px]">
-          <label className="text-sm font-medium text-slate-700 block mb-2">
-            Data
-          </label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+      <div className="bg-white rounded-lg border border-slate-200 p-6 space-y-4">
+        <h3 className="font-semibold text-slate-900">Filtros</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Data DE */}
+          <div>
+            <label className="text-sm font-medium text-slate-700 block mb-2">
+              Data DE:
+            </label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Data ATÉ */}
+          <div>
+            <label className="text-sm font-medium text-slate-700 block mb-2">
+              Data ATÉ:
+            </label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Gestor */}
+          <div>
+            <label className="text-sm font-medium text-slate-700 block mb-2">
+              Gestor:
+            </label>
+            <Select value={selectedGestor} onValueChange={setSelectedGestor}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Todos os gestores" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todos os gestores</SelectItem>
+                {data?.filtros?.gestores?.map((gestor: string | null) => (
+                  <SelectItem key={gestor} value={gestor || "__none__"}>
+                    {gestor || "Sem gestor"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Operação */}
+          <div>
+            <label className="text-sm font-medium text-slate-700 block mb-2">
+              Operação:
+            </label>
+            <Select value={selectedOperacao} onValueChange={setSelectedOperacao}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Todas as operações" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todas as operações</SelectItem>
+                {data?.filtros?.operacoes?.map((operacao: string | null) => (
+                  <SelectItem key={operacao} value={operacao || "__none__"}>
+                    {operacao || "Sem operação"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -146,7 +206,7 @@ export default function Today() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-slate-600">
-                HE Total do Dia
+                HE Total do Período
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -163,7 +223,7 @@ export default function Today() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">
+              <div className="text-3xl font-bold text-orange-600">
                 {data.kpis.motoristasComHe}
               </div>
             </CardContent>
@@ -171,167 +231,119 @@ export default function Today() {
         </div>
       )}
 
-      {/* Tabela Pouco Rodado */}
-      {data?.ofensoresPoucoRodado && data.ofensoresPoucoRodado.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Motoristas Ociosos</CardTitle>
-            <p className="text-sm text-slate-600">
-              Jornada acima de 10h com direção abaixo de 2h
-            </p>
-          </CardHeader>
-          <CardContent>
+      {/* Tabela de Ofensores */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Motoristas Ociosos</CardTitle>
+          <p className="text-sm text-slate-600 mt-2">
+            {data?.ofensoresPoucoRodado?.length || 0} motorista(s) encontrado(s)
+          </p>
+        </CardHeader>
+        <CardContent>
+          {data?.ofensoresPoucoRodado && data.ofensoresPoucoRodado.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50">
-                    <TableHead>Condutor</TableHead>
+                  <TableRow>
+                    <TableHead>Motorista</TableHead>
                     <TableHead>Gestor</TableHead>
-                    <TableHead className="text-right">Dirigido</TableHead>
-                    <TableHead className="text-right">Ocor. (7d)</TableHead>
-                    <TableHead className="text-right">Ocor. (30d)</TableHead>
+                    <TableHead>Direção</TableHead>
+                    <TableHead>Ocor. 7d</TableHead>
+                    <TableHead>Ocor. 30d</TableHead>
                     <TableHead>Ação Sugerida</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Observação</TableHead>
-                    <TableHead>Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.ofensoresPoucoRodado.map((item: any) => (
-                    <TableRow key={item.journeyId} className="hover:bg-slate-50">
-                      <TableCell className="font-medium">{item.condutor}</TableCell>
-                      <TableCell className="text-sm">{item.gestor}</TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatMinutesToTime(item.dirigido || 0)}
+                    <TableRow key={item.journeyId}>
+                      <TableCell className="font-medium">
+                        {item.condutor}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <Badge
-                          variant="outline"
-                          className={
-                            item.ocorJanela >= 3
-                              ? "bg-red-100 text-red-800 border-red-300"
-                              : item.ocorJanela === 2
-                              ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                              : "bg-blue-100 text-blue-800 border-blue-300"
-                          }
-                        >
-                          {item.ocorJanela}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant="outline">{item.ocor30d}</Badge>
-                      </TableCell>
+                      <TableCell>{item.gestor || "-"}</TableCell>
                       <TableCell>
-                        <Badge className={getSeverityColor(item.severidade)}>
-                          {item.acaoSugerida || "-"}
+                        <Badge variant="outline" className="bg-red-50 text-red-700">
+                          {formatMinutesToTime(item.dirigido)}
                         </Badge>
+                      </TableCell>
+                      <TableCell>{item.ocorJanela}</TableCell>
+                      <TableCell>{item.ocor30d}</TableCell>
+                      <TableCell>
+                        {item.acaoSugerida ? (
+                          <Badge className={getSeverityColor(item.severidade)}>
+                            {item.acaoSugerida}
+                          </Badge>
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getStatusIcon(item.status)}
-                          <span className="text-sm capitalize">{item.status}</span>
+                          <span className="text-sm capitalize">
+                            {item.status?.replace("_", " ")}
+                          </span>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-sm max-w-xs truncate">
-                        {item.observacao || "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            updateTreatmentMutation.mutate({
-                              journeyId: item.journeyId,
-                              tipo: "pouco_rodado",
-                              status: "resolvido",
-                            })
-                          }
-                          disabled={updateTreatmentMutation.isPending}
-                        >
-                          Resolver
-                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <p className="text-center text-slate-600 py-8">
+              Nenhum motorista ocioso encontrado para o período selecionado
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Tabela Horas Extras */}
+      {/* Tabela de Horas Extras */}
       {data?.ofensoresHe && data.ofensoresHe.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Ofensores - Horas Extras</CardTitle>
-            <p className="text-sm text-slate-600">
-              Motoristas com horas extras acumuladas
+            <CardTitle>Motoristas com Horas Extras</CardTitle>
+            <p className="text-sm text-slate-600 mt-2">
+              {data.ofensoresHe.length} motorista(s) encontrado(s)
             </p>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50">
-                    <TableHead>Condutor</TableHead>
+                  <TableRow>
+                    <TableHead>Motorista</TableHead>
                     <TableHead>Gestor</TableHead>
-                    <TableHead className="text-right">HE Total</TableHead>
-                    <TableHead className="text-right">HE 50%</TableHead>
-                    <TableHead className="text-right">HE 100%</TableHead>
-                    <TableHead className="text-right">Ocor. (7d)</TableHead>
-                    <TableHead className="text-right">Ocor. (30d)</TableHead>
+                    <TableHead>HE Total</TableHead>
+                    <TableHead>HE 50%</TableHead>
+                    <TableHead>HE 100%</TableHead>
+                    <TableHead>Ocor. 7d</TableHead>
                     <TableHead>Ação Sugerida</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.ofensoresHe.map((item: any) => (
-                    <TableRow key={item.journeyId} className="hover:bg-slate-50">
-                      <TableCell className="font-medium">{item.condutor}</TableCell>
-                      <TableCell className="text-sm">{item.gestor}</TableCell>
-                      <TableCell className="text-right font-mono font-bold text-orange-600">
-                        {formatMinutesToTime(item.he)}
+                    <TableRow key={item.journeyId}>
+                      <TableCell className="font-medium">
+                        {item.condutor}
                       </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatMinutesToTime(item.he50)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatMinutesToTime(item.he100)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant="outline">{item.ocorJanela}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant="outline">{item.ocor30d}</Badge>
-                      </TableCell>
+                      <TableCell>{item.gestor || "-"}</TableCell>
                       <TableCell>
-                        <Badge className={getSeverityColor(item.severidade)}>
-                          {item.acaoSugerida || "-"}
+                        <Badge variant="outline" className="bg-orange-50 text-orange-700">
+                          {formatMinutesToTime(item.he)}
                         </Badge>
                       </TableCell>
+                      <TableCell>{formatMinutesToTime(item.he50)}</TableCell>
+                      <TableCell>{formatMinutesToTime(item.he100)}</TableCell>
+                      <TableCell>{item.ocorJanela}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(item.status)}
-                          <span className="text-sm capitalize">{item.status}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            updateTreatmentMutation.mutate({
-                              journeyId: item.journeyId,
-                              tipo: "horas_extras",
-                              status: "resolvido",
-                            })
-                          }
-                          disabled={updateTreatmentMutation.isPending}
-                        >
-                          Resolver
-                        </Button>
+                        {item.acaoSugerida ? (
+                          <Badge className={getSeverityColor(item.severidade)}>
+                            {item.acaoSugerida}
+                          </Badge>
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -341,16 +353,6 @@ export default function Today() {
           </CardContent>
         </Card>
       )}
-
-      {/* Empty State */}
-      {(!data?.ofensoresPoucoRodado || data.ofensoresPoucoRodado.length === 0) &&
-        (!data?.ofensoresHe || data.ofensoresHe.length === 0) && (
-          <Card>
-            <CardContent className="pt-12 pb-12 text-center">
-              <p className="text-slate-600">Nenhuma infração registrada para este dia</p>
-            </CardContent>
-          </Card>
-        )}
     </div>
   );
 }
