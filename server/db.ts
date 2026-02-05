@@ -1,27 +1,11 @@
-import { eq, and, gte, lte, desc, asc, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, or, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import {
-  InsertUser,
-  users,
-  emailAllowlist,
-  imports,
-  journeys,
-  recurrences,
-  treatments,
-  configurations,
-  emailLogs,
-  aiInsights,
-  suggestedActions,
-  warnings,
-  type Journey,
-  type Treatment,
-  type Recurrence,
-  type Configuration,
-} from "../drizzle/schema";
-import { ENV } from "./_core/env";
+import { InsertUser, users, journeys, recurrences, warnings, imports, configurations } from "../drizzle/schema";
+import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
+// Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -33,8 +17,6 @@ export async function getDb() {
   }
   return _db;
 }
-
-// ============ AUTH ============
 
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
@@ -74,8 +56,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.role = user.role;
       updateSet.role = user.role;
     } else if (user.openId === ENV.ownerOpenId) {
-      values.role = "admin";
-      updateSet.role = "admin";
+      values.role = 'admin';
+      updateSet.role = 'admin';
     }
 
     if (!values.lastSignedIn) {
@@ -102,414 +84,166 @@ export async function getUserByOpenId(openId: string) {
     return undefined;
   }
 
-  const result = await db
-    .select()
-    .from(users)
-    .where(eq(users.openId, openId))
-    .limit(1);
+  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
 }
 
-// ============ EMAIL ALLOWLIST ============
+// TODO: add feature queries here as your schema grows.
 
-export async function isEmailAllowed(email: string): Promise<boolean> {
-  const db = await getDb();
-  if (!db) return false;
-
-  const result = await db
-    .select()
-    .from(emailAllowlist)
-    .where(eq(emailAllowlist.email, email))
-    .limit(1);
-
-  return result.length > 0;
-}
-
-export async function addEmailToAllowlist(email: string): Promise<void> {
+export async function createJourneys(data: any[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.insert(emailAllowlist).values({ email }).onDuplicateKeyUpdate({
-    set: { email },
-  });
-}
-
-// ============ IMPORTS ============
-
-export async function getLastImport() {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db
-    .select()
-    .from(imports)
-    .orderBy(desc(imports.importedAt))
-    .limit(1);
-
-  return result.length > 0 ? result[0] : null;
-}
-
-export async function createImport(data: {
-  fileName: string;
-  fileHash: string;
-  rowCount: number;
-  newRowsCount: number;
-  importedBy: number;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const result = await db.insert(imports).values(data);
-  return result;
-}
-
-export async function getImportHistory(limit: number = 20) {
-  const db = await getDb();
-  if (!db) return [];
-
-  return db
-    .select()
-    .from(imports)
-    .orderBy(desc(imports.importedAt))
-    .limit(limit);
-}
-
-// ============ JOURNEYS ============
-
-export async function createJourneys(journeyList: typeof journeys.$inferInsert[]) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  // Batch insert em chunks de 500 para melhor performance
   const BATCH_SIZE = 500;
-  const batches = [];
-  
-  for (let i = 0; i < journeyList.length; i += BATCH_SIZE) {
-    const batch = journeyList.slice(i, i + BATCH_SIZE);
-    batches.push(db.insert(journeys).values(batch));
-  }
-  
-  // Executar todos os batches em paralelo
-  return Promise.all(batches);
-}
-
-export async function getJourneysByDate(data: Date) {
-  const db = await getDb();
-  if (!db) return [];
-
-  const startOfDay = new Date(data);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(data);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  return db
-    .select()
-    .from(journeys)
-    .where(and(gte(journeys.data, startOfDay), lte(journeys.data, endOfDay)))
-    .orderBy(asc(journeys.conductorName));
-}
-
-export async function getJourneysByDateRange(startDate: Date, endDate: Date) {
-  const db = await getDb();
-  if (!db) return [];
-
-  return db
-    .select()
-    .from(journeys)
-    .where(and(gte(journeys.data, startDate), lte(journeys.data, endDate)))
-    .orderBy(desc(journeys.data), asc(journeys.conductorName));
-}
-
-export async function getJourneysByConductor(
-  conductorName: string,
-  startDate: Date,
-  endDate: Date
-) {
-  const db = await getDb();
-  if (!db) return [];
-
-  return db
-    .select()
-    .from(journeys)
-    .where(
-      and(
-        eq(journeys.conductorName, conductorName),
-        gte(journeys.data, startDate),
-        lte(journeys.data, endDate)
-      )
-    )
-    .orderBy(desc(journeys.data));
-}
-
-// ============ RECURRENCES ============
-
-export async function upsertRecurrence(data: typeof recurrences.$inferInsert) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  return db
-    .insert(recurrences)
-    .values(data)
-    .onDuplicateKeyUpdate({
+  for (let i = 0; i < data.length; i += BATCH_SIZE) {
+    const batch = data.slice(i, i + BATCH_SIZE);
+    await db.insert(journeys).values(batch as any).onDuplicateKeyUpdate({
       set: {
-        ocorPoucoJanela: data.ocorPoucoJanela,
-        ocorPouco30d: data.ocorPouco30d,
-        ocorHeJanela: data.ocorHeJanela,
-        ocorHe30d: data.ocorHe30d,
-        updatedAt: new Date(),
+        tempoTotalDirigido: journeys.tempoTotalDirigido,
+        poucoRodado: journeys.poucoRodado,
+        temHe: journeys.temHe,
+        heAlerta: journeys.heAlerta,
       },
     });
-}
-
-export async function getRecurrence(conductorName: string, data: Date) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db
-    .select()
-    .from(recurrences)
-    .where(
-      and(
-        eq(recurrences.conductorName, conductorName),
-        eq(recurrences.data, data)
-      )
-    )
-    .limit(1);
-
-  return result.length > 0 ? result[0] : null;
-}
-
-// ============ TREATMENTS ============
-
-export async function upsertTreatment(data: typeof treatments.$inferInsert) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  return db
-    .insert(treatments)
-    .values(data)
-    .onDuplicateKeyUpdate({
-      set: {
-        status: data.status,
-        observacao: data.observacao,
-        atualizadoPor: data.atualizadoPor,
-        atualizadoEm: new Date(),
-      },
-    });
-}
-
-export async function getTreatment(journeyId: number, tipo: string) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db
-    .select()
-    .from(treatments)
-    .where(
-      and(eq(treatments.journeyId, journeyId), eq(treatments.tipo, tipo as any))
-    )
-    .limit(1);
-
-  return result.length > 0 ? result[0] : null;
-}
-
-export async function getTreatmentsByDateRange(startDate: Date, endDate: Date) {
-  const db = await getDb();
-  if (!db) return [];
-
-  return db
-    .select()
-    .from(treatments)
-    .where(and(gte(treatments.data, startDate), lte(treatments.data, endDate)))
-    .orderBy(desc(treatments.data));
-}
-
-// ============ CONFIGURATIONS ============
-
-export async function getConfigurations(): Promise<Configuration> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const result = await db.select().from(configurations).limit(1);
-
-  if (result.length > 0) {
-    return result[0];
   }
-
-  // Criar configuração padrão se não existir
-  const defaults = {
-    limitePoucoRodadoMin: 120,
-    limiteHeAlertaMin: 90,
-    janelaReincidenciaDias: 7,
-    janelaCronicoDias: 30,
-    thresholdPoucoRodado1: 1,
-    thresholdPoucoRodado2: 2,
-    thresholdPoucoRodado3: 3,
-    thresholdPouco30d: 5,
-    thresholdHe30d: 5,
-  };
-
-  await db.insert(configurations).values(defaults);
-  return { ...defaults, id: 1, atualizadoEm: new Date(), criadoEm: new Date() };
 }
 
-export async function updateConfigurations(data: Partial<Configuration>) {
+export async function getLastImportRowCount() {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) return 0;
 
-  const config = await db.select().from(configurations).limit(1);
-  const configId = config.length > 0 ? config[0].id : 1;
+  const result = await db
+    .select({ rowCount: journeys.rowCount })
+    .from(journeys)
+    .orderBy(desc(journeys.data))
+    .limit(1);
 
-  return db
-    .update(configurations)
-    .set({ ...data, atualizadoEm: new Date() })
-    .where(eq(configurations.id, configId));
-}
-
-// ============ SUGGESTED ACTIONS ============
-
-export async function createSuggestedActions(
-  actions: typeof suggestedActions.$inferInsert[]
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  return db.insert(suggestedActions).values(actions);
-}
-
-export async function getSuggestedActionsByDate(data: Date) {
-  const db = await getDb();
-  if (!db) return [];
-
-  const startOfDay = new Date(data);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(data);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  return db
-    .select()
-    .from(suggestedActions)
-    .where(and(gte(suggestedActions.data, startOfDay), lte(suggestedActions.data, endOfDay)))
-    .orderBy(desc(suggestedActions.severidade), desc(suggestedActions.data));
-}
-
-// ============ EMAIL LOGS ============
-
-export async function createEmailLog(data: typeof emailLogs.$inferInsert) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  return db.insert(emailLogs).values(data);
-}
-
-export async function getEmailLogsByStatus(status: string) {
-  const db = await getDb();
-  if (!db) return [];
-
-  return db
-    .select()
-    .from(emailLogs)
-    .where(eq(emailLogs.status, status as any))
-    .orderBy(asc(emailLogs.criadoEm));
-}
-
-export async function updateEmailLogStatus(
-  id: number,
-  status: string,
-  enviadoEm?: Date
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  return db
-    .update(emailLogs)
-    .set({
-      status: status as any,
-      enviadoEm: enviadoEm || new Date(),
-    })
-    .where(eq(emailLogs.id, id));
-}
-
-// ============ AI INSIGHTS ============
-
-export async function createAiInsight(data: typeof aiInsights.$inferInsert) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  return db.insert(aiInsights).values(data);
-}
-
-export async function getAiInsightsByConductor(
-  conductorName: string,
-  limit: number = 10
-) {
-  const db = await getDb();
-  if (!db) return [];
-
-  return db
-    .select()
-    .from(aiInsights)
-    .where(eq(aiInsights.conductorName, conductorName))
-    .orderBy(desc(aiInsights.criadoEm))
-    .limit(limit);
-}
-
-// ============ WARNINGS ============
-export async function createWarning(data: typeof warnings.$inferInsert) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  return db.insert(warnings).values(data);
-}
-
-export async function getWarningsByConductor(conductorName: string) {
-  const db = await getDb();
-  if (!db) return [];
-  return db
-    .select()
-    .from(warnings)
-    .where(eq(warnings.conductorName, conductorName))
-    .orderBy(desc(warnings.criadoEm));
-}
-
-export async function getWarningsByType(tipo: "pouco_rodado" | "horas_extras") {
-  const db = await getDb();
-  if (!db) return [];
-  return db
-    .select()
-    .from(warnings)
-    .where(eq(warnings.tipo, tipo))
-    .orderBy(desc(warnings.criadoEm));
+  return result.length > 0 ? result[0].rowCount : 0;
 }
 
 export async function getReincidentsWithWarnings() {
   const db = await getDb();
   if (!db) return [];
   
-  const allWarnings = await db.select().from(warnings);
+  // Buscar reincidências (motoristas com múltiplas ocorrências)
+  const reincurrences = await db
+    .select()
+    .from(recurrences)
+    .where(
+      or(
+        gte(recurrences.ocorPoucoJanela, 2),
+        gte(recurrences.ocorPouco30d, 3),
+        gte(recurrences.ocorHeJanela, 2),
+        gte(recurrences.ocorHe30d, 3)
+      )
+    )
+    .orderBy(desc(recurrences.data));
   
-  const grouped = new Map<string, any>();
+  // Buscar advertências já registradas
+  const allWarnings = await db.select().from(warnings);
+  const warningsByDriver = new Map<string, any[]>();
   for (const w of allWarnings) {
-    if (!grouped.has(w.conductorName)) {
-      grouped.set(w.conductorName, {
-        conductorName: w.conductorName,
+    if (!warningsByDriver.has(w.conductorName)) {
+      warningsByDriver.set(w.conductorName, []);
+    }
+    warningsByDriver.get(w.conductorName)!.push(w);
+  }
+  
+  // Agrupar reincidências por motorista
+  const grouped = new Map<string, any>();
+  for (const r of reincurrences) {
+    if (!grouped.has(r.conductorName)) {
+      grouped.set(r.conductorName, {
+        conductorName: r.conductorName,
         avisosPoucoRodado: 0,
         avisosHorasExtras: 0,
-        ultimoAviso: null,
-        historico: [],
+        ultimoAviso: r.data,
+        historico: warningsByDriver.get(r.conductorName) || [],
+        reincidencias: {
+          poucoRodado7d: r.ocorPoucoJanela,
+          poucoRodado30d: r.ocorPouco30d,
+          horasExtras7d: r.ocorHeJanela,
+          horasExtras30d: r.ocorHe30d,
+        },
       });
     }
-    const item = grouped.get(w.conductorName);
-    if (w.tipo === "pouco_rodado") {
-      item.avisosPoucoRodado = Math.max(item.avisosPoucoRodado, w.nivelAdvertencia);
-    } else {
-      item.avisosHorasExtras = Math.max(item.avisosHorasExtras, w.nivelAdvertencia);
+  }
+  
+  // Calcular nível de aviso baseado em reincidências
+  for (const item of grouped.values()) {
+    const r = item.reincidencias;
+    if (r.poucoRodado7d >= 2 || r.poucoRodado30d >= 3) {
+      item.avisosPoucoRodado = r.poucoRodado30d >= 3 ? 3 : (r.poucoRodado7d >= 2 ? 2 : 1);
     }
-    item.ultimoAviso = w.criadoEm;
-    item.historico.push(w);
+    if (r.horasExtras7d >= 2 || r.horasExtras30d >= 3) {
+      item.avisosHorasExtras = r.horasExtras30d >= 3 ? 3 : (r.horasExtras7d >= 2 ? 2 : 1);
+    }
   }
   
   return Array.from(grouped.values()).sort(
     (a, b) => new Date(b.ultimoAviso).getTime() - new Date(a.ultimoAviso).getTime()
   );
+}
+
+
+export async function getImportHistory() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const imports = await db
+    .select()
+    .from(journeys)
+    .orderBy(desc(journeys.data))
+    .limit(100);
+  
+  return imports;
+}
+
+export async function getLastImport() {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db
+    .select()
+    .from(journeys)
+    .orderBy(desc(journeys.data))
+    .limit(1);
+  
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getConfigurations() {
+  const db = await getDb();
+  if (!db) return {};
+  
+  const result = await db.select().from(configurations).limit(1);
+  return result.length > 0 ? result[0] : {};
+}
+
+
+export async function createImport(data: any) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.insert(imports).values(data);
+  return result;
+}
+
+export async function updateConfigurations(data: any) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.insert(configurations).values(data).onDuplicateKeyUpdate({
+    set: data,
+  });
+  return result;
+}
+
+export async function createWarning(data: any) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.insert(warnings).values(data);
+  return result;
 }

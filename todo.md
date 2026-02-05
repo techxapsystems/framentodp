@@ -104,3 +104,10 @@
 - [x] Adicionar 2 checks na tela Reincidentes: "Advertência Gerada" e "Advertência Aplicada"
   - Implementado com badges visuais (verde e azul)
   - Campos no banco de dados: advertenciaGerada, advertenciaAplicada, dataAplicacao
+
+## Bug: Reincidentes Não Aparecem
+- [x] Tela de Reincidentes não mostra nenhum motorista mesmo após importação
+- [x] Verificar se dados foram importados corretamente
+- [x] Verificar lógica de cálculo de reincidências
+- [x] Verificar query getReincidents no backend
+- [x] Reescrever getReincidentsWithWarnings para buscar reincidências (não apenas advertências registradas)
