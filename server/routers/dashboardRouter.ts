@@ -1,0 +1,372 @@
+import { protectedProcedure, router } from "../_core/trpc";
+import { z } from "zod";
+import { getDb } from "../db";
+import {
+  journeys,
+  recurrences,
+  suggestedActions,
+  treatments,
+} from "../../drizzle/schema";
+import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
+
+export const dashboardRouter = router({
+  /**
+   * Obtém dados do dia para o dashboard HOJE
+   */
+  getTodayData: protectedProcedure
+    .input(
+      z.object({
+        date: z.string(),
+        gestores: z.array(z.string()).optional(),
+        operacoes: z.array(z.string()).optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const targetDate = new Date(input.date);
+        const startOfDay = new Date(targetDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(targetDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Buscar jornadas do dia
+        let query = db
+          .select()
+          .from(journeys)
+          .where(
+            and(gte(journeys.data, startOfDay), lte(journeys.data, endOfDay))
+          );
+
+        const dayJourneys = await query;
+
+        // Filtrar por gestor e operação
+        let filtered = dayJourneys;
+        if (input.gestores && input.gestores.length > 0) {
+          filtered = filtered.filter((j) =>
+            input.gestores!.includes(j.gestorName || "")
+          );
+        }
+        if (input.operacoes && input.operacoes.length > 0) {
+          filtered = filtered.filter((j) =>
+            input.operacoes!.includes(j.operacao || "")
+          );
+        }
+
+        // Buscar reincidências
+        const recurrenceData = await db
+          .select()
+          .from(recurrences)
+          .where(
+            and(
+              gte(recurrences.data, startOfDay),
+              lte(recurrences.data, endOfDay)
+            )
+          );
+
+        // Buscar ações sugeridas
+        const suggestedActionsData = await db
+          .select()
+          .from(suggestedActions)
+          .where(
+            and(
+              gte(suggestedActions.data, startOfDay),
+              lte(suggestedActions.data, endOfDay)
+            )
+          );
+
+        // Buscar tratativas
+        const treatmentsData = await db
+          .select()
+          .from(treatments)
+          .where(
+            and(gte(treatments.data, startOfDay), lte(treatments.data, endOfDay))
+          );
+
+        // Calcular KPIs
+        const totalMotoristas = new Set(filtered.map((j) => j.conductorName))
+          .size;
+        const ofensoresPoucoRodado = filtered.filter((j) => j.poucoRodado).length;
+        const heTotal = filtered.reduce((sum, j) => sum + j.heMin, 0);
+        const motoristasComHe = new Set(
+          filtered.filter((j) => j.temHe).map((j) => j.conductorName)
+        ).size;
+
+        // Agrupar ofensores pouco rodado
+        const ofensoresPoucoRodadoList = filtered
+          .filter((j) => j.poucoRodado)
+          .map((j) => {
+            const rec = recurrenceData.find(
+              (r) => r.conductorName === j.conductorName
+            );
+            const action = suggestedActionsData.find(
+              (a) =>
+                a.journeyId === j.id &&
+                a.tipo === "pouco_rodado"
+            );
+            const treatment = treatmentsData.find(
+              (t) =>
+                t.journeyId === j.id &&
+                t.tipo === "pouco_rodado"
+            );
+
+            return {
+              journeyId: j.id,
+              condutor: j.conductorName,
+              gestor: j.gestorName,
+              dirigido: j.dirigidoMin,
+              ocorJanela: rec?.ocorPoucoJanela || 0,
+              ocor30d: rec?.ocorPouco30d || 0,
+              acaoSugerida: action?.acao || "",
+              severidade: action?.severidade || "info",
+              status: treatment?.status || "pendente",
+              observacao: treatment?.observacao || "",
+            };
+          })
+          .sort(
+            (a, b) =>
+              b.ocorJanela - a.ocorJanela || a.dirigido - b.dirigido
+          );
+
+        // Agrupar ofensores horas extras
+        const ofensoresHeList = filtered
+          .filter((j) => j.temHe)
+          .map((j) => {
+            const rec = recurrenceData.find(
+              (r) => r.conductorName === j.conductorName
+            );
+            const action = suggestedActionsData.find(
+              (a) =>
+                a.journeyId === j.id &&
+                a.tipo === "horas_extras"
+            );
+            const treatment = treatmentsData.find(
+              (t) =>
+                t.journeyId === j.id &&
+                t.tipo === "horas_extras"
+            );
+
+            return {
+              journeyId: j.id,
+              condutor: j.conductorName,
+              gestor: j.gestorName,
+              he: j.heMin,
+              he50: j.he50Min,
+              he100: j.he100Min,
+              ocorJanela: rec?.ocorHeJanela || 0,
+              ocor30d: rec?.ocorHe30d || 0,
+              acaoSugerida: action?.acao || "",
+              severidade: action?.severidade || "info",
+              status: treatment?.status || "pendente",
+              observacao: treatment?.observacao || "",
+            };
+          })
+          .sort((a, b) => b.he - a.he || b.ocorJanela - a.ocorJanela);
+
+        // Listar gestores e operações disponíveis
+        const gestoresUnique = Array.from(
+          new Set(dayJourneys.map((j) => j.gestorName).filter(Boolean))
+        );
+        const operacoesUnique = Array.from(
+          new Set(dayJourneys.map((j) => j.operacao).filter(Boolean))
+        );
+
+        return {
+          success: true,
+          kpis: {
+            totalMotoristas,
+            ofensoresPoucoRodado,
+            percentualOfensores: (
+              (ofensoresPoucoRodado / totalMotoristas) *
+              100
+            ).toFixed(1),
+            heTotal,
+            motoristasComHe,
+          },
+          ofensoresPoucoRodado: ofensoresPoucoRodadoList,
+          ofensoresHe: ofensoresHeList,
+          filtros: {
+            gestores: gestoresUnique,
+            operacoes: operacoesUnique,
+          },
+        };
+      } catch (error) {
+        console.error("[DashboardRouter] Error:", error);
+        return {
+          success: false,
+          message: String(error),
+          kpis: {},
+          ofensoresPoucoRodado: [],
+          ofensoresHe: [],
+          filtros: {},
+        };
+      }
+    }),
+
+  /**
+   * Atualiza status e observação de uma tratativa
+   */
+  updateTreatment: protectedProcedure
+    .input(
+      z.object({
+        journeyId: z.number(),
+        tipo: z.enum(["pouco_rodado", "horas_extras"]),
+        status: z.enum(["pendente", "em_andamento", "resolvido", "ignorado"]),
+        observacao: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Buscar journey para obter dados
+        const journey = await db
+          .select()
+          .from(journeys)
+          .where(eq(journeys.id, input.journeyId))
+          .limit(1);
+
+        if (journey.length === 0) {
+          return {
+            success: false,
+            message: "Jornada não encontrada",
+          };
+        }
+
+        const j = journey[0];
+
+        // Upsert treatment
+        await db
+          .insert(treatments)
+          .values({
+            journeyId: input.journeyId,
+            conductorName: j.conductorName,
+            data: j.data,
+            tipo: input.tipo as any,
+            status: input.status as any,
+            observacao: input.observacao,
+            atualizadoPor: ctx.user.id,
+            atualizadoEm: new Date(),
+          })
+          .onDuplicateKeyUpdate({
+            set: {
+              status: input.status as any,
+              observacao: input.observacao,
+              atualizadoPor: ctx.user.id,
+              atualizadoEm: new Date(),
+            },
+          });
+
+        return {
+          success: true,
+          message: "Tratativa atualizada com sucesso",
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: String(error),
+        };
+      }
+    }),
+
+  /**
+   * Obtém dados de uma semana específica
+   */
+  getWeekData: protectedProcedure
+    .input(z.object({ weekStart: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const startDate = new Date(input.weekStart);
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+
+        // Buscar jornadas da semana
+        const weekJourneys = await db
+          .select()
+          .from(journeys)
+          .where(
+            and(gte(journeys.data, startDate), lte(journeys.data, endDate))
+          );
+
+        // Agrupar por dia
+        const byDay = new Map<string, any[]>();
+        for (const j of weekJourneys) {
+          const dayKey = j.data.toISOString().split("T")[0];
+          if (!byDay.has(dayKey)) {
+            byDay.set(dayKey, []);
+          }
+          byDay.get(dayKey)!.push(j);
+        }
+
+        // Calcular estatísticas por dia
+        const dailyStats = Array.from(byDay).map(([day, dayJourneys]) => {
+          const totalMotoristas = new Set(
+            dayJourneys.map((j) => j.conductorName)
+          ).size;
+          const poucoRodado = dayJourneys.filter((j) => j.poucoRodado).length;
+          const heTotal = dayJourneys.reduce((sum, j) => sum + j.heMin, 0);
+
+          return {
+            date: day,
+            totalMotoristas,
+            poucoRodado,
+            percentualPoucoRodado: (
+              (poucoRodado / totalMotoristas) *
+              100
+            ).toFixed(1),
+            heTotal,
+          };
+        });
+
+        // Top 10 reincidentes pouco rodado
+        const conductorPoucoRodado = new Map<string, number>();
+        for (const j of weekJourneys.filter((j) => j.poucoRodado)) {
+          conductorPoucoRodado.set(
+            j.conductorName,
+            (conductorPoucoRodado.get(j.conductorName) || 0) + 1
+          );
+        }
+
+        const topPoucoRodado = Array.from(conductorPoucoRodado)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([name, count]) => ({ name, count }));
+
+        // Top 10 HE
+        const conductorHe = new Map<string, number>();
+        for (const j of weekJourneys.filter((j) => j.temHe)) {
+          conductorHe.set(
+            j.conductorName,
+            (conductorHe.get(j.conductorName) || 0) + j.heMin
+          );
+        }
+
+        const topHe = Array.from(conductorHe)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([name, minutes]) => ({ name, minutes }));
+
+        return {
+          success: true,
+          dailyStats,
+          topPoucoRodado,
+          topHe,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: String(error),
+          dailyStats: [],
+          topPoucoRodado: [],
+          topHe: [],
+        };
+      }
+    }),
+});
