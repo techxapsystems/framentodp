@@ -11,6 +11,7 @@ import Week from "./pages/Week";
 import Import from "./pages/Import";
 import Settings from "./pages/Settings";
 import Recidivists from "./pages/Recidivists";
+import WarningsDashboard from "./pages/WarningsDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -20,6 +21,7 @@ function Router() {
         <Route path={"/"} component={Today} />
         <Route path={"/semana"} component={Week} />
         <Route path={"/reincidentes"} component={Recidivists} />
+        <Route path={"/advertencias"} component={WarningsDashboard} />
         <Route path={"/importacao"} component={Import} />
         <Route path={"/configuracoes"} component={Settings} />
         <Route path={"/404"} component={NotFound} />

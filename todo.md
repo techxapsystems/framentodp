@@ -147,3 +147,8 @@
 - [x] Reestilizar botões e cards com novo tema (verde neon #00FF00)
 - [x] Adicionar logo da Framento no header/sidebar
 - [ ] Testar contraste e acessibilidade com novas cores
+
+## Bugs & Melhorias Urgentes 2
+- [ ] Filtro de motorista não lista motoristas no dialog de nova advertência
+- [ ] Criar dashboard de advertências por motorista (tabela + gráfico)
+- [ ] Criar dashboard de advertências por operação (tabela + gráfico)

@@ -445,4 +445,20 @@ export const dashboardRouter = router({
         };
       }
     }),
+
+  /**
+   * Estatísticas de advertências por motorista
+   */
+  getWarningsStatsByDriver: protectedProcedure.query(async () => {
+    const { getWarningsStatsByDriver } = await import("../db");
+    return await getWarningsStatsByDriver();
+  }),
+
+  /**
+   * Estatísticas de advertências por operação
+   */
+  getWarningsStatsByOperation: protectedProcedure.query(async () => {
+    const { getWarningsStatsByOperation } = await import("../db");
+    return await getWarningsStatsByOperation();
+  }),
 });

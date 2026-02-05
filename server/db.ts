@@ -323,3 +323,77 @@ export async function getLastImport() {
 export async function updateConfigurations(data: any) {
   return updateConfiguration(data);
 }
+
+
+// Estatísticas de advertências por motorista
+export async function getWarningsStatsByDriver() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const allWarnings = await db.select().from(warnings);
+  
+  const statsByDriver = new Map<string, { motorista: string; total: number; aviso1: number; aviso2: number; aviso3: number }>();
+  
+  for (const w of allWarnings) {
+    if (!statsByDriver.has(w.conductorName)) {
+      statsByDriver.set(w.conductorName, {
+        motorista: w.conductorName,
+        total: 0,
+        aviso1: 0,
+        aviso2: 0,
+        aviso3: 0,
+      });
+    }
+    
+    const stats = statsByDriver.get(w.conductorName)!;
+    stats.total++;
+    
+    if (w.nivelAdvertencia === 1) stats.aviso1++;
+    else if (w.nivelAdvertencia === 2) stats.aviso2++;
+    else if (w.nivelAdvertencia === 3) stats.aviso3++;
+  }
+  
+  return Array.from(statsByDriver.values()).sort((a, b) => b.total - a.total);
+}
+
+// Estatísticas de advertências por operação
+export async function getWarningsStatsByOperation() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const allWarnings = await db.select().from(warnings);
+  const allJourneys = await db.select().from(journeys);
+  
+  // Criar mapa de motorista -> operação
+  const operacaoByDriver = new Map<string, string>();
+  for (const j of allJourneys) {
+    if (!operacaoByDriver.has(j.conductorName)) {
+      operacaoByDriver.set(j.conductorName, j.operacao || "Desconhecida");
+    }
+  }
+  
+  const statsByOperation = new Map<string, { operacao: string; total: number; aviso1: number; aviso2: number; aviso3: number }>();
+  
+  for (const w of allWarnings) {
+    const operacao = operacaoByDriver.get(w.conductorName) || "Desconhecida";
+    
+    if (!statsByOperation.has(operacao)) {
+      statsByOperation.set(operacao, {
+        operacao,
+        total: 0,
+        aviso1: 0,
+        aviso2: 0,
+        aviso3: 0,
+      });
+    }
+    
+    const stats = statsByOperation.get(operacao)!;
+    stats.total++;
+    
+    if (w.nivelAdvertencia === 1) stats.aviso1++;
+    else if (w.nivelAdvertencia === 2) stats.aviso2++;
+    else if (w.nivelAdvertencia === 3) stats.aviso3++;
+  }
+  
+  return Array.from(statsByOperation.values()).sort((a, b) => b.total - a.total);
+}
