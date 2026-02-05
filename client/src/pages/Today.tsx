@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { useFilters } from "@/contexts/FilterContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -21,21 +22,17 @@ import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Today() {
-  const [dateFrom, setDateFrom] = useState(
-    new Date().toISOString().split("T")[0]
-  );
-  const [dateTo, setDateTo] = useState(
-    new Date().toISOString().split("T")[0]
-  );
-  const [selectedGestor, setSelectedGestor] = useState<string>("");
-  const [selectedOperacao, setSelectedOperacao] = useState<string>("");
+  const { filters, setDateFrom: setContextDateFrom, setDateTo: setContextDateTo, setManager: setContextManager } = useFilters();
+  
+  const dateFrom = filters.dateFrom.toISOString().split("T")[0];
+  const dateTo = filters.dateTo.toISOString().split("T")[0];
+  const selectedGestor = filters.manager;
 
   // Buscar dados para o intervalo de datas
   const { data, isLoading, refetch } = trpc.dashboard.getTodayData.useQuery({
     date: dateFrom,
     dateEnd: dateTo,
     gestores: selectedGestor && selectedGestor !== "__all__" ? [selectedGestor === "__none__" ? "" : selectedGestor] : undefined,
-    operacoes: selectedOperacao && selectedOperacao !== "__all__" ? [selectedOperacao === "__none__" ? "" : selectedOperacao] : undefined,
   });
 
   const updateTreatmentMutation = trpc.dashboard.updateTreatment.useMutation({
@@ -79,6 +76,20 @@ export default function Today() {
     }
   };
 
+  const handleDateFromChange = (newDate: string) => {
+    const date = new Date(newDate);
+    setContextDateFrom(date);
+  };
+
+  const handleDateToChange = (newDate: string) => {
+    const date = new Date(newDate);
+    setContextDateTo(date);
+  };
+
+  const handleGestorChange = (value: string) => {
+    setContextManager(value);
+  };
+
   if (isLoading) {
     return (
       <div className="p-8">
@@ -103,7 +114,7 @@ export default function Today() {
       {/* Filtros */}
       <div className="bg-white rounded-lg border border-slate-200 p-6 space-y-4">
         <h3 className="font-semibold text-slate-900">Filtros</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Data DE */}
           <div>
             <label className="text-sm font-medium text-slate-700 block mb-2">
@@ -112,7 +123,7 @@ export default function Today() {
             <input
               type="date"
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={(e) => handleDateFromChange(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -125,7 +136,7 @@ export default function Today() {
             <input
               type="date"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => handleDateToChange(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -135,7 +146,7 @@ export default function Today() {
             <label className="text-sm font-medium text-slate-700 block mb-2">
               Gestor:
             </label>
-            <Select value={selectedGestor} onValueChange={setSelectedGestor}>
+            <Select value={selectedGestor} onValueChange={handleGestorChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Todos os gestores" />
               </SelectTrigger>
@@ -149,8 +160,6 @@ export default function Today() {
               </SelectContent>
             </Select>
           </div>
-
-
         </div>
       </div>
 

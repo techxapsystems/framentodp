@@ -121,3 +121,10 @@
 - [x] Adicionar campos de placa e dias de infração no dialog
 - [x] Criar gerador de template de email com dados obrigatórios
 - [x] Adicionar botão "Copiar Email" para área de transferência
+
+## Persistência de Filtros
+- [x] Criar contexto global para persistir filtros entre abas
+- [x] Adicionar filtros na tela HOJE (Data DE/ATÉ, Gestor) - usando FilterContext
+- [ ] Adicionar filtros na tela SEMANA (Data DE/ATÉ, Gestor)
+- [ ] Adicionar filtros na tela REINCIDENTES (Data DE/ATÉ, Gestor)
+- [ ] Adicionar filtros na tela IMPORTAÇÃO
