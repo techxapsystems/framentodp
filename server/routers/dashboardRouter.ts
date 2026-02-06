@@ -546,4 +546,44 @@ export const dashboardRouter = router({
     const { getWarningsStatsByOperation } = await import("../db");
     return await getWarningsStatsByOperation();
   }),
+
+  createOrientation: protectedProcedure
+    .input(z.object({
+      conductorName: z.string(),
+      tipo: z.enum(["pouco_rodado", "horas_extras"]),
+      motivo: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const { createOrientation: createOrientationDb } = await import("../db");
+        await createOrientationDb({
+          conductorName: input.conductorName,
+          tipo: input.tipo,
+          motivo: input.motivo,
+          orientadoPor: ctx.user?.email || "Sistema",
+        });
+        return { success: true };
+      } catch (error) {
+        return { success: false, message: String(error) };
+      }
+    }),
+
+  getOrientationsByConductor: protectedProcedure
+    .input(z.object({
+      conductorName: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const { getOrientationsByConductor } = await import("../db");
+      return await getOrientationsByConductor(input.conductorName);
+    }),
+
+  countOrientations: protectedProcedure
+    .input(z.object({
+      conductorName: z.string(),
+      tipo: z.enum(["pouco_rodado", "horas_extras"]),
+    }))
+    .query(async ({ input }) => {
+      const { countOrientations } = await import("../db");
+      return await countOrientations(input.conductorName, input.tipo);
+    }),
 });

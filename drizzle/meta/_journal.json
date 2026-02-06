@@ -29,6 +29,13 @@
       "when": 1770298753367,
       "tag": "0003_plain_albert_cleary",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1770318801703,
+      "tag": "0004_old_solo",
+      "breakpoints": true
     }
   ]
 }

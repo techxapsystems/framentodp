@@ -1,6 +1,6 @@
 import { eq, and, gte, lte, desc, inArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, journeys, recurrences, warnings, imports, configurations } from "../drizzle/schema";
+import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -501,4 +501,86 @@ export async function getWarningsStatsByOperation() {
   }
   
   return Array.from(statsByOperation.values()).sort((a, b) => b.total - a.total);
+}
+
+
+/**
+ * Registrar uma orientação para um motorista
+ * Na 3ª orientação, gera automaticamente uma Advertência (Aviso 1)
+ */
+export async function createOrientation(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Contar orientações anteriores ANTES de inserir
+  const previousOrientations = await db
+    .select()
+    .from(orientations)
+    .where(
+      and(
+        eq(orientations.conductorName, data.conductorName),
+        eq(orientations.tipo, data.tipo)
+      )
+    );
+  
+  // Inserir orientação
+  await db.insert(orientations).values({
+    conductorName: data.conductorName,
+    tipo: data.tipo,
+    motivo: data.motivo,
+    orientadoPor: data.orientadoPor,
+    criadoEm: new Date(),
+  });
+  
+  // Se chegou a 3 orientações (contadas ANTES de inserir), gerar advertência automática
+  if (previousOrientations.length === 2) { // 2 anteriores + 1 nova = 3 total
+    await db.insert(warnings).values({
+      conductorName: data.conductorName,
+      tipo: data.tipo,
+      nivelAdvertencia: 1, // Aviso 1
+      motivo: `Advertência automática gerada após 3 orientações. Motivo: ${data.motivo}`,
+      observacao: "Gerada automaticamente após 3 orientações",
+      aplicadoPor: data.orientadoPor,
+      advertenciaGerada: true,
+      advertenciaAplicada: false,
+      geradaAutomaticamente: true,
+      criadoEm: new Date(),
+    });
+  }
+}
+
+/**
+ * Obter orientações de um motorista
+ */
+export async function getOrientationsByConductor(conductorName: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select()
+    .from(orientations)
+    .where(eq(orientations.conductorName, conductorName))
+    .orderBy(desc(orientations.criadoEm));
+  
+  return result;
+}
+
+/**
+ * Contar orientações por motorista e tipo
+ */
+export async function countOrientations(conductorName: string, tipo: string) {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const result = await db
+    .select()
+    .from(orientations)
+    .where(
+      and(
+        eq(orientations.conductorName, conductorName),
+        eq(orientations.tipo, tipo)
+      )
+    );
+  
+  return result.length;
 }

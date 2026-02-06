@@ -25,7 +25,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AlertTriangle, AlertCircle, Copy, Edit2 } from "lucide-react";
+import { AlertTriangle, AlertCircle, Copy, Edit2, MessageSquare } from "lucide-react";
+import { OrientationDialog } from "@/components/OrientationDialog";
 import { toast } from "sonner";
 
 export default function Recidivists() {
@@ -44,6 +45,8 @@ export default function Recidivists() {
   const [editWarningReason, setEditWarningReason] = useState("");
   const [editWarningNote, setEditWarningNote] = useState("");
   const [editWarningType, setEditWarningType] = useState<"pouco_rodado" | "horas_extras">("pouco_rodado");
+  const [orientationDialogOpen, setOrientationDialogOpen] = useState(false);
+  const [selectedMotoristaForOrientation, setSelectedMotoristaForOrientation] = useState<{ name: string; placa: string } | null>(null);
 
   const { data, isLoading, refetch } = trpc.dashboard.getReincidents.useQuery(
     {
@@ -563,16 +566,34 @@ export default function Recidivists() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditWarning(item.historico?.[0])}
-                          disabled={!item.historico || item.historico.length === 0}
-                          className="gap-2"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          Editar
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedMotoristaForOrientation({
+                                name: item.conductorName,
+                                placa: item.placa,
+                              });
+                              setOrientationDialogOpen(true);
+                            }}
+                            className="gap-2"
+                            title="Registrar orientação"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            Orientação
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditWarning(item.historico?.[0])}
+                            disabled={!item.historico || item.historico.length === 0}
+                            className="gap-2"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            Editar
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -669,6 +690,17 @@ export default function Recidivists() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog de Orientação */}
+      <OrientationDialog
+        open={orientationDialogOpen}
+        onOpenChange={setOrientationDialogOpen}
+        motorista={selectedMotoristaForOrientation}
+        onSuccess={() => {
+          refetch();
+          setOrientationDialogOpen(false);
+        }}
+      />
     </div>
   );
 }

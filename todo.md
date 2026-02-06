@@ -169,6 +169,20 @@
 
 
 ## Bugs Criticos - Advertencias (RESOLVIDOS)
+
+## Resumo Final - Status do Projeto
+
+### ✅ COMPLETO
+- Dashboard de ociosidade com filtros avançados
+- Sistema de advertências (manual + automático)
+- Sistema de orientações com geração automática de advertências
+- Tela de reincidentes com histórico
+- Tela de relatórios com filtros e exportação PDF
+- Importação de dados em Excel
+- Configurações do sistema
+- Branding Framento Transportes aplicado
+
+### 🔧 Bugs Criticos - Advertencias (RESOLVIDOS)
 - [x] Advertencias cadastradas nao aparecem na aba "Advertencias"
   - Causa: Faltava campo `aplicadoPor` obrigatorio na funcao createWarning
   - Solucao: Adicionar campo obrigatorio ao inserir advertencia
@@ -207,3 +221,29 @@
   - Integrado ao backend para filtrar dados
 - [x] Testar filtros funcionando corretamente
   - Todos os filtros testados e funcionando perfeitamente
+
+
+## Sistema de Orienta\u00e7\u00f5es (IMPLEMENTADO E TESTADO)
+- [x] Adicionar tabela `orientations` ao schema
+- [x] Criar migration para tabela de orienta\u00e7\u00f5es
+- [x] Implementar API para registrar orienta\u00e7\u00e3o (createOrientation, countOrientations)
+- [x] Implementar l\u00f3gica: na 3\u00aa orienta\u00e7\u00e3o, gerar Advert\u00eancia autom\u00e1tica (Aviso 1)
+- [x] Criar UI para registrar orienta\u00e7\u00e3o na tela de Reincidentes (OrientationDialog)
+- [x] Mostrar contador de orienta\u00e7\u00f5es no dialog (0 de 3, 1 de 3, 2 de 3)
+- [x] Testar fluxo completo (registrar 3 orienta\u00e7\u00f5es e gerar advertencia autom\u00e1tica)
+
+### Bugs Corrigidos no Sistema de Orienta\u00e7\u00f5es
+- [x] Import de toast estava incorreto (usava @/hooks/use-toast que nao existe)
+  - Solu\u00e7\u00e3o: Usar `sonner` diretamente
+- [x] Nome do motorista nao era passado corretamente para o dialog
+  - Causa: Codigo usava `item.motorista` mas os dados tinham `item.conductorName`
+  - Solu\u00e7\u00e3o: Corrigir para usar `item.conductorName`
+- [x] Contador de orienta\u00e7\u00f5es nao atualizava ap\u00f3s registrar
+  - Causa: Query nao era refetchada ap\u00f3s sucesso da mutation
+  - Solu\u00e7\u00e3o: Adicionar refetch() no callback onSuccess da mutation
+
+### Testes Realizados
+- [x] Registrar 1\u00aa orienta\u00e7\u00e3o: Salva no banco, contador mostra "1 de 3"
+- [x] Registrar 2\u00aa orienta\u00e7\u00e3o: Salva no banco, contador mostra "2 de 3"
+- [x] Registrar 3\u00aa orienta\u00e7\u00e3o: Salva no banco + Gera advertencia autom\u00e1tica (Aviso 1)
+- [x] Verificar banco de dados: 3 registros de orienta\u00e7\u00e3o e 3 advertencias para JOSE ALVES DA SILVA

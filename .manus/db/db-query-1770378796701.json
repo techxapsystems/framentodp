@@ -1,0 +1,52 @@
+{
+  "query": "SELECT * FROM warnings WHERE conductorName = 'JOSE ALVES DA SILVA' AND tipo = 'pouco_rodado' ORDER BY criadoEm DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3dGJWfvPW4PQcvR.root --database niJQc4ibt4VMW3Ni9Ahpj8 --execute SELECT * FROM warnings WHERE conductorName = 'JOSE ALVES DA SILVA' AND tipo = 'pouco_rodado' ORDER BY criadoEm DESC;",
+  "rows": [
+    {
+      "id": "60001",
+      "conductorName": "JOSE ALVES DA SILVA",
+      "tipo": "pouco_rodado",
+      "nivelAdvertencia": "1",
+      "motivo": "Advertência automática gerada após 3 orientações. Motivo: Orientado 3 vezes pela Ana - Gerando Advertência",
+      "observacao": "Gerada automaticamente após 3 orientações",
+      "aplicadoPor": "techxapoficial@gmail.com",
+      "criadoEm": "2026-02-06 11:53:05",
+      "advertenciaGerada": "1",
+      "advertenciaAplicada": "0",
+      "dataAplicacao": "NULL",
+      "geradaAutomaticamente": "1"
+    },
+    {
+      "id": "30001",
+      "conductorName": "JOSE ALVES DA SILVA",
+      "tipo": "pouco_rodado",
+      "nivelAdvertencia": "1",
+      "motivo": "TESTE",
+      "observacao": "TESTE",
+      "aplicadoPor": "techxapoficial@gmail.com",
+      "criadoEm": "2026-02-05 18:33:58",
+      "advertenciaGerada": "1",
+      "advertenciaAplicada": "0",
+      "dataAplicacao": "NULL",
+      "geradaAutomaticamente": "0"
+    },
+    {
+      "id": "1",
+      "conductorName": "JOSE ALVES DA SILVA",
+      "tipo": "pouco_rodado",
+      "nivelAdvertencia": "2",
+      "motivo": "Motorista apresentou jornada com pouco rodado. Necessário acompanhamento.",
+      "observacao": "",
+      "aplicadoPor": "techxapoficial@gmail.com",
+      "criadoEm": "2026-02-05 18:14:15",
+      "advertenciaGerada": "1",
+      "advertenciaAplicada": "0",
+      "dataAplicacao": "NULL",
+      "geradaAutomaticamente": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tconductorName\ttipo\tnivelAdvertencia\tmotivo\tobservacao\taplicadoPor\tcriadoEm\tadvertenciaGerada\tadvertenciaAplicada\tdataAplicacao\tgeradaAutomaticamente\n60001\tJOSE ALVES DA SILVA\tpouco_rodado\t1\tAdvertência automática gerada após 3 orientações. Motivo: Orientado 3 vezes pela Ana - Gerando Advertência\tGerada automaticamente após 3 orientações\ttechxapoficial@gmail.com\t2026-02-06 11:53:05\t1\t0\tNULL\t1\n30001\tJOSE ALVES DA SILVA\tpouco_rodado\t1\tTESTE\tTESTE\ttechxapoficial@gmail.com\t2026-02-05 18:33:58\t1\t0\tNULL\t0\n1\tJOSE ALVES DA SILVA\tpouco_rodado\t2\tMotorista apresentou jornada com pouco rodado. Necessário acompanhamento.\t\ttechxapoficial@gmail.com\t2026-02-05 18:14:15\t1\t0\tNULL\t0\n",
+  "stderr": "",
+  "execution_time_ms": 356
+}
