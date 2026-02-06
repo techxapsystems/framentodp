@@ -414,16 +414,10 @@ export const dashboardRouter = router({
       try {
         const { getAllIdleDrivers } = await import("../db");
         const drivers = await getAllIdleDrivers();
-        return {
-          success: true,
-          drivers,
-        };
+        return drivers || [];
       } catch (error) {
-        return {
-          success: false,
-          message: String(error),
-          drivers: [],
-        };
+        console.error("Error fetching idle drivers:", error);
+        return [];
       }
     }),
 
@@ -506,28 +500,14 @@ export const dashboardRouter = router({
    * Busca advertencias para relatorio com filtros
    */
   getWarningsReport: protectedProcedure
-    .input(
-      z.object({
-        dateStart: z.string().optional(),
-        dateEnd: z.string().optional(),
-        conductorName: z.string().optional(),
-        tipo: z.enum(["pouco_rodado", "horas_extras"]).optional(),
-      })
-    )
-    .query(async ({ input }) => {
+    .query(async () => {
       try {
-        const { getWarningsReport: getWarningsReportDb } = await import("../db");
-        const warnings = await getWarningsReportDb(input);
-        return {
-          success: true,
-          warnings,
-        };
+        const { getWarningsReport } = await import("../db");
+        const data = await getWarningsReport({});
+        return data || [];
       } catch (error) {
-        return {
-          success: false,
-          message: String(error),
-          warnings: [],
-        };
+        console.error("Error fetching warnings report:", error);
+        return [];
       }
     }),
 

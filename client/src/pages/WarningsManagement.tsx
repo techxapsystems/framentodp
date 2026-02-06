@@ -64,6 +64,16 @@ export default function WarningsManagement() {
     },
   });
 
+  const markAppliedMutation = trpc.dashboard.markWarningApplied.useMutation({
+    onSuccess: () => {
+      toast.success("Advertência marcada como aplicada com sucesso");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Erro: ${error.message}`);
+    },
+  });
+
   const handleEditWarning = (warning: any) => {
     setEditingWarningId(warning.id);
     setEditWarningLevel(warning.nivelAdvertencia as "1" | "2" | "3");
@@ -242,8 +252,13 @@ export default function WarningsManagement() {
                               className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
                               title="Marcar como aplicada"
                               onClick={() => {
-                                toast.info("Funcionalidade em desenvolvimento");
+                                markAppliedMutation.mutate({
+                                  warningId: item.historico[0].id,
+                                  dataAplicacao: new Date().toISOString().split('T')[0],
+                                  assinada: false,
+                                });
                               }}
+                              disabled={markAppliedMutation.isPending}
                             >
                               <Check className="w-4 h-4" />
                               Aplicada

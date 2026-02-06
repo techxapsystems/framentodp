@@ -420,3 +420,12 @@
 - [x] Mover botões (Orientação, ✓ Aplicada, Editar) para "Gerenciamento de Advertências"
 - [x] Atualizar navegação no App.tsx
 - [x] Testar fluxo completo de advertências
+
+
+## Bugs Críticos - Reorganização de Advertências (RESOLVIDOS)
+- [x] Motoristas não listam no Cadastro de Advertências (select vazio)
+  - Causa: Query getIdleDriversForWarning retornava objeto {success, drivers} em vez de array direto
+  - Solução: Simplificar retorno para retornar array diretamente
+- [x] Implementar funcionalidade "Marcar como Aplicada" na tela de Acompanhamento
+  - Implementado: Mutation markWarningApplied agora marca advertência como aplicada
+  - UI atualizada: Botão "Aplicada" desaparece após marcar, status muda para "✓ Aplicada" (verde)
