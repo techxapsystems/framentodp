@@ -65,7 +65,7 @@ export default function Recidivists() {
 
   const { data, isLoading, refetch } = trpc.dashboard.getReincidents.useQuery(
     {
-      tipo: selectedType && selectedType !== "" ? (selectedType as "pouco_rodado" | "horas_extras") : undefined,
+      tipo: selectedType && selectedType !== "__all__" ? (selectedType as "pouco_rodado" | "horas_extras") : undefined,
     },
     {
       enabled: true,
@@ -114,6 +114,7 @@ export default function Recidivists() {
       setWarningNote("");
       setLicensePlate("");
       setInfrationDays("");
+      setOperacao("");
       setDialogWarningType("pouco_rodado");
       // Refetch dados sem reload de página
       refetch();
@@ -366,18 +367,13 @@ export default function Recidivists() {
                     <label className="text-sm font-medium text-slate-700 block mb-2">
                       Operação: *
                     </label>
-                    <Select value={operacao} onValueChange={setOperacao}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a operação" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {operacoes.map((op) => (
-                          <SelectItem key={op} value={op}>
-                            {op}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <input
+                      type="text"
+                      value={operacao}
+                      readOnly
+                      placeholder="Preenchida automaticamente"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-700"
+                    />
                   </div>
 
                   <div>
@@ -389,7 +385,7 @@ export default function Recidivists() {
                       value={infrationDays}
                       onChange={(e) => handleInfrationDaysChange(e.target.value)}
                       placeholder="Ex: 02/05/2026"
-                      maxLength="10"
+                      maxLength={10}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>

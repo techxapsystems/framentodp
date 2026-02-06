@@ -110,13 +110,11 @@ export const dashboardRouter = router({
             );
             const action = suggestedActionsData.find(
               (a) =>
-                a.journeyId === j.id &&
-                a.tipo === "pouco_rodado"
+                a.journeyId === j.id
             );
             const treatment = treatmentsData.find(
               (t) =>
-                t.journeyId === j.id &&
-                t.tipo === "pouco_rodado"
+                t.journeyId === j.id
             );
 
             return {
@@ -146,13 +144,11 @@ export const dashboardRouter = router({
             );
             const action = suggestedActionsData.find(
               (a) =>
-                a.journeyId === j.id &&
-                a.tipo === "horas_extras"
+                a.journeyId === j.id
             );
             const treatment = treatmentsData.find(
               (t) =>
-                t.journeyId === j.id &&
-                t.tipo === "horas_extras"
+                t.journeyId === j.id
             );
 
             return {

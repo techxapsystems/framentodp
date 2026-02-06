@@ -108,7 +108,7 @@ export async function getLastImportRowCount() {
   const result = await db
     .select({ rowCount: imports.rowCount })
     .from(imports)
-    .orderBy(desc(imports.criadoEm))
+    .orderBy(desc(imports.importedAt))
     .limit(1);
   
   return result.length > 0 ? result[0].rowCount : 0;
@@ -124,7 +124,6 @@ export async function createImportLog(data: { fileName: string; fileHash: string
     rowCount: data.rowCount,
     newRowsCount: data.newRowsCount,
     importedBy: data.importedBy,
-    criadoEm: new Date(),
   });
   
   return result;
@@ -154,7 +153,7 @@ export async function getReincidentsWithWarnings() {
   // Buscar dados dos motoristas com advertências
   const grouped = new Map<string, any>();
   
-  for (const conductorName of motoristasComAdvertencias) {
+  for (const conductorName of Array.from(motoristasComAdvertencias)) {
     // Buscar última jornada do motorista
     const journeyData = await db
       .select()
@@ -251,6 +250,7 @@ export async function getAllIdleDrivers() {
         conductorName: j.conductorName,
         placa: j.placa || "N/A",
         data: j.data,
+        operacao: j.operacao || "N/A",
       });
     }
   }
@@ -267,7 +267,7 @@ export async function getImportHistory() {
   const result = await db
     .select()
     .from(imports)
-    .orderBy(desc(imports.criadoEm))
+    .orderBy(desc(imports.importedAt))
     .limit(20);
   
   return result;
@@ -284,7 +284,6 @@ export async function updateWarning(warningId: number, data: any) {
       nivelAdvertencia: data.nivelAdvertencia,
       motivo: data.motivo,
       observacao: data.observacao,
-      atualizadoEm: new Date(),
     })
     .where(eq(warnings.id, warningId));
 }
@@ -310,7 +309,7 @@ export async function getWarningsReport(filters: any) {
   const db = await getDb();
   if (!db) return [];
   
-  let query = db.select().from(warnings);
+  let query: any = db.select().from(warnings);
   
   // Filtrar por data
   if (filters.dateStart) {
@@ -332,10 +331,10 @@ export async function getWarningsReport(filters: any) {
   
   // Filtrar por tipo
   if (filters.tipo) {
-    query = query.where(eq(warnings.tipo, filters.tipo));
+    query = query.where(eq(warnings.tipo, filters.tipo as any));
   }
   
-  return query.orderBy(desc(warnings.criadoEm));
+  return query.orderBy(desc(warnings.criadoEm)) as any;
 }
 
 export async function createWarning(data: any) {
@@ -374,7 +373,7 @@ export async function getTodayData(dateFrom: Date, dateTo: Date, gestores?: stri
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  let query = db
+  let query: any = db
     .select()
     .from(journeys)
     .where(
@@ -386,14 +385,14 @@ export async function getTodayData(dateFrom: Date, dateTo: Date, gestores?: stri
     );
   
   if (gestores && gestores.length > 0) {
-    query = query.where(inArray(journeys.gestor, gestores));
+    query = query.where(inArray(journeys.gestorName, gestores));
   }
   
   if (operacoes && operacoes.length > 0) {
     query = query.where(inArray(journeys.operacao, operacoes));
   }
   
-  const result = await query;
+  const result = await query as any[];
   return result;
 }
 
@@ -583,7 +582,7 @@ export async function countOrientations(conductorName: string, tipo: string) {
     .where(
       and(
         eq(orientations.conductorName, conductorName),
-        eq(orientations.tipo, tipo)
+        eq(orientations.tipo, tipo as any)
       )
     );
   
@@ -612,13 +611,13 @@ export async function getWarningsStats(filters: {
       conditions.push(lte(warnings.criadoEm, filters.endDate));
     }
 
-    let query = db.select().from(warnings);
+    let query: any = db.select().from(warnings);
     
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
 
-    const allWarnings = await query;
+    const allWarnings = await query as any[];
 
     // Filtrar por operação se necessário (através de join com journeys)
     let filteredWarnings = allWarnings;
@@ -674,13 +673,13 @@ export async function getWarningsTrend(filters: {
       lte(warnings.criadoEm, filters.endDate),
     ];
 
-    let query = db.select().from(warnings);
+    let query: any = db.select().from(warnings);
     
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
 
-    const allWarnings = await query;
+    const allWarnings = await query as any[];
 
     // Filtrar por operação se necessário
     let filteredWarnings = allWarnings;
@@ -760,13 +759,13 @@ export async function getWarningsByOperation(filters: {
       conditions.push(lte(warnings.criadoEm, filters.endDate));
     }
 
-    let query = db.select().from(warnings);
+    let query: any = db.select().from(warnings);
     
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
 
-    const allWarnings = await query;
+    const allWarnings = await query as any[];
 
     // Agrupar por operação
     const grouped: Record<string, { total: number; assinadas: number }> = {};
@@ -784,7 +783,7 @@ export async function getWarningsByOperation(filters: {
         grouped[operacao] = { total: 0, assinadas: 0 };
       }
       grouped[operacao].total++;
-      if (warning.assinada) {
+      if (warning.advertenciaAplicada) {
         grouped[operacao].assinadas++;
       }
     }
@@ -911,8 +910,8 @@ export async function getPdfHistoryFiltered(filters: {
   if (!db) return [];
 
   try {
-    let query = db.select().from(warningPdfHistory);
-    const conditions = [];
+    let query: any = db.select().from(warningPdfHistory);
+    const conditions: any[] = [];
 
     if (filters.conductorName) {
       conditions.push(eq(warningPdfHistory.conductorName, filters.conductorName));
@@ -935,7 +934,7 @@ export async function getPdfHistoryFiltered(filters: {
     }
 
     const result = await query.orderBy(desc(warningPdfHistory.criadoEm));
-    return result;
+    return result as any[];
   } catch (error) {
     console.error("[DB] Error getting filtered PDF history:", error);
     return [];
