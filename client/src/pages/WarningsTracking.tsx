@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { AlertCircle, CheckCircle2, Clock, TrendingUp } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, TrendingUp, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 export default function WarningsTracking() {
   const [startDate, setStartDate] = useState<string>(
@@ -15,6 +18,8 @@ export default function WarningsTracking() {
   );
   const [selectedOperation, setSelectedOperation] = useState<string>("all");
   const [groupBy, setGroupBy] = useState<"day" | "week" | "month">("week");
+  const [showPendingDialog, setShowPendingDialog] = useState(false);
+  const [pendingWarnings, setPendingWarnings] = useState<any[]>([]);
 
   // Buscar operações disponíveis
   const { data: operations = [] } = trpc.dashboard.getAllOperations.useQuery();
@@ -162,7 +167,11 @@ export default function WarningsTracking() {
               Aguardando devolução
             </p>
             <Button size="sm" variant="ghost" className="mt-2 w-full text-xs text-yellow-600" onClick={() => {
-              alert("Funcionalidade em desenvolvimento: Ver pendentes");
+              if (warningStats.warnings) {
+                const pending = warningStats.warnings.filter((w: any) => !w.assinada);
+                setPendingWarnings(pending);
+                setShowPendingDialog(true);
+              }
             }}>
               Ver Pendentes
             </Button>
@@ -289,6 +298,56 @@ export default function WarningsTracking() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de Advertências Pendentes */}
+      <Dialog open={showPendingDialog} onOpenChange={setShowPendingDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Advertências Pendentes de Assinatura</DialogTitle>
+          </DialogHeader>
+          
+          {pendingWarnings.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Motorista</TableHead>
+                    <TableHead>Placa</TableHead>
+                    <TableHead>Operacao</TableHead>
+                    <TableHead>Nivel</TableHead>
+                    <TableHead>Data Criacao</TableHead>
+                    <TableHead>Motivo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingWarnings.map((warning: any) => (
+                    <TableRow key={warning.id}>
+                      <TableCell className="font-medium">{warning.conductorName}</TableCell>
+                      <TableCell>{warning.placa}</TableCell>
+                      <TableCell>{warning.operacao}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          Aviso {warning.nivelAdvertencia}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {warning.motivo || '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhuma advertencia pendente de assinatura
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -710,6 +710,41 @@ export const dashboardRouter = router({
     }),
 
   /**
+   * Reverter advertência de Aplicada para Pendente
+   */
+  revertWarning: protectedProcedure
+    .input(
+      z.object({
+        warningId: z.number(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        await db
+          .update(warnings)
+          .set({
+            advertenciaAplicada: false,
+            dataAplicacao: null,
+          })
+          .where(eq(warnings.id, input.warningId));
+
+        return {
+          success: true,
+          message: "Advertência revertida para pendente com sucesso",
+        };
+      } catch (error) {
+        console.error("[Router] Error reverting warning:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: String(error),
+        });
+      }
+    }),
+
+  /**
    * Salvar PDF no histórico de auditoria
    */
   savePdfHistory: protectedProcedure

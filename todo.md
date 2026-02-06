@@ -429,3 +429,14 @@
 - [x] Implementar funcionalidade "Marcar como Aplicada" na tela de Acompanhamento
   - Implementado: Mutation markWarningApplied agora marca advertência como aplicada
   - UI atualizada: Botão "Aplicada" desaparece após marcar, status muda para "✓ Aplicada" (verde)
+
+
+## Bugs Criticos - Acompanhamento de Advertencias (RESOLVIDOS)
+- [x] Botao "Ver Pendentes" agora funciona corretamente
+  - Implementado: Modal com tabela de advertencias pendentes de assinatura
+  - Dados exibidos: Motorista, Placa, Operacao, Nivel, Data de Criacao, Motivo
+- [x] Nao mostra dados das advertencias pendentes de assinatura
+  - Resolvido: Modal agora exibe todas as advertencias com status nao assinada
+- [x] Falta botao para reverter advertencia de "Aplicada" para "Pendente"
+  - Implementado: Botao "Reverter" (em vermelho) aparece para advertencias marcadas como "Aplicada"
+  - Funcionalidade: Reverte advertencia para status "Pendente" com confirmacao

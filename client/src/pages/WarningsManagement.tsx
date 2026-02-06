@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertTriangle, AlertCircle, Edit2, MessageSquare, Check } from "lucide-react";
+import { AlertTriangle, AlertCircle, Edit2, MessageSquare, Check, X } from "lucide-react";
 import { OrientationDialog } from "@/components/OrientationDialog";
 import { toast } from "sonner";
 
@@ -66,7 +66,17 @@ export default function WarningsManagement() {
 
   const markAppliedMutation = trpc.dashboard.markWarningApplied.useMutation({
     onSuccess: () => {
-      toast.success("Advertência marcada como aplicada com sucesso");
+      toast.success("Advertencia marcada como aplicada com sucesso");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Erro: ${error.message}`);
+    },
+  });
+
+  const revertWarningMutation = trpc.dashboard.revertWarning.useMutation({
+    onSuccess: () => {
+      toast.success("Advertencia revertida para pendente com sucesso");
       refetch();
     },
     onError: (error) => {
@@ -265,7 +275,28 @@ export default function WarningsManagement() {
                             </Button>
                           )}
                           
-                          {/* Botão Editar */}
+                          {/* Botao Reverter para Pendente */}
+                          {item.historico && item.historico.length > 0 && item.historico[0].advertenciaAplicada && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-2 border-red-300 text-red-700 hover:bg-red-50"
+                              title="Reverter para pendente"
+                              onClick={() => {
+                                if (confirm("Tem certeza que deseja reverter esta advertencia para pendente?")) {
+                                  revertWarningMutation.mutate({
+                                    warningId: item.historico[0].id,
+                                  });
+                                }
+                              }}
+                              disabled={revertWarningMutation.isPending}
+                            >
+                              <X className="w-4 h-4" />
+                              Reverter
+                            </Button>
+                          )}
+                          
+                          {/* Botao Editar */}
                           <Button
                             size="sm"
                             variant="outline"
