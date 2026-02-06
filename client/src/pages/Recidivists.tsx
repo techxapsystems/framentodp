@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { AlertTriangle, AlertCircle, Copy, Edit2, MessageSquare } from "lucide-react";
 import { OrientationDialog } from "@/components/OrientationDialog";
+import { WarningPDFButton } from "@/components/WarningPDFGenerator";
 import { toast } from "sonner";
 
 export default function Recidivists() {
@@ -47,6 +48,11 @@ export default function Recidivists() {
   const [editWarningType, setEditWarningType] = useState<"pouco_rodado" | "horas_extras">("pouco_rodado");
   const [orientationDialogOpen, setOrientationDialogOpen] = useState(false);
   const [selectedMotoristaForOrientation, setSelectedMotoristaForOrientation] = useState<{ name: string; placa: string } | null>(null);
+  const [operacao, setOperacao] = useState<string>("");
+  const [editOperacao, setEditOperacao] = useState<string>("");
+
+  // Buscar operações disponíveis
+  const { data: operacoes = [] } = trpc.dashboard.getAllOperations.useQuery();
 
   const { data, isLoading, refetch } = trpc.dashboard.getReincidents.useQuery(
     {
@@ -316,6 +322,24 @@ export default function Recidivists() {
 
                   <div>
                     <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Operação: *
+                    </label>
+                    <Select value={operacao} onValueChange={setOperacao}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a operação" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {operacoes.map((op) => (
+                          <SelectItem key={op} value={op}>
+                            {op}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
                       Dias de Infração: *
                     </label>
                     <input
@@ -384,13 +408,26 @@ export default function Recidivists() {
                     />
                   </div>
 
-                  <Button
-                    onClick={handleCreateWarning}
-                    disabled={createWarningMutation.isPending}
-                    className="w-full bg-red-600 hover:bg-red-700"
-                  >
-                    {createWarningMutation.isPending ? "Registrando..." : "Registrar Advertência"}
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      onClick={handleCreateWarning}
+                      disabled={createWarningMutation.isPending}
+                      className="w-full bg-red-600 hover:bg-red-700"
+                    >
+                      {createWarningMutation.isPending ? "Registrando..." : "Registrar Advertência"}
+                    </Button>
+                    <WarningPDFButton
+                      conductorName={selectedConductor}
+                      licensePlate={licensePlate}
+                      operacao={operacao}
+                      warningLevel={warningLevel}
+                      warningType={dialogWarningType}
+                      warningReason={warningReason}
+                      warningNote={warningNote}
+                      infrationDays={infrationDays}
+                      disabled={!selectedConductor || !licensePlate || !operacao}
+                    />
+                  </div>
                 </div>
 
                 {/* Coluna direita: Histórico e Email */}

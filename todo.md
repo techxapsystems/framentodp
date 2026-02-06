@@ -366,3 +366,10 @@
 - [ ] Ações em massa na tela de reincidentes
 - [ ] Melhorar fluxo de importação
 - [ ] Adicionar gamificação/metas
+
+
+## Melhorias no Cadastro de Advertência
+- [x] Adicionar campo "Operação" ao formulário de cadastro (COMPLETO)
+- [x] Campo "Placa" já existia no formulário
+- [x] Implementar funcionalidade de impressão em PDF (COMPLETO)
+- [ ] Testar fluxo completo de cadastro e impressão
