@@ -293,3 +293,32 @@
 2. Implementar testes para validação de arquivo XLSX com dados reais
 3. Adicionar testes para tratamento de erros em casos extremos
 4. Implementar testes de performance para importações grandes (>10k linhas)
+
+
+## Painel de Acompanhamento de Advertências (EM DESENVOLVIMENTO)
+- [ ] Implementar funções backend para estatísticas de advertências
+- [ ] Criar procedures tRPC para acompanhamento (getWarningsStats, getWarningsByPeriod, etc)
+- [ ] Implementar UI do painel com filtros por período e operação
+- [ ] Adicionar gráficos (total enviadas vs devolvidas, tendência temporal, distribuição por operação)
+- [ ] Adicionar KPIs (total, taxa de devolução, pendentes)
+- [ ] Integrar painel ao menu sidebar
+- [ ] Testar fluxo completo
+
+
+## Painel de Acompanhamento de Advertências (IMPLEMENTADO)
+- [x] Implementar funções backend para estatísticas de advertências
+  - getWarningsStats: Obtém estatísticas gerais com filtros
+  - getWarningsTrend: Obtém tendência temporal agrupada por período
+  - getWarningsByOperation: Agrupa advertências por operação
+  - getAllOperations: Lista todas as operações disponíveis
+- [x] Criar procedures tRPC para acompanhamento
+- [x] Implementar UI do painel com filtros por período e operação
+- [x] Adicionar gráficos e KPIs
+  - KPI: Total de advertências
+  - KPI: Devolvidas assinadas (com %)
+  - KPI: Pendentes (com %)
+  - KPI: Taxa de devolução
+  - Gráfico de tendência temporal
+  - Gráfico de distribuição por operação
+- [x] Integrar painel ao menu sidebar com ícone TrendingUp
+- [ ] Testar fluxo completo (aguardando correção de erros de TypeScript)

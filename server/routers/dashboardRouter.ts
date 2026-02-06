@@ -586,4 +586,95 @@ export const dashboardRouter = router({
       const { countOrientations } = await import("../db");
       return await countOrientations(input.conductorName, input.tipo);
     }),
+  
+  /**
+   * Obter estatísticas de advertências com filtros
+   */
+  getWarningsStats: protectedProcedure
+    .input(
+      z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        operacao: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const { getWarningsStats } = await import("../db");
+        const stats = await getWarningsStats({
+          startDate: input.startDate ? new Date(input.startDate) : undefined,
+          endDate: input.endDate ? new Date(input.endDate) : undefined,
+          operacao: input.operacao,
+        });
+        return stats || { total: 0, assinadas: 0, naoAssinadas: 0, taxaDevolucao: 0, warnings: [] };
+      } catch (error) {
+        console.error("[Router] Error getting warnings stats:", error);
+        return { total: 0, assinadas: 0, naoAssinadas: 0, taxaDevolucao: 0, warnings: [] };
+      }
+    }),
+  
+  /**
+   * Obter tendência de advertências por período
+   */
+  getWarningsTrend: protectedProcedure
+    .input(
+      z.object({
+        startDate: z.string(),
+        endDate: z.string(),
+        groupBy: z.enum(["day", "week", "month"]).default("day"),
+        operacao: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const { getWarningsTrend } = await import("../db");
+        const trend = await getWarningsTrend({
+          startDate: new Date(input.startDate),
+          endDate: new Date(input.endDate),
+          groupBy: input.groupBy,
+          operacao: input.operacao,
+        });
+        return trend || [];
+      } catch (error) {
+        console.error("[Router] Error getting warnings trend:", error);
+        return [];
+      }
+    }),
+  
+  /**
+   * Obter advertências agrupadas por operação
+   */
+  getWarningsByOperation: protectedProcedure
+    .input(
+      z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const { getWarningsByOperation } = await import("../db");
+        const byOp = await getWarningsByOperation({
+          startDate: input.startDate ? new Date(input.startDate) : undefined,
+          endDate: input.endDate ? new Date(input.endDate) : undefined,
+        });
+        return byOp || [];
+      } catch (error) {
+        console.error("[Router] Error getting warnings by operation:", error);
+        return [];
+      }
+    }),
+  
+  /**
+   * Obter todas as operações
+   */
+  getAllOperations: protectedProcedure.query(async () => {
+    try {
+      const { getAllOperations } = await import("../db");
+      return await getAllOperations();
+    } catch (error) {
+      console.error("[Router] Error getting operations:", error);
+      return [];
+    }
+  }),
 });

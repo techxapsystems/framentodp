@@ -12,6 +12,7 @@ import Import from "./pages/Import";
 import Settings from "./pages/Settings";
 import Recidivists from "./pages/Recidivists";
 import WarningsDashboard from "./pages/WarningsDashboard";
+import WarningsTracking from "./pages/WarningsTracking";
 import Reports from "./pages/Reports";
 
 function Router() {
@@ -23,6 +24,7 @@ function Router() {
         <Route path={"/semana"} component={Week} />
         <Route path={"/reincidentes"} component={Recidivists} />
         <Route path={"/advertencias"} component={WarningsDashboard} />
+        <Route path={"/acompanhamento"} component={WarningsTracking} />
         <Route path={"/relatorios"} component={Reports} />
         <Route path={"/importacao"} component={Import} />
         <Route path={"/configuracoes"} component={Settings} />

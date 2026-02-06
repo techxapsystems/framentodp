@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, inArray, or } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray, or, isNotNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -588,4 +588,241 @@ export async function countOrientations(conductorName: string, tipo: string) {
     );
   
   return result.length;
+}
+
+
+/**
+ * Obter estatísticas de advertências por período e operação
+ */
+export async function getWarningsStats(filters: {
+  startDate?: Date;
+  endDate?: Date;
+  operacao?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const conditions = [];
+    
+    if (filters.startDate) {
+      conditions.push(gte(warnings.criadoEm, filters.startDate));
+    }
+    if (filters.endDate) {
+      conditions.push(lte(warnings.criadoEm, filters.endDate));
+    }
+
+    let query = db.select().from(warnings);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const allWarnings = await query;
+
+    // Filtrar por operação se necessário (através de join com journeys)
+    let filteredWarnings = allWarnings;
+    if (filters.operacao) {
+      const journeysWithOp = await db
+        .select()
+        .from(journeys)
+        .where(eq(journeys.operacao, filters.operacao));
+      
+      const conductorNamesWithOp = new Set(
+        journeysWithOp.map(j => j.conductorName)
+      );
+      
+      filteredWarnings = allWarnings.filter(w =>
+        conductorNamesWithOp.has(w.conductorName)
+      );
+    }
+
+    // Calcular estatísticas
+    const total = filteredWarnings.length;
+    const assinadas = filteredWarnings.filter(w => w.assinada).length;
+    const naoAssinadas = total - assinadas;
+    const taxaDevolucao = total > 0 ? Math.round((assinadas / total) * 100) : 0;
+
+    return {
+      total,
+      assinadas,
+      naoAssinadas,
+      taxaDevolucao,
+      warnings: filteredWarnings,
+    };
+  } catch (error) {
+    console.error("[DB] Error getting warnings stats:", error);
+    return null;
+  }
+}
+
+/**
+ * Obter advertências agrupadas por período (dia/semana/mês)
+ */
+export async function getWarningsTrend(filters: {
+  startDate: Date;
+  endDate: Date;
+  groupBy: "day" | "week" | "month";
+  operacao?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const conditions = [
+      gte(warnings.criadoEm, filters.startDate),
+      lte(warnings.criadoEm, filters.endDate),
+    ];
+
+    let query = db.select().from(warnings);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const allWarnings = await query;
+
+    // Filtrar por operação se necessário
+    let filteredWarnings = allWarnings;
+    if (filters.operacao) {
+      const journeysWithOp = await db
+        .select()
+        .from(journeys)
+        .where(eq(journeys.operacao, filters.operacao));
+      
+      const conductorNamesWithOp = new Set(
+        journeysWithOp.map(j => j.conductorName)
+      );
+      
+      filteredWarnings = allWarnings.filter(w =>
+        conductorNamesWithOp.has(w.conductorName)
+      );
+    }
+
+    // Agrupar por período
+    const grouped: Record<string, { total: number; assinadas: number }> = {};
+
+    filteredWarnings.forEach(warning => {
+      const date = new Date(warning.criadoEm);
+      let key: string;
+
+      if (filters.groupBy === "day") {
+        key = date.toISOString().split("T")[0];
+      } else if (filters.groupBy === "week") {
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
+        key = weekStart.toISOString().split("T")[0];
+      } else {
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      }
+
+      if (!grouped[key]) {
+        grouped[key] = { total: 0, assinadas: 0 };
+      }
+      grouped[key].total++;
+      if (warning.assinada) {
+        grouped[key].assinadas++;
+      }
+    });
+
+    return Object.entries(grouped)
+      .map(([period, data]) => ({
+        period,
+        total: data.total,
+        assinadas: data.assinadas,
+        naoAssinadas: data.total - data.assinadas,
+        taxaDevolucao: data.total > 0 ? Math.round((data.assinadas / data.total) * 100) : 0,
+      }))
+      .sort((a, b) => a.period.localeCompare(b.period));
+  } catch (error) {
+    console.error("[DB] Error getting warnings trend:", error);
+    return [];
+  }
+}
+
+/**
+ * Obter advertências por operação
+ */
+export async function getWarningsByOperation(filters: {
+  startDate?: Date;
+  endDate?: Date;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const conditions = [];
+    
+    if (filters.startDate) {
+      conditions.push(gte(warnings.criadoEm, filters.startDate));
+    }
+    if (filters.endDate) {
+      conditions.push(lte(warnings.criadoEm, filters.endDate));
+    }
+
+    let query = db.select().from(warnings);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const allWarnings = await query;
+
+    // Agrupar por operação
+    const grouped: Record<string, { total: number; assinadas: number }> = {};
+
+    for (const warning of allWarnings) {
+      const journey = await db
+        .select()
+        .from(journeys)
+        .where(eq(journeys.conductorName, warning.conductorName))
+        .limit(1);
+
+      const operacao = journey[0]?.operacao || "Desconhecida";
+
+      if (!grouped[operacao]) {
+        grouped[operacao] = { total: 0, assinadas: 0 };
+      }
+      grouped[operacao].total++;
+      if (warning.assinada) {
+        grouped[operacao].assinadas++;
+      }
+    }
+
+    return Object.entries(grouped)
+      .map(([operacao, data]) => ({
+        operacao,
+        total: data.total,
+        assinadas: data.assinadas,
+        naoAssinadas: data.total - data.assinadas,
+        taxaDevolucao: data.total > 0 ? Math.round((data.assinadas / data.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+  } catch (error) {
+    console.error("[DB] Error getting warnings by operation:", error);
+    return [];
+  }
+}
+
+/**
+ * Obter todas as operações únicas
+ */
+export async function getAllOperations() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const result = await db
+      .selectDistinct({ operacao: journeys.operacao })
+      .from(journeys)
+      .where(isNotNull(journeys.operacao));
+
+    return result
+      .map(r => r.operacao)
+      .filter((op): op is string => op !== null)
+      .sort();
+  } catch (error) {
+    console.error("[DB] Error getting operations:", error);
+    return [];
+  }
 }
