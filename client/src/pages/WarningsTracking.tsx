@@ -13,7 +13,7 @@ export default function WarningsTracking() {
   const [endDate, setEndDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
-  const [selectedOperation, setSelectedOperation] = useState<string>("");
+  const [selectedOperation, setSelectedOperation] = useState<string>("all");
   const [groupBy, setGroupBy] = useState<"day" | "week" | "month">("week");
 
   // Buscar operações disponíveis
@@ -23,7 +23,7 @@ export default function WarningsTracking() {
   const { data: stats } = trpc.dashboard.getWarningsStats.useQuery({
     startDate,
     endDate,
-    operacao: selectedOperation || undefined,
+    operacao: selectedOperation !== "all" ? selectedOperation : undefined,
   });
 
   // Buscar tendência
@@ -31,7 +31,7 @@ export default function WarningsTracking() {
     startDate,
     endDate,
     groupBy,
-    operacao: selectedOperation || undefined,
+    operacao: selectedOperation !== "all" ? selectedOperation : undefined,
   });
 
   // Buscar por operação
@@ -82,7 +82,7 @@ export default function WarningsTracking() {
                   <SelectValue placeholder="Todas as operações" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as operações</SelectItem>
+                  <SelectItem value="all">Todas as operações</SelectItem>
                   {operations.map((op) => (
                     <SelectItem key={op} value={op}>
                       {op}
