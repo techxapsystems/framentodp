@@ -401,3 +401,14 @@
 - [ ] Remover filtros de tipo antigos
 - [ ] Atualizar UI para novo sistema
 - [ ] Testar novo fluxo
+
+
+## REVISÃO E IMPLEMENTAÇÃO DO NOVO FLUXO (NOVO)
+- [ ] Corrigir erros de TypeScript no projeto (49 TS errors)
+- [ ] Atualizar schema com campos de prazo (data_prazo, data_assinatura)
+- [ ] Implementar dashboard de acompanhamento com prazos (4 dias)
+- [ ] Implementar dashboard de alertas (vencidas em vermelho)
+- [ ] Criar sistema de relatórios por gestor/operação/período
+- [ ] Otimizar performance e UX
+- [ ] Explicar aba "Hoje" e como status muda
+- [ ] Testar fluxo completo
