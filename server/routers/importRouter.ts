@@ -80,9 +80,8 @@ export const importRouter = router({
           importedBy: ctx.user.id,
         });
 
-        // Obter ID da importação
-        const lastImport = await getLastImport();
-        const importId = lastImport?.id || 1;
+        // Usar ID do registro criado
+        const importId = importRecord?.id || 1;
 
         // Atualizar journeys com importId
         const journeyList = importResult.newJourneys.map((j) => ({
@@ -95,7 +94,7 @@ export const importRouter = router({
 
         // Recalcular análises para a última data importada
         const config = await getConfigurations();
-        if (journeyList.length > 0) {
+        if (config && journeyList.length > 0) {
           const lastDate = journeyList[journeyList.length - 1].data;
           await recalculateForDate(lastDate, config);
         }
@@ -120,10 +119,10 @@ export const importRouter = router({
    * Obtém histórico de importações
    */
   getHistory: protectedProcedure
-    .input(z.object({ limit: z.number().default(20) }))
+    .input(z.object({ limit: z.number().optional() }))
     .query(async ({ input }) => {
       try {
-        const history = await getImportHistory(input.limit);
+        const history = await getImportHistory(input.limit || 20);
         return {
           success: true,
           data: history,
@@ -145,6 +144,12 @@ export const importRouter = router({
     .mutation(async ({ input }) => {
       try {
         const config = await getConfigurations();
+        if (!config) {
+          return {
+            success: false,
+            message: "Configurações não encontradas",
+          };
+        }
         const targetDate = new Date(input.date);
 
         const result = await recalculateForDate(targetDate, config);

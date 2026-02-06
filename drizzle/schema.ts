@@ -56,7 +56,7 @@ export const imports = mysqlTable(
     fileHash: varchar("fileHash", { length: 64 }).notNull(),
     rowCount: int("rowCount").notNull(), // Total de linhas processadas
     newRowsCount: int("newRowsCount").notNull(), // Linhas novas nesta importação
-    importedBy: int("importedBy").notNull(),
+    importedBy: varchar("importedBy", { length: 64 }).notNull(),
     importedAt: timestamp("importedAt").defaultNow().notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },

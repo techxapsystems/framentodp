@@ -114,15 +114,20 @@ export async function getLastImportRowCount() {
   return result.length > 0 ? result[0].rowCount : 0;
 }
 
-export async function createImportLog(rowCount: number, status: string) {
+export async function createImportLog(data: { fileName: string; fileHash: string; rowCount: number; newRowsCount: number; importedBy: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.insert(imports).values({
-    rowCount,
-    status,
+  const result = await db.insert(imports).values({
+    fileName: data.fileName,
+    fileHash: data.fileHash,
+    rowCount: data.rowCount,
+    newRowsCount: data.newRowsCount,
+    importedBy: data.importedBy,
     criadoEm: new Date(),
   });
+  
+  return result;
 }
 
 export async function getReincidentsWithWarnings() {
@@ -417,8 +422,8 @@ export async function updateConfiguration(data: any) {
 }
 
 // Aliases para compatibilidade
-export async function createImport(rowCount: number, status: string) {
-  return createImportLog(rowCount, status);
+export async function createImport(data: { fileName: string; fileHash: string; rowCount: number; newRowsCount: number; importedBy: string }) {
+  return createImportLog(data);
 }
 
 export async function getLastImport() {

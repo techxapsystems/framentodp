@@ -225,6 +225,16 @@ export async function importExcelIncremental(
 
     // Normalizar linhas novas em paralelo (chunks de 100)
     const config = await getConfigurations();
+    if (!config) {
+      return {
+        success: false,
+        message: "Configurações não encontradas",
+        totalRows,
+        newRows: 0,
+        newJourneys: [],
+        error: "Configuration not found",
+      };
+    }
     const CHUNK_SIZE = 100;
     const newJourneys: InsertJourney[] = [];
 

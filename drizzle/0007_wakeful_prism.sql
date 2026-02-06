@@ -1,0 +1,1 @@
+ALTER TABLE `imports` MODIFY COLUMN `importedBy` varchar(64) NOT NULL;
