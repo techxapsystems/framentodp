@@ -36,6 +36,13 @@
       "when": 1770318801703,
       "tag": "0004_old_solo",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1770380201017,
+      "tag": "0005_mushy_rockslide",
+      "breakpoints": true
     }
   ]
 }

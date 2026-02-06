@@ -335,13 +335,41 @@ export const warnings = mysqlTable(
     advertenciaAplicada: boolean("advertenciaAplicada").notNull().default(false),
     dataAplicacao: timestamp("dataAplicacao"),
     geradaAutomaticamente: boolean("geradaAutomaticamente").notNull().default(false),
+    
+    // Campos de assinatura
+    assinada: boolean("assinada").notNull().default(false),
+    dataAssinatura: timestamp("dataAssinatura"),
+    assinadaPor: varchar("assinadaPor", { length: 320 }),
+    
     criadoEm: timestamp("criadoEm").defaultNow().notNull(),
   },
   (table) => [
     index("idx_conductorTipo").on(table.conductorName, table.tipo),
     index("idx_criadoEm").on(table.criadoEm),
+    index("idx_assinada").on(table.assinada),
   ]
 );
 
 export type Warning = typeof warnings.$inferSelect;
 export type InsertWarning = typeof warnings.$inferInsert;
+
+/**
+ * Tipos de Infração - cadastro dinâmico de tipos
+ */
+export const infractionTypes = mysqlTable(
+  "infraction_types",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    nome: varchar("nome", { length: 255 }).notNull().unique(),
+    descricao: text("descricao"),
+    ativo: boolean("ativo").notNull().default(true),
+    criadoEm: timestamp("criadoEm").defaultNow().notNull(),
+    atualizadoEm: timestamp("atualizadoEm").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [
+    index("idx_ativo").on(table.ativo),
+  ]
+);
+
+export type InfractionType = typeof infractionTypes.$inferSelect;
+export type InsertInfractionType = typeof infractionTypes.$inferInsert;

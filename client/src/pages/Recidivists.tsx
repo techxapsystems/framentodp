@@ -523,6 +523,7 @@ export default function Recidivists() {
                     <TableHead>Último Aviso</TableHead>
                     <TableHead>Advertência Gerada</TableHead>
                     <TableHead>Advertência Aplicada</TableHead>
+                    <TableHead>Assinada</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -564,6 +565,25 @@ export default function Recidivists() {
                         <Badge variant="outline" className="bg-blue-50 text-blue-700">
                           ✓ Sim
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {item.historico && item.historico.length > 0 ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const warningId = item.historico[0]?.id;
+                              if (warningId) {
+                                markWarningAsSignedMutation.mutate({ warningId });
+                              }
+                            }}
+                            className={item.historico[0]?.assinada ? "bg-green-100 text-green-700" : ""}
+                          >
+                            {item.historico[0]?.assinada ? "✓ Assinada" : "Marcar Assinada"}
+                          </Button>
+                        ) : (
+                          <span className="text-slate-500">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -704,3 +724,13 @@ export default function Recidivists() {
     </div>
   );
 }
+
+  const markWarningAsSignedMutation = trpc.dashboard.markWarningAsSigned.useMutation({
+    onSuccess: () => {
+      toast.success("Advertência marcada como assinada");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Erro: ${error.message}`);
+    },
+  });

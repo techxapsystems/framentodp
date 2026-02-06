@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { BarChart3, LogOut, PanelLeft, Upload, Settings, Home, AlertTriangle, AlertCircle, FileText } from "lucide-react";
+import { BarChart3, LogOut, PanelLeft, Upload, Settings, Home, AlertTriangle, AlertCircle, FileText, BarChart4 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -32,6 +32,8 @@ const menuItems = [
   { icon: BarChart3, label: "Semana", path: "/semana" },
   { icon: AlertTriangle, label: "Reincidentes", path: "/reincidentes" },
   { icon: AlertCircle, label: "Advertências", path: "/advertencias" },
+  { icon: FileText, label: "Acompanhamento", path: "/acompanhamento" },
+  { icon: FileText, label: "Tipos de Infração", path: "/tipos-infracao" },
   { icon: FileText, label: "Relatórios", path: "/relatorios" },
   { icon: Upload, label: "Importação", path: "/importacao" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },

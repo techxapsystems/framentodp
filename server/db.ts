@@ -1,6 +1,6 @@
 import { eq, and, gte, lte, desc, inArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations } from "../drizzle/schema";
+import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations, infractionTypes } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -583,4 +583,159 @@ export async function countOrientations(conductorName: string, tipo: string) {
     );
   
   return result.length;
+}
+
+
+/**
+ * Marcar advertência como assinada
+ */
+export async function markWarningAsSigned(warningId: number, assinadaPor: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .update(warnings)
+    .set({
+      assinada: true,
+      dataAssinatura: new Date(),
+      assinadaPor,
+    })
+    .where(eq(warnings.id, warningId));
+}
+
+/**
+ * Obter estatísticas de advertências assinadas vs não assinadas
+ */
+export async function getWarningsSignatureStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, assinadas: 0, naoAssinadas: 0, percentualAssinatura: 0 };
+  
+  const allWarnings = await db.select().from(warnings);
+  
+  const total = allWarnings.length;
+  const assinadas = allWarnings.filter(w => w.assinada).length;
+  const naoAssinadas = total - assinadas;
+  const percentualAssinatura = total > 0 ? (assinadas / total) * 100 : 0;
+  
+  return {
+    total,
+    assinadas,
+    naoAssinadas,
+    percentualAssinatura: Math.round(percentualAssinatura * 100) / 100,
+  };
+}
+
+/**
+ * Obter estatísticas de advertências assinadas por operação
+ */
+export async function getWarningsSignatureStatsByOperation() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const allWarnings = await db.select().from(warnings);
+  const allJourneys = await db.select().from(journeys);
+  
+  // Criar mapa de motorista -> operação
+  const operacaoByDriver = new Map<string, string>();
+  for (const j of allJourneys) {
+    if (!operacaoByDriver.has(j.conductorName)) {
+      operacaoByDriver.set(j.conductorName, j.operacao || "Desconhecida");
+    }
+  }
+  
+  const statsByOperation = new Map<string, { operacao: string; total: number; assinadas: number; naoAssinadas: number; percentual: number }>();
+  
+  for (const w of allWarnings) {
+    const operacao = operacaoByDriver.get(w.conductorName) || "Desconhecida";
+    
+    if (!statsByOperation.has(operacao)) {
+      statsByOperation.set(operacao, {
+        operacao,
+        total: 0,
+        assinadas: 0,
+        naoAssinadas: 0,
+        percentual: 0,
+      });
+    }
+    
+    const stats = statsByOperation.get(operacao)!;
+    stats.total++;
+    
+    if (w.assinada) {
+      stats.assinadas++;
+    } else {
+      stats.naoAssinadas++;
+    }
+    
+    stats.percentual = Math.round((stats.assinadas / stats.total) * 100 * 100) / 100;
+  }
+  
+  return Array.from(statsByOperation.values()).sort((a, b) => b.total - a.total);
+}
+
+/**
+ * Criar novo tipo de infração
+ */
+export async function createInfractionType(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(infractionTypes).values({
+    nome: data.nome,
+    descricao: data.descricao || "",
+    ativo: true,
+    criadoEm: new Date(),
+  });
+  
+  return result;
+}
+
+/**
+ * Obter todos os tipos de infração ativos
+ */
+export async function getInfractionTypes() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select()
+    .from(infractionTypes)
+    .where(eq(infractionTypes.ativo, true))
+    .orderBy(desc(infractionTypes.criadoEm));
+  
+  return result;
+}
+
+/**
+ * Atualizar tipo de infração
+ */
+export async function updateInfractionType(id: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .update(infractionTypes)
+    .set({
+      nome: data.nome,
+      descricao: data.descricao,
+      ativo: data.ativo,
+      atualizadoEm: new Date(),
+    })
+    .where(eq(infractionTypes.id, id));
+}
+
+/**
+ * Deletar tipo de infração (soft delete)
+ */
+export async function deleteInfractionType(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .update(infractionTypes)
+    .set({
+      ativo: false,
+      atualizadoEm: new Date(),
+    })
+    .where(eq(infractionTypes.id, id));
 }

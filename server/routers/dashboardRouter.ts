@@ -586,4 +586,110 @@ export const dashboardRouter = router({
       const { countOrientations } = await import("../db");
       return await countOrientations(input.conductorName, input.tipo);
     }),
+
+  /**
+   * Marcar advertência como assinada
+   */
+  markWarningAsSigned: protectedProcedure
+    .input(z.object({
+      warningId: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const { markWarningAsSigned } = await import("../db");
+        await markWarningAsSigned(input.warningId, ctx.user?.email || "Sistema");
+        return { success: true };
+      } catch (error) {
+        return { success: false, message: String(error) };
+      }
+    }),
+
+  /**
+   * Obter estatísticas de advertências assinadas
+   */
+  getWarningsSignatureStats: protectedProcedure
+    .query(async () => {
+      const { getWarningsSignatureStats } = await import("../db");
+      return await getWarningsSignatureStats();
+    }),
+
+  /**
+   * Obter estatísticas de advertências assinadas por operação
+   */
+  getWarningsSignatureStatsByOperation: protectedProcedure
+    .query(async () => {
+      const { getWarningsSignatureStatsByOperation } = await import("../db");
+      return await getWarningsSignatureStatsByOperation();
+    }),
+
+  /**
+   * Criar novo tipo de infração
+   */
+  createInfractionType: protectedProcedure
+    .input(z.object({
+      nome: z.string().min(1),
+      descricao: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const { createInfractionType } = await import("../db");
+        await createInfractionType({
+          nome: input.nome,
+          descricao: input.descricao,
+        });
+        return { success: true };
+      } catch (error) {
+        return { success: false, message: String(error) };
+      }
+    }),
+
+  /**
+   * Obter todos os tipos de infração
+   */
+  getInfractionTypes: protectedProcedure
+    .query(async () => {
+      const { getInfractionTypes } = await import("../db");
+      return await getInfractionTypes();
+    }),
+
+  /**
+   * Atualizar tipo de infração
+   */
+  updateInfractionType: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      nome: z.string().min(1),
+      descricao: z.string().optional(),
+      ativo: z.boolean(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const { updateInfractionType } = await import("../db");
+        await updateInfractionType(input.id, {
+          nome: input.nome,
+          descricao: input.descricao,
+          ativo: input.ativo,
+        });
+        return { success: true };
+      } catch (error) {
+        return { success: false, message: String(error) };
+      }
+    }),
+
+  /**
+   * Deletar tipo de infração
+   */
+  deleteInfractionType: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const { deleteInfractionType } = await import("../db");
+        await deleteInfractionType(input.id);
+        return { success: true };
+      } catch (error) {
+        return { success: false, message: String(error) };
+      }
+    }),
 });
