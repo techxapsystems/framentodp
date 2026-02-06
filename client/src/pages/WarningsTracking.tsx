@@ -110,7 +110,7 @@ export default function WarningsTracking() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total de Advertências
@@ -121,10 +121,15 @@ export default function WarningsTracking() {
             <p className="text-xs text-muted-foreground mt-1">
               Período selecionado
             </p>
+            <Button size="sm" variant="ghost" className="mt-2 w-full text-xs" onClick={() => {
+              alert("Funcionalidade em desenvolvimento: Ver todas as advertências");
+            }}>
+              Ver Todas
+            </Button>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-green-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -136,10 +141,15 @@ export default function WarningsTracking() {
             <p className="text-xs text-muted-foreground mt-1">
               {warningStats.total > 0 ? `${Math.round((warningStats.assinadas / warningStats.total) * 100)}%` : "0%"}
             </p>
+            <Button size="sm" variant="ghost" className="mt-2 w-full text-xs text-green-600" onClick={() => {
+              alert("Funcionalidade em desenvolvimento: Ver assinadas");
+            }}>
+              Ver Assinadas
+            </Button>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-yellow-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Clock className="w-4 h-4 text-yellow-600" />
@@ -151,6 +161,11 @@ export default function WarningsTracking() {
             <p className="text-xs text-muted-foreground mt-1">
               Aguardando devolução
             </p>
+            <Button size="sm" variant="ghost" className="mt-2 w-full text-xs text-yellow-600" onClick={() => {
+              alert("Funcionalidade em desenvolvimento: Ver pendentes");
+            }}>
+              Ver Pendentes
+            </Button>
           </CardContent>
         </Card>
 

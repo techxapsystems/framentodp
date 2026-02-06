@@ -322,3 +322,47 @@
   - Gráfico de distribuição por operação
 - [x] Integrar painel ao menu sidebar com ícone TrendingUp
 - [ ] Testar fluxo completo (aguardando correção de erros de TypeScript)
+
+
+## REVISÃO COMPLETA DE UX/UI (EM DESENVOLVIMENTO)
+
+### Crítico - Fluxo de Advertência
+- [x] Criar modal para marcar advertência como "aplicada" (UI pronta, backend em dev)
+- [x] Adicionar campos: Data de aplicação, Assinada (sim/não), Data de devolução (UI pronta)
+- [x] Implementar status visual: Pendente (amarelo) → Aplicada (azul) → Assinada (verde) (COMPLETO)
+- [x] Adicionar ações contextuais baseadas no status (COMPLETO)
+
+### Crítico - Status Visual
+- [x] Implementar sistema de cores para status (COMPLETO)
+- [x] Adicionar ícones para cada status (COMPLETO)
+- [x] Usar badges em tabelas (COMPLETO)
+- [x] Atualizar tela de reincidentes com cores (COMPLETO)
+
+### Crítico - Feedback Visual
+- [x] Melhorar toast com ícones (Já existia)
+- [x] Atualizar tabelas em tempo real (Pronto para backend)
+- [x] Adicionar animações de transição (Hover effects adicionados)
+- [x] Adicionar confirmação antes de ações críticas (Pronto para backend)
+
+### Importante - Dashboard de Acompanhamento
+- [x] Adicionar drill-down: clicar em números mostra lista (Botões adicionados)
+- [x] Adicionar ações diretas no painel (COMPLETO)
+- [ ] Adicionar filtros por status (Próximo)
+- [ ] Adicionar gráfico de funil (Próximo)
+
+### Importante - Tela de Reincidentes
+- [x] Reorganizar ações em primárias vs secundárias (COMPLETO)
+- [x] Adicionar coluna de status com badge (COMPLETO)
+- [ ] Adicionar seleção em massa (Próximo)
+- [x] Melhorar layout da tabela (COMPLETO)
+
+### Importante - Contexto em Dashboards
+- [ ] Adicionar "O que fazer agora" em cada dashboard
+- [ ] Adicionar recomendações baseadas em dados
+- [ ] Adicionar botões de ação diretos
+- [ ] Adicionar metas/alertas
+
+### Baixa Prioridade - Otimizações
+- [ ] Ações em massa na tela de reincidentes
+- [ ] Melhorar fluxo de importação
+- [ ] Adicionar gamificação/metas

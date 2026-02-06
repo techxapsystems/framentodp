@@ -521,8 +521,7 @@ export default function Recidivists() {
                     <TableHead>Aviso Pouco Rodado</TableHead>
                     <TableHead>Aviso Horas Extras</TableHead>
                     <TableHead>Último Aviso</TableHead>
-                    <TableHead>Advertência Gerada</TableHead>
-                    <TableHead>Advertência Aplicada</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -556,17 +555,29 @@ export default function Recidivists() {
                           : "-"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="bg-green-50 text-green-700">
-                          ✓ Sim
-                        </Badge>
+                        {item.historico && item.historico.length > 0 ? (
+                          <div className="space-y-1">
+                            {!item.historico[0].advertenciaAplicada ? (
+                              <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300">
+                                ⏳ Pendente
+                              </Badge>
+                            ) : !item.historico[0].assinada ? (
+                              <Badge className="bg-blue-100 text-blue-800 border border-blue-300">
+                                ✓ Aplicada
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-green-100 text-green-800 border border-green-300">
+                                ✓✓ Assinada
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-500">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                          ✓ Sim
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1 flex-wrap">
+                          {/* Ações Primárias */}
                           <Button
                             size="sm"
                             variant="outline"
@@ -583,6 +594,38 @@ export default function Recidivists() {
                             <MessageSquare className="w-4 h-4" />
                             Orientação
                           </Button>
+                          
+                          {/* Botão Marcar como Aplicada */}
+                          {item.historico && item.historico.length > 0 && !item.historico[0].advertenciaAplicada && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                              title="Marcar como aplicada"
+                              onClick={() => {
+                                toast.info("Funcionalidade em desenvolvimento");
+                              }}
+                            >
+                              ✓ Aplicada
+                            </Button>
+                          )}
+                          
+                          {/* Botão Marcar como Assinada */}
+                          {item.historico && item.historico.length > 0 && item.historico[0].advertenciaAplicada && !item.historico[0].assinada && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-2 border-green-300 text-green-700 hover:bg-green-50"
+                              title="Marcar como assinada"
+                              onClick={() => {
+                                toast.info("Funcionalidade em desenvolvimento");
+                              }}
+                            >
+                              ✓✓ Assinada
+                            </Button>
+                          )}
+                          
+                          {/* Ações Secundárias */}
                           <Button
                             size="sm"
                             variant="outline"

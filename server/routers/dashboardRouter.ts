@@ -6,8 +6,10 @@ import {
   recurrences,
   suggestedActions,
   treatments,
+  warnings,
 } from "../../drizzle/schema";
 import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 
 export const dashboardRouter = router({
   /**
@@ -677,4 +679,55 @@ export const dashboardRouter = router({
       return [];
     }
   }),
+  
+  /**
+   * Marcar advertência como aplicada
+   */
+  markWarningApplied: protectedProcedure
+    .input(
+      z.object({
+        warningId: z.number(),
+        dataAplicacao: z.string(),
+        assinada: z.boolean(),
+        dataAssinatura: z.string().optional(),
+        observacoes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const updateData: Record<string, any> = {
+          advertenciaAplicada: true,
+          dataAplicacao: new Date(input.dataAplicacao),
+          assinada: input.assinada,
+        };
+
+        if (input.assinada && input.dataAssinatura) {
+          updateData.dataAssinatura = new Date(input.dataAssinatura);
+          updateData.assinadaPor = "Motorista";
+        }
+
+        if (input.observacoes) {
+          updateData.observacao = input.observacoes;
+        }
+
+        await db
+          .update(warnings)
+          .set(updateData)
+          .where(eq(warnings.id, input.warningId));
+
+        return {
+          success: true,
+          message: "Advertência marcada como aplicada com sucesso",
+        };
+      } catch (error) {
+        console.error("[Router] Error marking warning as applied:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: String(error),
+        });
+      }
+    }),
 });
