@@ -11,7 +11,7 @@ import Week from "./pages/Week";
 import Import from "./pages/Import";
 import Settings from "./pages/Settings";
 import Recidivists from "./pages/Recidivists";
-import WarningsDashboard from "./pages/WarningsDashboard";
+import WarningsManagement from "./pages/WarningsManagement";
 import WarningsTracking from "./pages/WarningsTracking";
 import Reports from "./pages/Reports";
 
@@ -23,7 +23,7 @@ function Router() {
         <Route path={"/"} component={Today} />
         <Route path={"/semana"} component={Week} />
         <Route path={"/reincidentes"} component={Recidivists} />
-        <Route path={"/advertencias"} component={WarningsDashboard} />
+        <Route path={"/advertencias"} component={WarningsManagement} />
         <Route path={"/acompanhamento"} component={WarningsTracking} />
         <Route path={"/relatorios"} component={Reports} />
         <Route path={"/importacao"} component={Import} />

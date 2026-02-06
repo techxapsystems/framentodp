@@ -30,8 +30,8 @@ import { Button } from "./ui/button";
 const menuItems = [
   { icon: Home, label: "Hoje", path: "/" },
   { icon: BarChart3, label: "Semana", path: "/semana" },
-  { icon: AlertTriangle, label: "Reincidentes", path: "/reincidentes" },
-  { icon: AlertCircle, label: "Advertências", path: "/advertencias" },
+  { icon: AlertTriangle, label: "Cadastro de Advertências", path: "/reincidentes" },
+  { icon: AlertCircle, label: "Gerenciamento de Advertências", path: "/advertencias" },
   { icon: TrendingUp, label: "Acompanhamento", path: "/acompanhamento" },
   { icon: FileText, label: "Relatórios", path: "/relatorios" },
   { icon: Upload, label: "Importação", path: "/importacao" },

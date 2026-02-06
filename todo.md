@@ -412,3 +412,11 @@
 - [ ] Otimizar performance e UX
 - [ ] Explicar aba "Hoje" e como status muda
 - [ ] Testar fluxo completo
+
+
+## Reorganização de Telas de Advertências
+- [x] Renomear "Reincidentes" para "Cadastro de Advertências" (apenas criação)
+- [x] Criar nova tela "Gerenciamento de Advertências" (lista + ações)
+- [x] Mover botões (Orientação, ✓ Aplicada, Editar) para "Gerenciamento de Advertências"
+- [x] Atualizar navegação no App.tsx
+- [x] Testar fluxo completo de advertências
