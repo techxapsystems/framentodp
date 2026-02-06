@@ -157,7 +157,7 @@ export async function importExcelIncremental(
 ): Promise<ImportResult> {
   try {
     // Ler workbook
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const workbook = XLSX.read(buffer);
     const sheet = detectDataSheet(workbook);
 
     if (!sheet) {
@@ -265,7 +265,7 @@ export function validateExcelStructure(buffer: Buffer): {
   sheetName?: string;
 } {
   try {
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const workbook = XLSX.read(buffer);
     const sheet = detectDataSheet(workbook);
 
     if (!sheet) {
