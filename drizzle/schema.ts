@@ -164,7 +164,7 @@ export const suggestedActions = mysqlTable(
     journeyId: int("journeyId").notNull(),
     conductorName: varchar("conductorName", { length: 255 }).notNull(),
     data: timestamp("data").notNull(),
-    tipo: mysqlEnum("tipo", ["pouco_rodado", "horas_extras"]).notNull(),
+    tipo: mysqlEnum("tipo", ["advertencia", "suspensao"]).notNull(),
     acao: text("acao").notNull(), // Descrição da ação sugerida
     severidade: mysqlEnum("severidade", ["info", "warning", "critical"]).notNull(),
     
@@ -189,7 +189,7 @@ export const treatments = mysqlTable(
     journeyId: int("journeyId").notNull(),
     conductorName: varchar("conductorName", { length: 255 }).notNull(),
     data: timestamp("data").notNull(),
-    tipo: mysqlEnum("tipo", ["pouco_rodado", "horas_extras"]).notNull(),
+    tipo: mysqlEnum("tipo", ["advertencia", "suspensao"]).notNull(),
     
     status: mysqlEnum("status", ["pendente", "em_andamento", "resolvido", "ignorado"])
       .notNull()
@@ -304,7 +304,7 @@ export const orientations = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     conductorName: varchar("conductorName", { length: 255 }).notNull(),
-    tipo: mysqlEnum("tipo", ["pouco_rodado", "horas_extras"]).notNull(),
+    tipo: mysqlEnum("tipo", ["advertencia", "suspensao"]).notNull(),
     motivo: text("motivo").notNull(),
     orientadoPor: varchar("orientadoPor", { length: 320 }).notNull(),
     criadoEm: timestamp("criadoEm").defaultNow().notNull(),
@@ -326,7 +326,7 @@ export const warnings = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     conductorName: varchar("conductorName", { length: 255 }).notNull(),
-    tipo: mysqlEnum("tipo", ["pouco_rodado", "horas_extras"]).notNull(),
+    tipo: mysqlEnum("tipo", ["advertencia", "suspensao"]).notNull(),
     nivelAdvertencia: int("nivelAdvertencia").notNull(),
     motivo: text("motivo").notNull(),
     observacao: text("observacao"),
@@ -336,6 +336,15 @@ export const warnings = mysqlTable(
     dataAplicacao: timestamp("dataAplicacao"),
     geradaAutomaticamente: boolean("geradaAutomaticamente").notNull().default(false),
     criadoEm: timestamp("criadoEm").defaultNow().notNull(),
+    tipoColaborador: varchar("tipoColaborador", { length: 100 }),
+    dataAnotacao: timestamp("dataAnotacao"),
+    sequencia: varchar("sequencia", { length: 20 }),
+    tipoAnotacao: varchar("tipoAnotacao", { length: 100 }),
+    codigoTreinamento: varchar("codigoTreinamento", { length: 50 }),
+    numeroDocumento: varchar("numeroDocumento", { length: 50 }),
+    empresaResponsavel: varchar("empresaResponsavel", { length: 255 }),
+    tipoResponsavel: varchar("tipoResponsavel", { length: 100 }),
+    responsavelAnotacao: varchar("responsavelAnotacao", { length: 255 }),
   },
   (table) => [
     index("idx_conductorTipo").on(table.conductorName, table.tipo),
@@ -345,3 +354,31 @@ export const warnings = mysqlTable(
 
 export type Warning = typeof warnings.$inferSelect;
 export type InsertWarning = typeof warnings.$inferInsert;
+
+
+/**
+ * Histórico de PDFs de Advertências - armazena todas as versões geradas para auditoria
+ */
+export const warningPdfHistory = mysqlTable(
+  "warning_pdf_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    warningId: int("warningId").notNull(),
+    conductorName: varchar("conductorName", { length: 255 }).notNull(),
+    licensePlate: varchar("licensePlate", { length: 20 }).notNull(),
+    operacao: varchar("operacao", { length: 255 }).notNull(),
+    pdfUrl: text("pdfUrl").notNull(),
+    pdfKey: varchar("pdfKey", { length: 512 }).notNull(),
+    fileSize: int("fileSize").notNull(),
+    geradoPor: varchar("geradoPor", { length: 320 }).notNull(),
+    criadoEm: timestamp("criadoEm").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_warningId").on(table.warningId),
+    index("idx_conductorName").on(table.conductorName),
+    index("idx_criadoEm").on(table.criadoEm),
+  ]
+);
+
+export type WarningPdfHistory = typeof warningPdfHistory.$inferSelect;
+export type InsertWarningPdfHistory = typeof warningPdfHistory.$inferInsert;

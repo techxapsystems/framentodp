@@ -373,3 +373,31 @@
 - [x] Campo "Placa" já existia no formulário
 - [x] Implementar funcionalidade de impressão em PDF (COMPLETO)
 - [ ] Testar fluxo completo de cadastro e impressão
+
+
+## Histórico de PDFs de Advertências (NOVO)
+- [ ] Adicionar tabela `warningPdfHistory` no schema
+- [ ] Implementar função para salvar PDF no histórico
+- [ ] Integrar upload de PDF para S3
+- [ ] Criar tela de visualização de histórico
+- [ ] Adicionar botão de download de PDFs anteriores
+- [ ] Testar fluxo completo de auditoria
+
+
+## Expansão de Campos de Advertência (NOVO)
+- [ ] Adicionar campos ao schema: tipoColaborador, colaborador, dataAnotacao, sequencia, tipoAnotacao, codigoTreinamento, numeroDocumento, empresaResponsavel, tipoResponsavel, responsavelAnotacao
+- [ ] Adicionar campos ao formulário de cadastro
+- [ ] Atualizar backend para processar novos campos
+- [ ] Atualizar PDF para incluir novos campos
+- [ ] Testar formulário completo com novos campos
+
+
+## Transformação para Cadastro Genérico (NOVO)
+- [x] Revisar diferenças entre telas (COMPLETO)
+- [x] Auto-preencher Operação baseado no motorista selecionado (COMPLETO)
+- [x] Auto-preencher Placa baseado no motorista selecionado (Já existia)
+- [x] Formatar data da infração automaticamente (XX/XX/XXXX) (COMPLETO)
+- [x] Adicionar tipos "Advertência" e "Suspensão" (COMPLETO)
+- [ ] Remover filtros de tipo antigos
+- [ ] Atualizar UI para novo sistema
+- [ ] Testar novo fluxo

@@ -1,6 +1,6 @@
-import { eq, and, gte, lte, desc, inArray, or, isNotNull } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray, or, isNotNull, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations } from "../drizzle/schema";
+import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations, warningPdfHistory } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -824,5 +824,145 @@ export async function getAllOperations() {
   } catch (error) {
     console.error("[DB] Error getting operations:", error);
     return [];
+  }
+}
+
+
+/**
+ * Salvar PDF no histórico de auditoria
+ */
+export async function savePdfHistory(data: {
+  warningId: number;
+  conductorName: string;
+  licensePlate: string;
+  operacao: string;
+  pdfUrl: string;
+  pdfKey: string;
+  fileSize: number;
+  geradoPor: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot save PDF history: database not available");
+    return null;
+  }
+
+  try {
+    const result = await db.insert(warningPdfHistory).values(data);
+    return result;
+  } catch (error) {
+    console.error("[DB] Error saving PDF history:", error);
+    throw error;
+  }
+}
+
+/**
+ * Obter histórico de PDFs de uma advertência
+ */
+export async function getPdfHistoryByWarningId(warningId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const result = await db
+      .select()
+      .from(warningPdfHistory)
+      .where(eq(warningPdfHistory.warningId, warningId))
+      .orderBy(desc(warningPdfHistory.criadoEm));
+
+    return result;
+  } catch (error) {
+    console.error("[DB] Error getting PDF history:", error);
+    return [];
+  }
+}
+
+/**
+ * Obter histórico de PDFs de um motorista
+ */
+export async function getPdfHistoryByDriver(conductorName: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const result = await db
+      .select()
+      .from(warningPdfHistory)
+      .where(eq(warningPdfHistory.conductorName, conductorName))
+      .orderBy(desc(warningPdfHistory.criadoEm));
+
+    return result;
+  } catch (error) {
+    console.error("[DB] Error getting PDF history by driver:", error);
+    return [];
+  }
+}
+
+/**
+ * Obter histórico de PDFs com filtros
+ */
+export async function getPdfHistoryFiltered(filters: {
+  conductorName?: string;
+  startDate?: Date;
+  endDate?: Date;
+  operacao?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    let query = db.select().from(warningPdfHistory);
+    const conditions = [];
+
+    if (filters.conductorName) {
+      conditions.push(eq(warningPdfHistory.conductorName, filters.conductorName));
+    }
+
+    if (filters.operacao) {
+      conditions.push(eq(warningPdfHistory.operacao, filters.operacao));
+    }
+
+    if (filters.startDate) {
+      conditions.push(gte(warningPdfHistory.criadoEm, filters.startDate));
+    }
+
+    if (filters.endDate) {
+      conditions.push(lte(warningPdfHistory.criadoEm, filters.endDate));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const result = await query.orderBy(desc(warningPdfHistory.criadoEm));
+    return result;
+  } catch (error) {
+    console.error("[DB] Error getting filtered PDF history:", error);
+    return [];
+  }
+}
+
+/**
+ * Contar PDFs gerados por período
+ */
+export async function countPdfsByPeriod(startDate: Date, endDate: Date) {
+  const db = await getDb();
+  if (!db) return 0;
+
+  try {
+    const result = await db
+      .select({ count: count() })
+      .from(warningPdfHistory)
+      .where(
+        and(
+          gte(warningPdfHistory.criadoEm, startDate),
+          lte(warningPdfHistory.criadoEm, endDate)
+        )
+      );
+
+    return result[0]?.count || 0;
+  } catch (error) {
+    console.error("[DB] Error counting PDFs:", error);
+    return 0;
   }
 }

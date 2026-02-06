@@ -50,6 +50,15 @@ export default function Recidivists() {
   const [selectedMotoristaForOrientation, setSelectedMotoristaForOrientation] = useState<{ name: string; placa: string } | null>(null);
   const [operacao, setOperacao] = useState<string>("");
   const [editOperacao, setEditOperacao] = useState<string>("");
+  const [tipoColaborador, setTipoColaborador] = useState<string>("");
+  const [dataAnotacao, setDataAnotacao] = useState<string>("");
+  const [sequencia, setSequencia] = useState<string>("");
+  const [tipoAnotacao, setTipoAnotacao] = useState<string>("");
+  const [codigoTreinamento, setCodigoTreinamento] = useState<string>("");
+  const [numeroDocumento, setNumeroDocumento] = useState<string>("");
+  const [empresaResponsavel, setEmpresaResponsavel] = useState<string>("");
+  const [tipoResponsavel, setTipoResponsavel] = useState<string>("");
+  const [responsavelAnotacao, setResponsavelAnotacao] = useState<string>("");
 
   // Buscar operações disponíveis
   const { data: operacoes = [] } = trpc.dashboard.getAllOperations.useQuery();
@@ -226,13 +235,46 @@ export default function Recidivists() {
     (r: any) => r.conductorName === selectedConductor
   );
 
-  // Auto-preencher placa quando motorista é selecionado
+  // Encontrar operação do motorista selecionado
+  const selectedConductorOperation = idleDriversData?.drivers?.find(
+    (d: any) => d.conductorName === selectedConductor
+  )?.operacao;
+
+  // Auto-preencher placa e operação quando motorista é selecionado
   const handleConductorChange = (value: string) => {
     setSelectedConductor(value);
     const conductor = idleDriversData?.drivers?.find((d: any) => d.conductorName === value);
     if (conductor?.placa) {
       setLicensePlate(conductor.placa);
     }
+    if (conductor?.operacao) {
+      setOperacao(conductor.operacao);
+    }
+  };
+
+  // Formatar data automaticamente (XX/XX/XXXX)
+  const handleInfrationDaysChange = (value: string) => {
+    // Remove tudo que não é número
+    let numbers = value.replace(/\D/g, '');
+    
+    // Limita a 8 dígitos (DDMMYYYY)
+    if (numbers.length > 8) {
+      numbers = numbers.slice(0, 8);
+    }
+    
+    // Formata como DD/MM/YYYY
+    let formatted = '';
+    if (numbers.length > 0) {
+      formatted = numbers.slice(0, 2);
+      if (numbers.length > 2) {
+        formatted += '/' + numbers.slice(2, 4);
+      }
+      if (numbers.length > 4) {
+        formatted += '/' + numbers.slice(4, 8);
+      }
+    }
+    
+    setInfrationDays(formatted);
   };
 
   if (isLoading) {
@@ -340,13 +382,14 @@ export default function Recidivists() {
 
                   <div>
                     <label className="text-sm font-medium text-slate-700 block mb-2">
-                      Dias de Infração: *
+                      Data da Infração (DD/MM/YYYY): *
                     </label>
                     <input
                       type="text"
                       value={infrationDays}
-                      onChange={(e) => setInfrationDays(e.target.value)}
-                      placeholder="Ex: 02/05/2026, 01/05/2026"
+                      onChange={(e) => handleInfrationDaysChange(e.target.value)}
+                      placeholder="Ex: 02/05/2026"
+                      maxLength="10"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -360,8 +403,8 @@ export default function Recidivists() {
                         <SelectValue placeholder="Selecione o tipo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pouco_rodado">Pouco Rodado</SelectItem>
-                        <SelectItem value="horas_extras">Horas Extras</SelectItem>
+                        <SelectItem value="pouco_rodado">Advertência</SelectItem>
+                        <SelectItem value="horas_extras">Suspensão</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
