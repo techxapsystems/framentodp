@@ -307,7 +307,7 @@ export async function updateWarningStatus(warningId: number, advertenciaGerada: 
  */
 export async function getWarningsReport(filters: any) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) return { warnings: [] };
   
   let query: any = db.select().from(warnings);
   
@@ -334,7 +334,8 @@ export async function getWarningsReport(filters: any) {
     query = query.where(eq(warnings.tipo, filters.tipo as any));
   }
   
-  return query.orderBy(desc(warnings.criadoEm)) as any;
+  const data = await query.orderBy(desc(warnings.criadoEm));
+  return { warnings: data || [] };
 }
 
 export async function createWarning(data: any) {

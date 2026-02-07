@@ -440,3 +440,10 @@
 - [x] Falta botao para reverter advertencia de "Aplicada" para "Pendente"
   - Implementado: Botao "Reverter" (em vermelho) aparece para advertencias marcadas como "Aplicada"
   - Funcionalidade: Reverte advertencia para status "Pendente" com confirmacao
+
+
+## Bugs Críticos - Relatórios (RESOLVIDOS)
+- [x] Aba de Relatórios não está gerando relatórios
+  - Causa: Query getWarningsReport não aceitava parâmetros de entrada
+  - Solução: Adicionar .input() com filtros (data, motorista, tipo, operação)
+  - Resultado: Relatórios agora geram com sucesso em PDF com 7 advertências

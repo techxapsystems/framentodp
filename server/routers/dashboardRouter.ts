@@ -500,10 +500,17 @@ export const dashboardRouter = router({
    * Busca advertencias para relatorio com filtros
    */
   getWarningsReport: protectedProcedure
-    .query(async () => {
+    .input(z.object({
+      dateStart: z.string().optional(),
+      dateEnd: z.string().optional(),
+      conductorName: z.string().optional(),
+      tipo: z.string().optional(),
+      operacao: z.string().optional(),
+    }).optional())
+    .query(async ({ input }) => {
       try {
         const { getWarningsReport } = await import("../db");
-        const data = await getWarningsReport({});
+        const data = await getWarningsReport(input || {});
         return data || [];
       } catch (error) {
         console.error("Error fetching warnings report:", error);

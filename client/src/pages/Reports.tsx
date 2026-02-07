@@ -52,14 +52,15 @@ export default function Reports() {
 
   // Filtrar motoristas baseado na busca
   const motoristasFiltrados = useMemo(() => {
-    if (!idleDriversData?.drivers) return [];
-    return idleDriversData.drivers.filter((d: any) =>
+    if (!Array.isArray(idleDriversData)) return [];
+    return idleDriversData.filter((d: any) =>
       d.conductorName.toLowerCase().includes(motoristaBusca.toLowerCase())
     );
-  }, [idleDriversData?.drivers, motoristaBusca]);
+  }, [idleDriversData, motoristaBusca]);
 
   const generatePDF = async () => {
-    if (!reportData?.warnings || reportData.warnings.length === 0) {
+    const warnings = Array.isArray(reportData) ? reportData : reportData?.warnings || [];
+    if (!warnings || warnings.length === 0) {
       toast.error("Nenhum dado para gerar relatório");
       return;
     }
@@ -87,7 +88,7 @@ export default function Reports() {
       doc.text(filterText, 10, 25);
 
       // Tabela
-      const tableData = reportData.warnings.map((w: any) => [
+      const tableData = warnings.map((w: any) => [
         w.conductorName,
         w.tipo === "pouco_rodado" ? "Pouco Rodado" : "Horas Extras",
         `Aviso ${w.nivelAdvertencia}`,
@@ -118,7 +119,7 @@ export default function Reports() {
       const finalY = (doc as any).lastAutoTable.finalY || 35;
       doc.setFontSize(8);
       doc.text(
-        `Total de advertências: ${reportData.warnings.length}`,
+        `Total de advertências: ${warnings.length}`,
         10,
         finalY + 10
       );
@@ -275,7 +276,7 @@ export default function Reports() {
             <div className="flex items-end gap-2">
               <Button
                 onClick={generatePDF}
-                disabled={!reportData?.warnings || reportData.warnings.length === 0}
+                disabled={!reportData || (Array.isArray(reportData) ? reportData.length === 0 : !reportData.warnings || reportData.warnings.length === 0)}
                 className="flex-1 bg-green-600 hover:bg-green-700 gap-2"
               >
                 <Download className="w-4 h-4" />
@@ -290,11 +291,11 @@ export default function Reports() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Resultados ({reportData?.warnings?.length || 0} advertências)
+            Resultados ({(Array.isArray(reportData) ? reportData.length : reportData?.warnings?.length) || 0} advertências)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {reportData?.warnings && reportData.warnings.length > 0 ? (
+          {reportData && (Array.isArray(reportData) ? reportData.length > 0 : reportData.warnings && reportData.warnings.length > 0) ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -308,7 +309,7 @@ export default function Reports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reportData.warnings.map((warning: any, idx: number) => (
+                  {(Array.isArray(reportData) ? reportData : reportData?.warnings || []).map((warning: any, idx: number) => (
                     <TableRow key={idx}>
                       <TableCell className="font-medium">{warning.conductorName}</TableCell>
                       <TableCell>
