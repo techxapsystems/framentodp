@@ -19,6 +19,7 @@ import {
 import { Copy } from "lucide-react";
 import { WarningPDFButton } from "@/components/WarningPDFGenerator";
 import { toast } from "sonner";
+import { DateMaskInput } from "@/components/DateMaskInput";
 
 export default function Recidivists() {
   const [selectedConductor, setSelectedConductor] = useState<string>("");
@@ -215,12 +216,10 @@ Departamento de Pessoal
                   <label className="text-sm font-medium text-slate-700 block mb-2">
                     Data da Infração (DD/MM/YYYY): *
                   </label>
-                  <input
-                    type="text"
+                  <DateMaskInput
                     value={infrationDays}
-                    onChange={(e) => setInfrationDays(e.target.value)}
-                    placeholder="Ex: 02/05/2026"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    onChange={setInfrationDays}
+                    placeholder="DD/MM/YYYY"
                   />
                 </div>
 

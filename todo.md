@@ -478,3 +478,15 @@
 - [ ] Implementar sugestão automática de advertência após 3 orientações
 - [ ] Criar relatório de orientações com filtros por data, motorista, operação
 - [ ] Separar visualização da tela "Hoje" por operação (BRF Primária, BRF Secundária)
+
+
+## Melhorias de UX - Máscara de Data (COMPLETO)
+- [x] Criar componente de input com máscara de data (DD/MM/YYYY)
+  - Componente DateMaskInput criado com auto-formatação de barras
+  - Aceita apenas números, máximo 10 caracteres
+  - Formata automaticamente como DD/MM/YYYY
+- [x] Aplicar máscara em campos de data do cadastro de advertência
+  - Campo "Data da Infração" agora usa DateMaskInput
+  - Testado: digitando "02052026" formata para "02/05/2026"
+- [ ] Aplicar máscara em campos de data de outros formulários
+- [ ] Testar máscara em todos os campos
