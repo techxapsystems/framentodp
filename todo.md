@@ -447,3 +447,34 @@
   - Causa: Query getWarningsReport não aceitava parâmetros de entrada
   - Solução: Adicionar .input() com filtros (data, motorista, tipo, operação)
   - Resultado: Relatórios agora geram com sucesso em PDF com 7 advertências
+
+
+## Reorganização de Módulos e Sistema de Orientações
+
+### Módulo 1: Operacional Jornada
+- [ ] Mover telas: Hoje, Semana, Importação para este módulo
+- [ ] Implementar sistema de orientações na tela "Hoje"
+  - [ ] Campo para registrar orientação (texto)
+  - [ ] Registrar usuário que fez a orientação
+  - [ ] Registrar hora e data automaticamente
+  - [ ] Botão para salvar orientação
+- [ ] Adicionar lógica de sugestão automática
+  - [ ] Após 3 orientações, sugerir criação de advertência
+  - [ ] Campo para marcar se advertência foi gerada
+- [ ] Criar relatório de orientações
+  - [ ] Filtrar por período, motorista, operação
+  - [ ] Exportar em PDF
+- [ ] Separar telas por operação (BRF Primária, BRF Secundária, etc)
+
+### Módulo 2: Controle de Advertências
+- [ ] Mover telas: Cadastro de Advertências, Gerenciamento de Advertências, Acompanhamento, Relatórios
+- [ ] Revisar critérios de status (Resolvido vs Pendente)
+
+
+## Implementação de Interface de Orientações na Tela Hoje
+- [ ] Criar procedures tRPC para gerenciar orientações (createOrientation, listOrientations, countOrientations)
+- [ ] Implementar interface de orientações na tela "Hoje" com dialog para registrar
+- [ ] Adicionar contador automático de orientações por motorista
+- [ ] Implementar sugestão automática de advertência após 3 orientações
+- [ ] Criar relatório de orientações com filtros por data, motorista, operação
+- [ ] Separar visualização da tela "Hoje" por operação (BRF Primária, BRF Secundária)

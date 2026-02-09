@@ -27,14 +27,26 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-const menuItems = [
-  { icon: Home, label: "Hoje", path: "/" },
-  { icon: BarChart3, label: "Semana", path: "/semana" },
-  { icon: AlertTriangle, label: "Cadastro de Advertências", path: "/reincidentes" },
-  { icon: AlertCircle, label: "Gerenciamento de Advertências", path: "/advertencias" },
-  { icon: TrendingUp, label: "Acompanhamento", path: "/acompanhamento" },
-  { icon: FileText, label: "Relatórios", path: "/relatorios" },
-  { icon: Upload, label: "Importação", path: "/importacao" },
+type MenuItem = {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  path: string;
+  module?: "Operacional Jornada" | "Controle de Advertências";
+};
+
+const menuItems: MenuItem[] = [
+  // Módulo: Operacional Jornada
+  { icon: Home, label: "Hoje", path: "/", module: "Operacional Jornada" },
+  { icon: BarChart3, label: "Semana", path: "/semana", module: "Operacional Jornada" },
+  { icon: Upload, label: "Importação", path: "/importacao", module: "Operacional Jornada" },
+  
+  // Módulo: Controle de Advertências
+  { icon: AlertTriangle, label: "Cadastro de Advertências", path: "/reincidentes", module: "Controle de Advertências" },
+  { icon: AlertCircle, label: "Gerenciamento de Advertências", path: "/advertencias", module: "Controle de Advertências" },
+  { icon: TrendingUp, label: "Acompanhamento", path: "/acompanhamento", module: "Controle de Advertências" },
+  { icon: FileText, label: "Relatórios", path: "/relatorios", module: "Controle de Advertências" },
+  
+  // Configurações
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
@@ -157,6 +169,36 @@ function DashboardLayoutContent({
     };
   }, [isResizing, setSidebarWidth]);
 
+  const renderMenuSection = (title: string, items: MenuItem[]) => (
+    <div className="px-2 py-3">
+      <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+        {title}
+      </div>
+      <SidebarMenu className="gap-1">
+        {items.map(item => {
+          const isActive = location === item.path;
+          return (
+            <SidebarMenuItem key={item.path}>
+              <SidebarMenuButton
+                isActive={isActive}
+                onClick={() => setLocation(item.path)}
+                tooltip={item.label}
+                className={`h-10 transition-all font-normal ${
+                  isActive
+                    ? "bg-blue-600 text-white"
+                    : "text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                <item.icon className="h-4 w-4" />
+                <span>{item.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        })}
+      </SidebarMenu>
+    </div>
+  );
+
   return (
     <>
       <div className="relative" ref={sidebarRef}>
@@ -189,31 +231,25 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
-                const isActive = location === item.path;
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className={`h-10 transition-all font-normal ${
-                        isActive
-                          ? "bg-blue-600 text-white"
-                          : "text-slate-300 hover:bg-slate-700"
-                      }`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4`}
-                      />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
+          <SidebarContent className="gap-0 flex flex-col">
+            {renderMenuSection(
+              "Operacional Jornada",
+              menuItems.filter(item => item.module === "Operacional Jornada")
+            )}
+            
+            <div className="border-t border-slate-700" />
+            
+            {renderMenuSection(
+              "Controle de Advertências",
+              menuItems.filter(item => item.module === "Controle de Advertências")
+            )}
+            
+            <div className="border-t border-slate-700 mt-auto" />
+            
+            {renderMenuSection(
+              "Outros",
+              menuItems.filter(item => !item.module)
+            )}
           </SidebarContent>
 
           <SidebarFooter className="p-3 border-t border-slate-700">

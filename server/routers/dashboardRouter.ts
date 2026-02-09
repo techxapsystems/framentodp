@@ -545,9 +545,12 @@ export const dashboardRouter = router({
         const { createOrientation: createOrientationDb } = await import("../db");
         await createOrientationDb({
           conductorName: input.conductorName,
-          tipo: input.tipo,
-          motivo: input.motivo,
-          orientadoPor: ctx.user?.email || "Sistema",
+          licensePlate: "",
+          operacao: "",
+          observacao: input.motivo,
+          usuarioId: ctx.user?.id || 0,
+          usuarioNome: ctx.user?.name || "Sistema",
+          usuarioEmail: ctx.user?.email || "sistema@example.com",
         });
         return { success: true };
       } catch (error) {
@@ -560,18 +563,17 @@ export const dashboardRouter = router({
       conductorName: z.string(),
     }))
     .query(async ({ input }) => {
-      const { getOrientationsByConductor } = await import("../db");
-      return await getOrientationsByConductor(input.conductorName);
+      const { getOrientationsByDriver } = await import("../db");
+      return await getOrientationsByDriver(input.conductorName);
     }),
 
   countOrientations: protectedProcedure
     .input(z.object({
       conductorName: z.string(),
-      tipo: z.enum(["pouco_rodado", "horas_extras"]),
     }))
     .query(async ({ input }) => {
       const { countOrientations } = await import("../db");
-      return await countOrientations(input.conductorName, input.tipo);
+      return await countOrientations(input.conductorName);
     }),
   
   /**

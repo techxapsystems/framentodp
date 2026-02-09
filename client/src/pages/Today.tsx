@@ -18,10 +18,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, Plus, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
 
 export default function Today() {
+  const [selectedMotorista, setSelectedMotorista] = useState<any>(null);
+  const [orientacaoMotivo, setOrientacaoMotivo] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { filters, setDateFrom: setContextDateFrom, setDateTo: setContextDateTo, setManager: setContextManager } = useFilters();
   
   const dateFrom = filters.dateFrom.toISOString().split("T")[0];
@@ -44,6 +51,37 @@ export default function Today() {
       toast.error(`Erro: ${error.message}`);
     },
   });
+
+  const createOrientationMutation = trpc.dashboard.createOrientation.useMutation({
+    onSuccess: () => {
+      toast.success("Orientação registrada com sucesso");
+      setOrientacaoMotivo("");
+      setSelectedMotorista(null);
+      setIsDialogOpen(false);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Erro: ${error.message}`);
+    },
+  });
+
+  const countOrientationsMutation = trpc.dashboard.countOrientations.useQuery(
+    selectedMotorista ? { conductorName: selectedMotorista.condutor } : { conductorName: "" },
+    { enabled: !!selectedMotorista }
+  );
+
+  const handleRegistrarOrientacao = () => {
+    if (!selectedMotorista || !orientacaoMotivo.trim()) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+
+    createOrientationMutation.mutate({
+      conductorName: selectedMotorista.condutor,
+      tipo: "pouco_rodado",
+      motivo: orientacaoMotivo,
+    });
+  };
 
   const formatMinutesToTime = (minutes: number | undefined) => {
     if (!minutes) return "0h 0m";
@@ -287,6 +325,119 @@ export default function Today() {
               Nenhum motorista ocioso encontrado para o período selecionado
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Seção de Orientações */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5" />
+            Registrar Orientações
+          </CardTitle>
+          <p className="text-sm text-slate-600 mt-2">
+            Registre orientações para motoristas ociosos. Após 3 orientações, uma advertência será sugerida automaticamente.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {data?.ofensoresPoucoRodado && data.ofensoresPoucoRodado.length > 0 ? (
+                data.ofensoresPoucoRodado.map((motorista: any) => (
+                  <div key={motorista.journeyId} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-semibold text-slate-900">{motorista.condutor}</h4>
+                        <p className="text-sm text-slate-600">Gestor: {motorista.gestor || "-"}</p>
+                      </div>
+                      <Dialog open={isDialogOpen && selectedMotorista?.journeyId === motorista.journeyId} onOpenChange={(open) => {
+                        if (open) {
+                          setSelectedMotorista(motorista);
+                          setIsDialogOpen(true);
+                        } else {
+                          setIsDialogOpen(false);
+                          setSelectedMotorista(null);
+                        }
+                      }}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                            <Plus className="w-4 h-4 mr-1" />
+                            Orientação
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Registrar Orientação</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-medium text-slate-700 block mb-2">
+                                Motorista
+                              </label>
+                              <input
+                                type="text"
+                                value={motorista.condutor}
+                                disabled
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-slate-700 block mb-2">
+                                Orientações Registradas
+                              </label>
+                              <div className="text-2xl font-bold text-blue-600">
+                                {countOrientationsMutation.data || 0}
+                              </div>
+                              {countOrientationsMutation.data === 2 && (
+                                <p className="text-sm text-orange-600 mt-2 font-semibold">
+                                  ⚠️ Próxima orientação gerará uma advertência automática!
+                                </p>
+                              )}
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-slate-700 block mb-2">
+                                Motivo da Orientação
+                              </label>
+                              <Textarea
+                                value={orientacaoMotivo}
+                                onChange={(e) => setOrientacaoMotivo(e.target.value)}
+                                placeholder="Descreva o motivo da orientação..."
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                              />
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <Button variant="outline" onClick={() => {
+                                setIsDialogOpen(false);
+                                setSelectedMotorista(null);
+                                setOrientacaoMotivo("");
+                              }}>
+                                Cancelar
+                              </Button>
+                              <Button
+                                className="bg-blue-600 hover:bg-blue-700"
+                                onClick={handleRegistrarOrientacao}
+                                disabled={createOrientationMutation.isPending}
+                              >
+                                {createOrientationMutation.isPending ? "Registrando..." : "Registrar"}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      <p>Direção: {formatMinutesToTime(motorista.dirigido)}</p>
+                      <p>Ocorrências (7d): {motorista.ocorJanela}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-slate-600 col-span-2 py-8">
+                  Nenhum motorista ocioso para registrar orientações
+                </p>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

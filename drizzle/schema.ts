@@ -304,14 +304,21 @@ export const orientations = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     conductorName: varchar("conductorName", { length: 255 }).notNull(),
-    tipo: mysqlEnum("tipo", ["advertencia", "suspensao"]).notNull(),
-    motivo: text("motivo").notNull(),
-    orientadoPor: varchar("orientadoPor", { length: 320 }).notNull(),
+    licensePlate: varchar("licensePlate", { length: 20 }).notNull(),
+    operacao: varchar("operacao", { length: 255 }).notNull(),
+    observacao: text("observacao").notNull(),
+    usuarioId: int("usuarioId").notNull(),
+    usuarioNome: varchar("usuarioNome", { length: 255 }).notNull(),
+    usuarioEmail: varchar("usuarioEmail", { length: 320 }).notNull(),
+    dataOrientacao: timestamp("dataOrientacao").defaultNow().notNull(),
     criadoEm: timestamp("criadoEm").defaultNow().notNull(),
+    advertenciaGerada: boolean("advertenciaGerada").notNull().default(false),
+    warningId: int("warningId"), // Referencia a advertencia gerada apos 3 orientacoes
   },
   (table) => [
-    index("idx_conductorTipo").on(table.conductorName, table.tipo),
-    index("idx_criadoEm").on(table.criadoEm),
+    index("idx_conductorName").on(table.conductorName),
+    index("idx_dataOrientacao").on(table.dataOrientacao),
+    index("idx_operacao").on(table.operacao),
   ]
 );
 
@@ -382,3 +389,9 @@ export const warningPdfHistory = mysqlTable(
 
 export type WarningPdfHistory = typeof warningPdfHistory.$inferSelect;
 export type InsertWarningPdfHistory = typeof warningPdfHistory.$inferInsert;
+
+
+/**
+ * Orientações - registra todas as orientações dadas aos motoristas
+ * Utilizado para rastrear histórico de orientações e sugerir advertências após 3 orientações
+ */

@@ -513,83 +513,21 @@ export async function getWarningsStatsByOperation() {
  * Registrar uma orientação para um motorista
  * Na 3ª orientação, gera automaticamente uma Advertência (Aviso 1)
  */
-export async function createOrientation(data: any) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  // Contar orientações anteriores ANTES de inserir
-  const previousOrientations = await db
-    .select()
-    .from(orientations)
-    .where(
-      and(
-        eq(orientations.conductorName, data.conductorName),
-        eq(orientations.tipo, data.tipo)
-      )
-    );
-  
-  // Inserir orientação
-  await db.insert(orientations).values({
-    conductorName: data.conductorName,
-    tipo: data.tipo,
-    motivo: data.motivo,
-    orientadoPor: data.orientadoPor,
-    criadoEm: new Date(),
-  });
-  
-  // Se chegou a 3 orientações (contadas ANTES de inserir), gerar advertência automática
-  if (previousOrientations.length === 2) { // 2 anteriores + 1 nova = 3 total
-    await db.insert(warnings).values({
-      conductorName: data.conductorName,
-      tipo: data.tipo,
-      nivelAdvertencia: 1, // Aviso 1
-      motivo: `Advertência automática gerada após 3 orientações. Motivo: ${data.motivo}`,
-      observacao: "Gerada automaticamente após 3 orientações",
-      aplicadoPor: data.orientadoPor,
-      advertenciaGerada: true,
-      advertenciaAplicada: false,
-      geradaAutomaticamente: true,
-      criadoEm: new Date(),
-    });
-  }
-}
 
 /**
- * Obter orientações de um motorista
+ * Contar orientações por motorista
  */
-export async function getOrientationsByConductor(conductorName: string) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  const result = await db
-    .select()
-    .from(orientations)
-    .where(eq(orientations.conductorName, conductorName))
-    .orderBy(desc(orientations.criadoEm));
-  
-  return result;
-}
-
-/**
- * Contar orientações por motorista e tipo
- */
-export async function countOrientations(conductorName: string, tipo: string) {
+export async function countOrientations(conductorName: string) {
   const db = await getDb();
   if (!db) return 0;
   
   const result = await db
     .select()
     .from(orientations)
-    .where(
-      and(
-        eq(orientations.conductorName, conductorName),
-        eq(orientations.tipo, tipo as any)
-      )
-    );
+    .where(eq(orientations.conductorName, conductorName));
   
   return result.length;
 }
-
 
 /**
  * Obter estatísticas de advertências por período e operação
@@ -964,5 +902,119 @@ export async function countPdfsByPeriod(startDate: Date, endDate: Date) {
   } catch (error) {
     console.error("[DB] Error counting PDFs:", error);
     return 0;
+  }
+}
+
+
+/**
+ * Criar uma nova orientação
+ */
+export async function createOrientation(data: {
+  conductorName: string;
+  licensePlate: string;
+  operacao: string;
+  observacao: string;
+  usuarioId: number;
+  usuarioNome: string;
+  usuarioEmail: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    const result = await db.insert(orientations).values({
+      ...data,
+      dataOrientacao: new Date(),
+      criadoEm: new Date(),
+      advertenciaGerada: false,
+    });
+    return result;
+  } catch (error) {
+    console.error("[DB] Error creating orientation:", error);
+    throw error;
+  }
+}
+
+
+
+/**
+ * Obter orientações de um motorista
+ */
+export async function getOrientationsByDriver(conductorName: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  try {
+    const result = await db
+      .select()
+      .from(orientations)
+      .where(eq(orientations.conductorName, conductorName))
+      .orderBy(desc(orientations.dataOrientacao));
+    return result;
+  } catch (error) {
+    console.error("[DB] Error getting orientations:", error);
+    return [];
+  }
+}
+
+/**
+ * Obter orientações com filtros
+ */
+export async function getOrientationsFiltered(filters: {
+  conductorName?: string;
+  operacao?: string;
+  startDate?: Date;
+  endDate?: Date;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  try {
+    let query: any = db.select().from(orientations);
+    const conditions: any[] = [];
+    
+    if (filters.conductorName) {
+      conditions.push(eq(orientations.conductorName, filters.conductorName));
+    }
+    if (filters.operacao) {
+      conditions.push(eq(orientations.operacao, filters.operacao));
+    }
+    if (filters.startDate) {
+      conditions.push(gte(orientations.dataOrientacao, filters.startDate));
+    }
+    if (filters.endDate) {
+      conditions.push(lte(orientations.dataOrientacao, filters.endDate));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    const result = await query.orderBy(desc(orientations.dataOrientacao));
+    return result;
+  } catch (error) {
+    console.error("[DB] Error getting filtered orientations:", error);
+    return [];
+  }
+}
+
+/**
+ * Marcar orientação como tendo gerado advertência
+ */
+export async function markOrientationAsWarningGenerated(orientationId: number, warningId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    await db
+      .update(orientations)
+      .set({
+        advertenciaGerada: true,
+        warningId: warningId,
+      })
+      .where(eq(orientations.id, orientationId));
+  } catch (error) {
+    console.error("[DB] Error marking orientation as warning generated:", error);
+    throw error;
   }
 }
