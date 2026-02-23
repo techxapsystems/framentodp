@@ -31,20 +31,20 @@ type MenuItem = {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   path: string;
-  module?: "Operacional Jornada" | "Controle de Advertências";
+  module?: "operacional_jornada" | "controle_de_advertencias";
 };
 
 const menuItems: MenuItem[] = [
   // Módulo: Operacional Jornada
-  { icon: Home, label: "Hoje", path: "/", module: "Operacional Jornada" },
-  { icon: BarChart3, label: "Semana", path: "/semana", module: "Operacional Jornada" },
-  { icon: Upload, label: "Importação", path: "/importacao", module: "Operacional Jornada" },
+  { icon: Home, label: "Hoje", path: "/", module: "operacional_jornada" },
+  { icon: BarChart3, label: "Semana", path: "/semana", module: "operacional_jornada" },
+  { icon: Upload, label: "Importação", path: "/importacao", module: "operacional_jornada" },
   
   // Módulo: Controle de Advertências
-  { icon: AlertTriangle, label: "Cadastro de Advertências", path: "/reincidentes", module: "Controle de Advertências" },
-  { icon: AlertCircle, label: "Gerenciamento de Advertências", path: "/advertencias", module: "Controle de Advertências" },
-  { icon: TrendingUp, label: "Acompanhamento", path: "/acompanhamento", module: "Controle de Advertências" },
-  { icon: FileText, label: "Relatórios", path: "/relatorios", module: "Controle de Advertências" },
+  { icon: AlertTriangle, label: "Cadastro de Advertências", path: "/reincidentes", module: "controle_de_advertencias" },
+  { icon: AlertCircle, label: "Gerenciamento de Advertências", path: "/advertencias", module: "controle_de_advertencias" },
+  { icon: TrendingUp, label: "Acompanhamento", path: "/acompanhamento", module: "controle_de_advertencias" },
+  { icon: FileText, label: "Relatórios", path: "/relatorios", module: "controle_de_advertencias" },
   
   // Configurações
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
@@ -130,8 +130,28 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+
+  // Filtrar itens de menu baseado nos módulos do usuário
+  const getFilteredMenuItems = () => {
+    if (!user) return [];
+    
+    // Se é admin, mostrar todos os itens
+    if (user.role === 'admin') return menuItems;
+    
+    // Se é usuário comum, filtrar por módulos
+    const userModules = user.modules ? JSON.parse(user.modules) : [];
+    return menuItems.filter(item => {
+      // Configurações sempre visível
+      if (item.path === '/configuracoes') return true;
+      // Filtrar por módulo
+      if (!item.module) return true;
+      return userModules.includes(item.module);
+    });
+  };
+
+  const filteredMenuItems = getFilteredMenuItems();
+  const activeMenuItem = filteredMenuItems.find(item => item.path === location);
 
   useEffect(() => {
     if (isCollapsed) {
@@ -169,35 +189,41 @@ function DashboardLayoutContent({
     };
   }, [isResizing, setSidebarWidth]);
 
-  const renderMenuSection = (title: string, items: MenuItem[]) => (
-    <div className="px-2 py-3">
-      <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-        {title}
+  const renderMenuSection = (title: string, items: MenuItem[]) => {
+    const visibleItems = items.filter(item => filteredMenuItems.some(m => m.path === item.path));
+    
+    if (visibleItems.length === 0) return null;
+
+    return (
+      <div className="px-2 py-3">
+        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          {title}
+        </div>
+        <SidebarMenu className="gap-1">
+          {visibleItems.map(item => {
+            const isActive = location === item.path;
+            return (
+              <SidebarMenuItem key={item.path}>
+                <SidebarMenuButton
+                  isActive={isActive}
+                  onClick={() => setLocation(item.path)}
+                  tooltip={item.label}
+                  className={`h-10 transition-all font-normal ${
+                    isActive
+                      ? "bg-blue-600 text-white"
+                      : "text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
       </div>
-      <SidebarMenu className="gap-1">
-        {items.map(item => {
-          const isActive = location === item.path;
-          return (
-            <SidebarMenuItem key={item.path}>
-              <SidebarMenuButton
-                isActive={isActive}
-                onClick={() => setLocation(item.path)}
-                tooltip={item.label}
-                className={`h-10 transition-all font-normal ${
-                  isActive
-                    ? "bg-blue-600 text-white"
-                    : "text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.label}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          );
-        })}
-      </SidebarMenu>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
@@ -234,14 +260,17 @@ function DashboardLayoutContent({
           <SidebarContent className="gap-0 flex flex-col">
             {renderMenuSection(
               "Operacional Jornada",
-              menuItems.filter(item => item.module === "Operacional Jornada")
+              menuItems.filter(item => item.module === "operacional_jornada")
             )}
             
-            <div className="border-t border-slate-700" />
+            {filteredMenuItems.some(item => item.module === "operacional_jornada") && 
+             filteredMenuItems.some(item => item.module === "controle_de_advertencias") && (
+              <div className="border-t border-slate-700" />
+            )}
             
             {renderMenuSection(
               "Controle de Advertências",
-              menuItems.filter(item => item.module === "Controle de Advertências")
+              menuItems.filter(item => item.module === "controle_de_advertencias")
             )}
             
             <div className="border-t border-slate-700 mt-auto" />

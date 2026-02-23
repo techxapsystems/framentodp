@@ -1,0 +1,9 @@
+{
+  "query": "\nINSERT INTO users (openId, name, email, loginMethod, role, department, modules, createdAt, updatedAt, lastSignedIn)\nVALUES \n  ('giovana_abc123def456ghi789jkl012', 'Giovana Lucatteli', 'giovana.lucatteli@transframento.com', 'oauth', 'user', 'dp', '[\"advertencias\"]', NOW(), NOW(), NOW()),\n  ('gabriel_xyz789uvw456rst123opq890', 'Gabriel Ferreira', 'gabriel.ferreira@transframento.com.br', 'oauth', 'admin', 'geral', '[\"ociosidade\",\"jornada\",\"advertencias\",\"orientacoes\",\"relatorios\",\"configuracoes\"]', NOW(), NOW(), NOW());\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3dGJWfvPW4PQcvR.root --database niJQc4ibt4VMW3Ni9Ahpj8 --execute \nINSERT INTO users (openId, name, email, loginMethod, role, department, modules, createdAt, updatedAt, lastSignedIn)\nVALUES \n  ('giovana_abc123def456ghi789jkl012', 'Giovana Lucatteli', 'giovana.lucatteli@transframento.com', 'oauth', 'user', 'dp', '[\"advertencias\"]', NOW(), NOW(), NOW()),\n  ('gabriel_xyz789uvw456rst123opq890', 'Gabriel Ferreira', 'gabriel.ferreira@transframento.com.br', 'oauth', 'admin', 'geral', '[\"ociosidade\",\"jornada\",\"advertencias\",\"orientacoes\",\"relatorios\",\"configuracoes\"]', NOW(), NOW(), NOW());\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 375
+}

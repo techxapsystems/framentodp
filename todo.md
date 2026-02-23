@@ -496,3 +496,21 @@
   - Tela Hoje: Campos exibindo 14/02/2026
   - Tela Semana: Campo exibindo 09/02/2026
   - Tela Relatorios: Campos prontos com placeholder DD/MM/YYYY
+
+
+## Camada de Usuários e Controle de Acesso (COMPLETO)
+- [x] Adicionar campos de departamento e módulos ao schema de usuários
+  - Campo `department` para identificar setor (dp, geral, etc)
+  - Campo `modules` para armazenar JSON array de módulos permitidos
+- [x] Criar usuários no banco de dados
+  - Giovana Lucatteli (giovana.lucatteli@transframento.com) - DP - Módulo: advertencias
+  - Gabriel Ferreira (gabriel.ferreira@transframento.com.br) - Admin - Todos os módulos
+- [x] Implementar filtro de menu no frontend por módulos
+  - DashboardLayout filtra itens de menu baseado em user.modules
+  - Admin vê todos os itens, usuários comuns veem apenas seus módulos
+- [x] Implementar proteção de rotas
+  - Componente ProtectedRoute valida permissões antes de renderizar
+  - Redireciona para 404 se usuário não tem acesso
+- [x] Criar testes de permissões
+  - 9 testes passando validando lógica de acesso
+  - Testes cobrem: acesso permitido, acesso negado, admin, usuário nulo, JSON inválido

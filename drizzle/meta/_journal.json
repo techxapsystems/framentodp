@@ -85,6 +85,13 @@
       "when": 1770425581040,
       "tag": "0011_quick_speed_demon",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1771857253803,
+      "tag": "0012_clever_smiling_tiger",
+      "breakpoints": true
     }
   ]
 }

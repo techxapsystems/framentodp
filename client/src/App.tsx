@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { FilterProvider } from "./contexts/FilterContext";
 import DashboardLayout from "./components/DashboardLayout";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import Today from "./pages/Today";
 import Week from "./pages/Week";
 import Import from "./pages/Import";
@@ -16,19 +17,46 @@ import WarningsTracking from "./pages/WarningsTracking";
 import Reports from "./pages/Reports";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <DashboardLayout>
       <Switch>
-        <Route path={"/"} component={Today} />
-        <Route path={"/semana"} component={Week} />
-        <Route path={"/reincidentes"} component={Recidivists} />
-        <Route path={"/advertencias"} component={WarningsManagement} />
-        <Route path={"/acompanhamento"} component={WarningsTracking} />
-        <Route path={"/relatorios"} component={Reports} />
-        <Route path={"/importacao"} component={Import} />
-        <Route path={"/configuracoes"} component={Settings} />
-        <Route path={"/404"} component={NotFound} />
+        <Route path="/" component={() => (
+          <ProtectedRoute requiredModules={["operacional_jornada"]}>
+            <Today />
+          </ProtectedRoute>
+        )} />
+        <Route path="/semana" component={() => (
+          <ProtectedRoute requiredModules={["operacional_jornada"]}>
+            <Week />
+          </ProtectedRoute>
+        )} />
+        <Route path="/reincidentes" component={() => (
+          <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
+            <Recidivists />
+          </ProtectedRoute>
+        )} />
+        <Route path="/advertencias" component={() => (
+          <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
+            <WarningsManagement />
+          </ProtectedRoute>
+        )} />
+        <Route path="/acompanhamento" component={() => (
+          <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
+            <WarningsTracking />
+          </ProtectedRoute>
+        )} />
+        <Route path="/relatorios" component={() => (
+          <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
+            <Reports />
+          </ProtectedRoute>
+        )} />
+        <Route path="/importacao" component={() => (
+          <ProtectedRoute requiredModules={["operacional_jornada"]}>
+            <Import />
+          </ProtectedRoute>
+        )} />
+        <Route path="/configuracoes" component={Settings} />
+        <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>
     </DashboardLayout>
