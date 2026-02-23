@@ -15,6 +15,7 @@ import Recidivists from "./pages/Recidivists";
 import WarningsManagement from "./pages/WarningsManagement";
 import WarningsTracking from "./pages/WarningsTracking";
 import Reports from "./pages/Reports";
+import Audit from "./pages/Audit";
 
 function Router() {
   return (
@@ -56,6 +57,11 @@ function Router() {
           </ProtectedRoute>
         )} />
         <Route path="/configuracoes" component={Settings} />
+        <Route path="/auditoria" component={() => (
+          <ProtectedRoute requiredRole="admin">
+            <Audit />
+          </ProtectedRoute>
+        )} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

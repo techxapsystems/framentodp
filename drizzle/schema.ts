@@ -394,6 +394,48 @@ export type InsertWarningPdfHistory = typeof warningPdfHistory.$inferInsert;
 
 
 /**
+ * Logs de Auditoria - registra todas as ações importantes dos usuários
+ */
+export const auditLogs = mysqlTable(
+  "audit_logs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    userName: varchar("userName", { length: 255 }).notNull(),
+    userEmail: varchar("userEmail", { length: 320 }).notNull(),
+    
+    // Tipo de ação
+    action: varchar("action", { length: 100 }).notNull(), // login, logout, create_warning, edit_warning, delete_warning, etc
+    resource: varchar("resource", { length: 100 }).notNull(), // users, warnings, orientations, etc
+    resourceId: int("resourceId"), // ID do recurso afetado
+    
+    // Detalhes da ação
+    description: text("description").notNull(),
+    details: text("details"), // JSON com dados adicionais
+    
+    // IP e User Agent
+    ipAddress: varchar("ipAddress", { length: 45 }),
+    userAgent: text("userAgent"),
+    
+    // Status da ação
+    status: mysqlEnum("status", ["success", "failed", "warning"]).notNull().default("success"),
+    errorMessage: text("errorMessage"),
+    
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_userId").on(table.userId),
+    index("idx_action").on(table.action),
+    index("idx_resource").on(table.resource),
+    index("idx_createdAt").on(table.createdAt),
+    index("idx_userIdCreatedAt").on(table.userId, table.createdAt),
+  ]
+);
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+/**
  * Orientações - registra todas as orientações dadas aos motoristas
  * Utilizado para rastrear histórico de orientações e sugerir advertências após 3 orientações
  */

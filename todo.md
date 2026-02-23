@@ -514,3 +514,28 @@
 - [x] Criar testes de permissões
   - 9 testes passando validando lógica de acesso
   - Testes cobrem: acesso permitido, acesso negado, admin, usuário nulo, JSON inválido
+
+
+## Sistema de Logs e Auditoria (COMPLETO)
+- [x] Criar schema de logs no banco de dados
+  - Tabela audit_logs com 14 colunas e 5 indices
+  - Campos: userId, userName, userEmail, action, resource, resourceId, description, details, ipAddress, userAgent, status, errorMessage, createdAt
+- [x] Implementar serviço de logs com funções de registro
+  - Função createAuditLog para registrar ações
+  - Funções de busca com filtros: por usuário, ação, recurso, período
+  - Função de estatísticas e limpeza de logs antigos
+- [x] Integrar logs em ações críticas (login, advertências, etc)
+  - Router tRPC com endpoints: getLogs, getMyLogs, getActionLogs, getResourceLogs, getLogsByDateRange, getStats, deleteOldLogs
+  - Apenas admin pode acessar logs de todos os usuários
+- [x] Criar página de auditoria para visualizar logs
+  - Página /auditoria com tabela de logs, filtros e busca
+  - Exibição de estatísticas (total, sucesso, falhas, avisos)
+  - Opção de export em CSV
+  - Paginação de resultados
+- [x] Implementar filtros e busca de logs
+  - Filtros por ação, recurso e nome de usuário
+  - Busca em tempo real
+  - Suporte a múltiplos filtros combinados
+- [x] Criar testes para sistema de logs
+  - 17 testes passando validando lógica de logs
+  - Testes cobrem: tipos de ações, recursos, filtros, paginação, deleção, export
