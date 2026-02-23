@@ -19,7 +19,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getLoginUrl } from "@/const";
+import { getLoginUrl, TECHXAP_LOGO, APP_NAME } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { BarChart3, LogOut, PanelLeft, Upload, Settings, Home, AlertTriangle, AlertCircle, FileText, TrendingUp, Shield, Trash2 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -80,14 +80,20 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-black to-gray-900">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Acesso ao Dashboard
-            </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Faça login com sua conta Google para acessar o dashboard de gestão de motoristas.
+            <img src={TECHXAP_LOGO} alt="TechXap" className="h-16 w-auto" />
+            <div className="text-center">
+              <h1 className="text-2xl font-semibold tracking-tight text-white">
+                {APP_NAME}
+              </h1>
+              <p className="text-sm text-yellow-400 mt-2">
+                Dashboard Operacional de Motoristas
+              </p>
+            </div>
+            <p className="text-sm text-gray-400 text-center max-w-sm">
+              Faça login com sua conta Google para acessar o dashboard.
             </p>
           </div>
           <Button
@@ -95,7 +101,7 @@ export default function DashboardLayout({
               window.location.href = getLoginUrl();
             }}
             size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
+            className="w-full shadow-lg hover:shadow-xl transition-all bg-yellow-500 text-black hover:bg-yellow-600"
           >
             Entrar com Google
           </Button>

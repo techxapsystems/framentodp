@@ -1,5 +1,10 @@
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
+// TechXap Branding
+export const TECHXAP_LOGO = "/techxap-logo.webp";
+export const APP_NAME = "TechXap Systems SaaS";
+export const APP_TAGLINE = "Dashboard Operacional de Motoristas";
+
 // Generate login URL at runtime so redirect URI reflects the current origin.
 export const getLoginUrl = () => {
   const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;

@@ -42,71 +42,71 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* Framento Transportes Color Scheme */
+/* TechXap Systems Color Scheme - Preto, Amarelo, Verde Neon */
 :root {
-  --primary: #00FF00;
-  --primary-foreground: #001F3F;
-  --sidebar-primary: #00FF00;
-  --sidebar-primary-foreground: #001F3F;
+  --primary: #FFD700;
+  --primary-foreground: #000000;
+  --sidebar-primary: #FFD700;
+  --sidebar-primary-foreground: #000000;
   --chart-1: #00FF00;
-  --chart-2: #00CC00;
-  --chart-3: #009900;
-  --chart-4: #006600;
-  --chart-5: #003300;
+  --chart-2: #FFD700;
+  --chart-3: #00CC00;
+  --chart-4: #CCAA00;
+  --chart-5: #009900;
   --radius: 0.65rem;
   --background: #FFFFFF;
-  --foreground: #001F3F;
-  --card: #F5F5F5;
-  --card-foreground: #001F3F;
+  --foreground: #000000;
+  --card: #F8F8F8;
+  --card-foreground: #000000;
   --popover: #FFFFFF;
-  --popover-foreground: #001F3F;
-  --secondary: #E8E8E8;
-  --secondary-foreground: #001F3F;
-  --muted: #D3D3D3;
+  --popover-foreground: #000000;
+  --secondary: #F0F0F0;
+  --secondary-foreground: #000000;
+  --muted: #D0D0D0;
   --muted-foreground: #666666;
   --accent: #00FF00;
-  --accent-foreground: #001F3F;
+  --accent-foreground: #000000;
   --destructive: #DC2626;
   --destructive-foreground: #FFFFFF;
   --border: #E0E0E0;
   --input: #E0E0E0;
-  --ring: #00FF00;
-  --sidebar: #001F3F;
+  --ring: #FFD700;
+  --sidebar: #000000;
   --sidebar-foreground: #FFFFFF;
-  --sidebar-accent: #00FF00;
-  --sidebar-accent-foreground: #001F3F;
-  --sidebar-border: #003D7A;
-  --sidebar-ring: #00FF00;
+  --sidebar-accent: #FFD700;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #333333;
+  --sidebar-ring: #FFD700;
 }
 
 .dark {
-  --primary: #00FF00;
-  --primary-foreground: #001F3F;
-  --sidebar-primary: #00FF00;
-  --sidebar-primary-foreground: #001F3F;
-  --background: #0F1419;
+  --primary: #FFD700;
+  --primary-foreground: #000000;
+  --sidebar-primary: #FFD700;
+  --sidebar-primary-foreground: #000000;
+  --background: #0A0A0A;
   --foreground: #FFFFFF;
-  --card: #1A1F2E;
+  --card: #1A1A1A;
   --card-foreground: #FFFFFF;
-  --popover: #1A1F2E;
+  --popover: #1A1A1A;
   --popover-foreground: #FFFFFF;
-  --secondary: #2A3142;
+  --secondary: #2A2A2A;
   --secondary-foreground: #E0E0E0;
-  --muted: #3A4152;
+  --muted: #3A3A3A;
   --muted-foreground: #A0A0A0;
   --accent: #00FF00;
-  --accent-foreground: #001F3F;
+  --accent-foreground: #000000;
   --destructive: #FF6B6B;
   --destructive-foreground: #FFFFFF;
   --border: #3A4152;
   --input: #2A3142;
   --ring: #00FF00;
-  --sidebar: #001F3F;
+  --sidebar: #000000;
   --sidebar-foreground: #FFFFFF;
-  --sidebar-accent: #00FF00;
-  --sidebar-accent-foreground: #001F3F;
-  --sidebar-border: #003D7A;
-  --sidebar-ring: #00FF00;
+  --sidebar-accent: #FFD700;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #333333;
+  --sidebar-ring: #FFD700;
 }
 
 @layer base {
