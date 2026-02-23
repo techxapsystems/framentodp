@@ -488,5 +488,11 @@
 - [x] Aplicar máscara em campos de data do cadastro de advertência
   - Campo "Data da Infração" agora usa DateMaskInput
   - Testado: digitando "02052026" formata para "02/05/2026"
-- [ ] Aplicar máscara em campos de data de outros formulários
-- [ ] Testar máscara em todos os campos
+- [x] Aplicar máscara em campos de data de outros formulários
+  - Tela Hoje: Data DE e Data ATE com DateMaskInput
+  - Tela Semana: Inicio da Semana com DateMaskInput
+  - Tela Relatorios: Data Inicio e Data Fim com DateMaskInput
+- [x] Testar máscara em todos os campos
+  - Tela Hoje: Campos exibindo 14/02/2026
+  - Tela Semana: Campo exibindo 09/02/2026
+  - Tela Relatorios: Campos prontos com placeholder DD/MM/YYYY

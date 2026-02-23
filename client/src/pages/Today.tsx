@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useFilters } from "@/contexts/FilterContext";
+import { DateMaskInput } from "@/components/DateMaskInput";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -23,7 +24,6 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
 
 export default function Today() {
   const [selectedMotorista, setSelectedMotorista] = useState<any>(null);
@@ -115,14 +115,33 @@ export default function Today() {
   };
 
   const handleDateFromChange = (newDate: string) => {
-    const date = new Date(newDate);
-    setContextDateFrom(date);
+    // Converter de DD/MM/YYYY para YYYY-MM-DD
+    if (newDate.length === 10 && newDate.includes("/")) {
+      const [day, month, year] = newDate.split("/");
+      const isoDate = `${year}-${month}-${day}`;
+      const date = new Date(isoDate + "T00:00:00");
+      setContextDateFrom(date);
+    }
   };
 
   const handleDateToChange = (newDate: string) => {
-    const date = new Date(newDate);
-    setContextDateTo(date);
+    // Converter de DD/MM/YYYY para YYYY-MM-DD
+    if (newDate.length === 10 && newDate.includes("/")) {
+      const [day, month, year] = newDate.split("/");
+      const isoDate = `${year}-${month}-${day}`;
+      const date = new Date(isoDate + "T00:00:00");
+      setContextDateTo(date);
+    }
   };
+
+  // Converter datas do contexto para formato DD/MM/YYYY para exibição
+  const dateFromFormatted = dateFrom ? (
+    dateFrom.split("-").reverse().join("/")
+  ) : "";
+  
+  const dateToFormatted = dateTo ? (
+    dateTo.split("-").reverse().join("/")
+  ) : "";
 
   const handleGestorChange = (value: string) => {
     setContextManager(value);
@@ -158,11 +177,10 @@ export default function Today() {
             <label className="text-sm font-medium text-slate-700 block mb-2">
               Data DE:
             </label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => handleDateFromChange(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            <DateMaskInput
+              value={dateFromFormatted}
+              onChange={handleDateFromChange}
+              placeholder="DD/MM/YYYY"
             />
           </div>
 
@@ -171,11 +189,10 @@ export default function Today() {
             <label className="text-sm font-medium text-slate-700 block mb-2">
               Data ATÉ:
             </label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => handleDateToChange(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            <DateMaskInput
+              value={dateToFormatted}
+              onChange={handleDateToChange}
+              placeholder="DD/MM/YYYY"
             />
           </div>
 

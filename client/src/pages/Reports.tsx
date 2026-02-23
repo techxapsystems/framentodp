@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { DateMaskInput } from "@/components/DateMaskInput";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,37 @@ export default function Reports() {
   const [motoristaBusca, setMotoristaBusca] = useState("");
   const [selectedTipo, setSelectedTipo] = useState<"" | "pouco_rodado" | "horas_extras">("");
   const [selectedOperacao, setSelectedOperacao] = useState("");
+
+  const handleDateStartChange = (newDate: string) => {
+    // Converter de DD/MM/YYYY para YYYY-MM-DD
+    if (newDate.length === 10 && newDate.includes("/")) {
+      const [day, month, year] = newDate.split("/");
+      const isoDate = `${year}-${month}-${day}`;
+      setDateStart(isoDate);
+    } else if (newDate === "") {
+      setDateStart("");
+    }
+  };
+
+  const handleDateEndChange = (newDate: string) => {
+    // Converter de DD/MM/YYYY para YYYY-MM-DD
+    if (newDate.length === 10 && newDate.includes("/")) {
+      const [day, month, year] = newDate.split("/");
+      const isoDate = `${year}-${month}-${day}`;
+      setDateEnd(isoDate);
+    } else if (newDate === "") {
+      setDateEnd("");
+    }
+  };
+
+  // Converter datas para formato DD/MM/YYYY para exibição
+  const dateStartFormatted = dateStart ? (
+    dateStart.split("-").reverse().join("/")
+  ) : "";
+  
+  const dateEndFormatted = dateEnd ? (
+    dateEnd.split("-").reverse().join("/")
+  ) : "";
 
   // Query para buscar lista de motoristas (DEVE VIR PRIMEIRO)
   const { data: idleDriversData } = trpc.dashboard.getIdleDriversForWarning.useQuery(
@@ -183,11 +215,10 @@ export default function Reports() {
               <label className="text-sm font-medium text-slate-700 block mb-2">
                 Data Início:
               </label>
-              <input
-                type="date"
-                value={dateStart}
-                onChange={(e) => setDateStart(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              <DateMaskInput
+                value={dateStartFormatted}
+                onChange={handleDateStartChange}
+                placeholder="DD/MM/YYYY"
               />
             </div>
 
@@ -195,11 +226,10 @@ export default function Reports() {
               <label className="text-sm font-medium text-slate-700 block mb-2">
                 Data Fim:
               </label>
-              <input
-                type="date"
-                value={dateEnd}
-                onChange={(e) => setDateEnd(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              <DateMaskInput
+                value={dateEndFormatted}
+                onChange={handleDateEndChange}
+                placeholder="DD/MM/YYYY"
               />
             </div>
 

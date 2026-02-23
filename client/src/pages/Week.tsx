@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { DateMaskInput } from "@/components/DateMaskInput";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
@@ -31,6 +32,20 @@ export default function Week() {
     const monday = new Date(today.setDate(diff));
     return monday.toISOString().split("T")[0];
   });
+
+  const handleWeekStartChange = (newDate: string) => {
+    // Converter de DD/MM/YYYY para YYYY-MM-DD
+    if (newDate.length === 10 && newDate.includes("/")) {
+      const [day, month, year] = newDate.split("/");
+      const isoDate = `${year}-${month}-${day}`;
+      setWeekStart(isoDate);
+    }
+  };
+
+  // Converter data para formato DD/MM/YYYY para exibição
+  const weekStartFormatted = weekStart ? (
+    weekStart.split("-").reverse().join("/")
+  ) : "";
 
   const { data, isLoading } = trpc.dashboard.getWeekData.useQuery({
     weekStart,
@@ -75,11 +90,10 @@ export default function Week() {
           <label className="text-sm font-medium text-slate-700 block mb-2">
             Início da Semana
           </label>
-          <input
-            type="date"
-            value={weekStart}
-            onChange={(e) => setWeekStart(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          <DateMaskInput
+            value={weekStartFormatted}
+            onChange={handleWeekStartChange}
+            placeholder="DD/MM/YYYY"
           />
         </div>
       </div>
