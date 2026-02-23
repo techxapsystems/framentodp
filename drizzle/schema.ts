@@ -436,6 +436,52 @@ export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
 
 /**
+ * Políticas de Retenção - configura quantos dias manter dados de cada tipo
+ */
+export const retentionPolicies = mysqlTable(
+  "retention_policies",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    resource: varchar("resource", { length: 100 }).notNull().unique(), // users, warnings, orientations, audit_logs, etc
+    retentionDays: int("retentionDays").notNull().default(90), // Quantos dias manter
+    enabled: boolean("enabled").notNull().default(true), // Se a política está ativa
+    autoDelete: boolean("autoDelete").notNull().default(true), // Se deve deletar automaticamente
+    description: text("description"), // Descrição da política
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [index("idx_resource").on(table.resource)]
+);
+
+export type RetentionPolicy = typeof retentionPolicies.$inferSelect;
+export type InsertRetentionPolicy = typeof retentionPolicies.$inferInsert;
+
+/**
+ * Histórico de Limpeza - registra quando logs foram deletados
+ */
+export const cleanupHistory = mysqlTable(
+  "cleanup_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    resource: varchar("resource", { length: 100 }).notNull(), // Tipo de dado deletado
+    recordsDeleted: int("recordsDeleted").notNull(), // Quantos registros foram deletados
+    deletedBefore: timestamp("deletedBefore").notNull(), // Data limite (deletou tudo antes dessa data)
+    executedBy: varchar("executedBy", { length: 320 }), // Email do usuário que executou (null se job automático)
+    isAutomatic: boolean("isAutomatic").notNull().default(true), // Se foi execução automática
+    status: mysqlEnum("status", ["success", "failed", "partial"]).notNull().default("success"),
+    errorMessage: text("errorMessage"), // Se falhou, qual foi o erro
+    executedAt: timestamp("executedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_resource").on(table.resource),
+    index("idx_executedAt").on(table.executedAt),
+  ]
+);
+
+export type CleanupHistory = typeof cleanupHistory.$inferSelect;
+export type InsertCleanupHistory = typeof cleanupHistory.$inferInsert;
+
+/**
  * Orientações - registra todas as orientações dadas aos motoristas
  * Utilizado para rastrear histórico de orientações e sugerir advertências após 3 orientações
  */

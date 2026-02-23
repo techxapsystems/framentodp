@@ -539,3 +539,29 @@
 - [x] Criar testes para sistema de logs
   - 17 testes passando validando lógica de logs
   - Testes cobrem: tipos de ações, recursos, filtros, paginação, deleção, export
+
+
+## Política de Retenção de Dados (COMPLETO)
+- [x] Criar tabela de configuração de políticas de retenção
+  - Tabela retention_policies com configuração por recurso
+  - Tabela cleanup_history para rastrear execuções
+- [x] Implementar serviço de limpeza de logs com suporte a múltiplas políticas
+  - Função cleanupAuditLogs para deletar logs antigos
+  - Função executeAllCleanups para executar todas as políticas
+  - Função getCleanupStats para obter estatísticas
+- [x] Criar job agendado que roda diariamente
+  - Job executado automaticamente às 2:00 AM
+  - Registra resultado em cleanup_history
+  - Integrado com sistema de auditoria
+- [x] Adicionar endpoints tRPC para gerenciar retenção
+  - getPolicies, getPolicy, upsertPolicy
+  - executeCleanup, getCleanupHistory, getStats
+  - Apenas admin pode acessar
+- [x] Criar página de gerenciamento de retenção
+  - Página /retenção-dados com interface completa
+  - Visualização de políticas e histórico
+  - Botão para executar limpeza manual
+  - Estatísticas de registros deletados
+- [x] Criar testes para política de retenção
+  - 15 testes passando validando lógica de retenção
+  - Testes cobrem: configuração, cálculo de cutoff, agendamento, múltiplos recursos

@@ -16,6 +16,7 @@ import WarningsManagement from "./pages/WarningsManagement";
 import WarningsTracking from "./pages/WarningsTracking";
 import Reports from "./pages/Reports";
 import Audit from "./pages/Audit";
+import DataRetention from "./pages/DataRetention";
 
 function Router() {
   return (
@@ -60,6 +61,11 @@ function Router() {
         <Route path="/auditoria" component={() => (
           <ProtectedRoute requiredRole="admin">
             <Audit />
+          </ProtectedRoute>
+        )} />
+        <Route path="/retenção-dados" component={() => (
+          <ProtectedRoute requiredRole="admin">
+            <DataRetention />
           </ProtectedRoute>
         )} />
         <Route path="/404" component={NotFound} />
