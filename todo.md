@@ -608,7 +608,14 @@
   - Filtros por tipo e categoria
   - Preview de conteúdo com botão copiar
   - Integrada ao menu lateral
-- [ ] Refatorar página de Advertências com campo único e integração de modelos
-  - Próximo passo: integrar biblioteca na tela de cadastro
+- [x] Refatorar página de Advertências com campo único e integração de modelos
+  - Campo único para texto da advertência/suspensão
+  - Removidos campos desnecessários (nível, motivo separado)
+  - Adicionado botão "Abrir Biblioteca" que abre em nova aba
+  - Motorista, placa e operação preenchidos automaticamente
+  - Data com máscara DD/MM/YYYY
+  - Tipo: Advertência ou Suspensão
+  - Instruções claras no card informativo
+  - Corrigido erro SelectItem vazio (value="all" ao invés de "")
 - [ ] Implementar geração de PDF com branding Framento
   - Próximo passo: você enviará modelo de PDF da Framento

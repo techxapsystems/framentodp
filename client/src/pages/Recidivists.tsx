@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,30 +16,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Copy } from "lucide-react";
+import { BookOpen, ExternalLink } from "lucide-react";
 import { WarningPDFButton } from "@/components/WarningPDFGenerator";
 import { toast } from "sonner";
 import { DateMaskInput } from "@/components/DateMaskInput";
 
 export default function Recidivists() {
   const [selectedConductor, setSelectedConductor] = useState<string>("");
-  const [warningLevel, setWarningLevel] = useState<"1" | "2" | "3">("1");
-  const [warningReason, setWarningReason] = useState("");
-  const [warningNote, setWarningNote] = useState("");
+  const [warningType, setWarningType] = useState<"advertencia" | "suspensao">("advertencia");
+  const [infrationDate, setInfrationDate] = useState("");
+  const [warningContent, setWarningContent] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
-  const [infrationDays, setInfrationDays] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogWarningType, setDialogWarningType] = useState<"pouco_rodado" | "horas_extras">("pouco_rodado");
   const [operacao, setOperacao] = useState<string>("");
-  const [tipoColaborador, setTipoColaborador] = useState<string>("");
-  const [dataAnotacao, setDataAnotacao] = useState<string>("");
-  const [sequencia, setSequencia] = useState<string>("");
-  const [tipoAnotacao, setTipoAnotacao] = useState<string>("");
-  const [codigoTreinamento, setCodigoTreinamento] = useState<string>("");
-  const [numeroDocumento, setNumeroDocumento] = useState<string>("");
-  const [empresaResponsavel, setEmpresaResponsavel] = useState<string>("");
-  const [tipoResponsavel, setTipoResponsavel] = useState<string>("");
-  const [responsavelAnotacao, setResponsavelAnotacao] = useState<string>("");
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Buscar operações disponíveis
   const { data: operacoes = [] } = trpc.dashboard.getAllOperations.useQuery();
@@ -61,11 +50,10 @@ export default function Recidivists() {
     onSuccess: () => {
       toast.success("Advertência registrada com sucesso");
       setSelectedConductor("");
-      setWarningLevel("1");
-      setWarningReason("");
-      setWarningNote("");
+      setWarningType("advertencia");
+      setWarningContent("");
       setLicensePlate("");
-      setInfrationDays("");
+      setInfrationDate("");
       setOperacao("");
       setDialogOpen(false);
     },
@@ -75,7 +63,7 @@ export default function Recidivists() {
   });
 
   const handleCreateWarning = () => {
-    if (!selectedConductor || !licensePlate || !operacao || !warningReason) {
+    if (!selectedConductor || !licensePlate || !operacao || !infrationDate || !warningContent) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
@@ -84,19 +72,19 @@ export default function Recidivists() {
       conductorName: selectedConductor,
       placa: licensePlate,
       operacao: operacao,
-      nivelAdvertencia: parseInt(warningLevel),
-      motivo: warningReason,
-      observacoes: warningNote,
-      tipo: dialogWarningType,
-      tipoColaborador: tipoColaborador || "",
-      dataAnotacao: dataAnotacao || "",
-      sequencia: sequencia || "",
-      tipoAnotacao: tipoAnotacao || "",
-      codigoTreinamento: codigoTreinamento || "",
-      numeroDocumento: numeroDocumento || "",
-      empresaResponsavel: empresaResponsavel || "",
-      tipoResponsavel: tipoResponsavel || "",
-      responsavelAnotacao: responsavelAnotacao || "",
+      nivelAdvertencia: 1,
+      motivo: warningContent,
+      observacoes: "",
+      tipo: warningType === "advertencia" ? "pouco_rodado" : "horas_extras",
+      tipoColaborador: "",
+      dataAnotacao: "",
+      sequencia: "",
+      tipoAnotacao: "",
+      codigoTreinamento: "",
+      numeroDocumento: "",
+      empresaResponsavel: "",
+      tipoResponsavel: "",
+      responsavelAnotacao: "",
     });
   };
 
@@ -109,35 +97,8 @@ export default function Recidivists() {
     }
   };
 
-  const handleCopyEmail = () => {
-    if (!selectedConductor || !licensePlate || !infrationDays || !warningReason) {
-      toast.error("Preencha os campos obrigatórios");
-      return;
-    }
-
-    const emailTemplate = `
-Prezado(a),
-
-Informamos que você recebeu uma advertência conforme detalhes abaixo:
-
-DADOS DA ADVERTÊNCIA:
-- Motorista: ${selectedConductor}
-- Placa: ${licensePlate}
-- Operação: ${operacao}
-- Tipo: ${dialogWarningType === "pouco_rodado" ? "Pouco Rodado" : "Horas Extras"}
-- Nível: Aviso ${warningLevel}
-- Dias de Infração: ${infrationDays}
-- Motivo: ${warningReason}
-${warningNote ? `- Observações: ${warningNote}` : ""}
-
-Favor tomar as devidas providências.
-
-Atenciosamente,
-Departamento de Pessoal
-    `.trim();
-
-    navigator.clipboard.writeText(emailTemplate);
-    toast.success("Email copiado para a área de transferência");
+  const openTemplateLibrary = () => {
+    window.open("/biblioteca-modelos", "_blank");
   };
 
   return (
@@ -160,182 +121,136 @@ Departamento de Pessoal
               + Nova Advertência
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Registrar Nova Advertência</DialogTitle>
             </DialogHeader>
 
-            <div className="grid grid-cols-2 gap-6">
-              {/* Coluna esquerda: Formulário */}
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Motorista: *
-                  </label>
-                  <Select value={selectedConductor} onValueChange={handleConductorChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um motorista" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.isArray(idleDriversData) && idleDriversData.map((driver: any) => (
-                        <SelectItem key={driver.conductorName} value={driver.conductorName}>
-                          {driver.conductorName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Placa do Veículo: *
-                  </label>
-                  <input
-                    type="text"
-                    value={licensePlate}
-                    readOnly
-                    placeholder="Preenchida automaticamente"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Operação: *
-                  </label>
-                  <input
-                    type="text"
-                    value={operacao}
-                    readOnly
-                    placeholder="Preenchida automaticamente"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Data da Infração (DD/MM/YYYY): *
-                  </label>
-                  <DateMaskInput
-                    value={infrationDays}
-                    onChange={setInfrationDays}
-                    placeholder="DD/MM/YYYY"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Tipo:
-                  </label>
-                  <Select value={dialogWarningType} onValueChange={(v: any) => setDialogWarningType(v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pouco_rodado">Advertência</SelectItem>
-                      <SelectItem value="horas_extras">Suspensão</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Nível de Advertência:
-                  </label>
-                  <Select value={warningLevel} onValueChange={(v: any) => setWarningLevel(v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Aviso 1</SelectItem>
-                      <SelectItem value="2">Aviso 2</SelectItem>
-                      <SelectItem value="3">Aviso 3 (Crítico)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Motivo: *
-                  </label>
-                  <textarea
-                    value={warningReason}
-                    onChange={(e) => setWarningReason(e.target.value)}
-                    placeholder="Descreva o motivo da advertência"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    rows={3}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">
-                    Observação (opcional):
-                  </label>
-                  <textarea
-                    value={warningNote}
-                    onChange={(e) => setWarningNote(e.target.value)}
-                    placeholder="Adicione observações adicionais"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Button
-                    onClick={handleCreateWarning}
-                    disabled={createWarningMutation.isPending}
-                    className="w-full bg-red-600 hover:bg-red-700"
-                  >
-                    {createWarningMutation.isPending ? "Registrando..." : "Registrar Advertência"}
-                  </Button>
-                  <WarningPDFButton
-                    conductorName={selectedConductor}
-                    licensePlate={licensePlate}
-                    operacao={operacao}
-                    warningLevel={warningLevel}
-                    warningType={dialogWarningType}
-                    warningReason={warningReason}
-                    warningNote={warningNote}
-                    infrationDays={infrationDays}
-                    disabled={!selectedConductor || !licensePlate || !operacao}
-                  />
-                </div>
+            <div className="space-y-4">
+              {/* Motorista */}
+              <div>
+                <label className="text-sm font-medium text-slate-700 block mb-2">
+                  Motorista: *
+                </label>
+                <Select value={selectedConductor} onValueChange={handleConductorChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um motorista" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.isArray(idleDriversData) && idleDriversData.map((driver: any) => (
+                      <SelectItem key={driver.conductorName} value={driver.conductorName}>
+                        {driver.conductorName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Coluna direita: Histórico e Email */}
-              <div className="space-y-4 border-l border-slate-200 pl-6">
-                <div>
-                  <h3 className="font-semibold text-slate-900 mb-3">Informações do Motorista</h3>
-                  {selectedConductorData ? (
-                    <div className="space-y-3">
-                      <div className="bg-slate-50 p-3 rounded-lg">
-                        <p className="text-sm text-slate-600">Motorista</p>
-                        <p className="font-medium text-slate-900">{selectedConductorData.conductorName}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-slate-500">Selecione um motorista para ver detalhes</p>
-                  )}
-                </div>
+              {/* Placa do Veículo */}
+              <div>
+                <label className="text-sm font-medium text-slate-700 block mb-2">
+                  Placa do Veículo: *
+                </label>
+                <input
+                  type="text"
+                  value={licensePlate}
+                  readOnly
+                  placeholder="Preenchida automaticamente"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50"
+                />
+              </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                    <Copy className="w-4 h-4" />
-                    Template de Email
-                  </h4>
-                  <p className="text-xs text-blue-700 mb-3">
-                    Preencha todos os campos obrigatórios (*) para gerar o email
-                  </p>
+              {/* Operação */}
+              <div>
+                <label className="text-sm font-medium text-slate-700 block mb-2">
+                  Operação: *
+                </label>
+                <input
+                  type="text"
+                  value={operacao}
+                  readOnly
+                  placeholder="Preenchida automaticamente"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50"
+                />
+              </div>
+
+              {/* Data da Infração */}
+              <div>
+                <label className="text-sm font-medium text-slate-700 block mb-2">
+                  Data da Infração (DD/MM/YYYY): *
+                </label>
+                <DateMaskInput
+                  value={infrationDate}
+                  onChange={setInfrationDate}
+                  placeholder="DD/MM/YYYY"
+                />
+              </div>
+
+              {/* Tipo */}
+              <div>
+                <label className="text-sm font-medium text-slate-700 block mb-2">
+                  Tipo: *
+                </label>
+                <Select value={warningType} onValueChange={(v: any) => setWarningType(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="advertencia">Advertência</SelectItem>
+                    <SelectItem value="suspensao">Suspensão</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Conteúdo da Advertência */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Texto da Advertência/Suspensão: *
+                  </label>
                   <Button
-                    onClick={handleCopyEmail}
-                    disabled={!selectedConductor || !licensePlate || !infrationDays || !warningReason}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    variant="outline"
                     size="sm"
+                    onClick={openTemplateLibrary}
+                    className="gap-2"
                   >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copiar Email
+                    <BookOpen className="w-4 h-4" />
+                    Abrir Biblioteca
+                    <ExternalLink className="w-3 h-3" />
                   </Button>
                 </div>
+                <textarea
+                  value={warningContent}
+                  onChange={(e) => setWarningContent(e.target.value)}
+                  placeholder="Cole aqui o texto do modelo de advertência ou suspensão"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  rows={8}
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  💡 Clique em "Abrir Biblioteca" para copiar um modelo padrão
+                </p>
+              </div>
+
+              {/* Botões de ação */}
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleCreateWarning}
+                  disabled={createWarningMutation.isPending}
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                >
+                  {createWarningMutation.isPending ? "Registrando..." : "Registrar Advertência"}
+                </Button>
+                <WarningPDFButton
+                  conductorName={selectedConductor}
+                  licensePlate={licensePlate}
+                  operacao={operacao}
+                  warningLevel="1"
+                  warningType={warningType === "advertencia" ? "pouco_rodado" : "horas_extras"}
+                  warningReason={warningContent}
+                  warningNote=""
+                  infrationDays={infrationDate}
+                  disabled={!selectedConductor || !licensePlate || !operacao || !warningContent}
+                />
               </div>
             </div>
           </DialogContent>
@@ -347,12 +262,27 @@ Departamento de Pessoal
         <CardHeader>
           <CardTitle>Como usar</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-slate-600">
-            Clique no botão "+ Nova Advertência" para registrar uma nova advertência. 
-            Selecione um motorista e preencha os campos obrigatórios. A placa e operação 
-            serão preenchidas automaticamente.
-          </p>
+        <CardContent className="space-y-3 text-sm text-slate-600">
+          <div>
+            <p className="font-medium text-slate-900">1. Selecione o motorista</p>
+            <p>A placa do veículo e operação serão preenchidas automaticamente</p>
+          </div>
+          <div>
+            <p className="font-medium text-slate-900">2. Preencha a data da infração</p>
+            <p>Use o formato DD/MM/YYYY (ex: 23/02/2026)</p>
+          </div>
+          <div>
+            <p className="font-medium text-slate-900">3. Escolha o tipo</p>
+            <p>Selecione entre Advertência ou Suspensão</p>
+          </div>
+          <div>
+            <p className="font-medium text-slate-900">4. Cole o texto do modelo</p>
+            <p>Clique em "Abrir Biblioteca" para acessar os modelos padrão em uma nova aba. Copie o modelo desejado e cole no campo de texto.</p>
+          </div>
+          <div>
+            <p className="font-medium text-slate-900">5. Gere o PDF</p>
+            <p>Clique em "Gerar PDF" para criar o documento com branding da empresa</p>
+          </div>
         </CardContent>
       </Card>
     </div>

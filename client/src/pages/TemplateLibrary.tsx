@@ -109,14 +109,14 @@ export default function TemplateLibrary() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Categoria</label>
               <Select 
-                value={selectedCategoryId?.toString() || ""} 
-                onValueChange={(value) => setSelectedCategoryId(value ? parseInt(value) : null)}
+                value={selectedCategoryId?.toString() || "all"} 
+                onValueChange={(value) => setSelectedCategoryId(value === "all" ? null : parseInt(value))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as categorias</SelectItem>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
                   {categories?.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.name}
