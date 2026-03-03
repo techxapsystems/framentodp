@@ -17,6 +17,7 @@ import WarningsTracking from "./pages/WarningsTracking";
 import Reports from "./pages/Reports";
 import Audit from "./pages/Audit";
 import DataRetention from "./pages/DataRetention";
+import TemplateLibrary from "./pages/TemplateLibrary";
 
 function Router() {
   return (
@@ -66,6 +67,11 @@ function Router() {
         <Route path="/retenção-dados" component={() => (
           <ProtectedRoute requiredRole="admin">
             <DataRetention />
+          </ProtectedRoute>
+        )} />
+        <Route path="/biblioteca-modelos" component={() => (
+          <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
+            <TemplateLibrary />
           </ProtectedRoute>
         )} />
         <Route path="/404" component={NotFound} />

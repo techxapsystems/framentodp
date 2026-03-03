@@ -485,3 +485,81 @@ export type InsertCleanupHistory = typeof cleanupHistory.$inferInsert;
  * Orientações - registra todas as orientações dadas aos motoristas
  * Utilizado para rastrear histórico de orientações e sugerir advertências após 3 orientações
  */
+
+
+/**
+ * Categorias de Modelos - agrupa modelos por tipo de infração
+ */
+export const modelCategories = mysqlTable(
+  "model_categories",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 200 }).notNull().unique(), // ex: "Excesso de Velocidade", "Falta Injustificada"
+    description: text("description"), // Descrição da categoria
+    type: mysqlEnum("type", ["advertencia", "suspensao"]).notNull(), // Tipo padrão
+    icon: varchar("icon", { length: 50 }), // Ícone para UI
+    color: varchar("color", { length: 7 }), // Cor para UI
+    order: int("order").default(0), // Ordem de exibição
+    isActive: boolean("isActive").notNull().default(true),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [
+    index("idx_type").on(table.type),
+    index("idx_isActive").on(table.isActive),
+  ]
+);
+
+export type ModelCategory = typeof modelCategories.$inferSelect;
+export type InsertModelCategory = typeof modelCategories.$inferInsert;
+
+/**
+ * Modelos de Advertências e Suspensões - templates pré-configurados
+ */
+export const warningTemplates = mysqlTable(
+  "warning_templates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    categoryId: int("categoryId").notNull(), // Referência para categoria
+    title: varchar("title", { length: 255 }).notNull(), // Título do modelo
+    type: mysqlEnum("type", ["advertencia", "suspensao"]).notNull(), // Tipo
+    content: text("content").notNull(), // Conteúdo do modelo (texto completo)
+    summary: varchar("summary", { length: 500 }), // Resumo para preview
+    tags: varchar("tags", { length: 500 }), // Tags para busca (JSON array)
+    sourceFile: varchar("sourceFile", { length: 255 }), // Nome do arquivo original
+    isActive: boolean("isActive").notNull().default(true),
+    usageCount: int("usageCount").default(0), // Quantas vezes foi usado
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [
+    index("idx_categoryId").on(table.categoryId),
+    index("idx_type").on(table.type),
+    index("idx_isActive").on(table.isActive),
+  ]
+);
+
+export type WarningTemplate = typeof warningTemplates.$inferSelect;
+export type InsertWarningTemplate = typeof warningTemplates.$inferInsert;
+
+/**
+ * Histórico de Uso de Modelos - rastreia qual modelo foi usado em cada advertência
+ */
+export const templateUsageHistory = mysqlTable(
+  "template_usage_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    templateId: int("templateId").notNull(), // Modelo usado
+    warningId: int("warningId"), // Advertência criada (pode ser null se ainda não foi criada)
+    userId: int("userId").notNull(), // Usuário que usou o modelo
+    usedAt: timestamp("usedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_templateId").on(table.templateId),
+    index("idx_userId").on(table.userId),
+    index("idx_usedAt").on(table.usedAt),
+  ]
+);
+
+export type TemplateUsageHistory = typeof templateUsageHistory.$inferSelect;
+export type InsertTemplateUsageHistory = typeof templateUsageHistory.$inferInsert;

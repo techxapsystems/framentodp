@@ -7,6 +7,7 @@ import { dashboardRouter } from "./routers/dashboardRouter";
 import { configRouter } from "./routers/configRouter";
 import { auditRouter } from "./routers/auditRouter";
 import { retentionRouter } from "./routers/retentionRouter";
+import { templateRouter } from "./routers/templateRouter";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -26,6 +27,7 @@ export const appRouter = router({
   config: configRouter,
   audit: auditRouter,
   retention: retentionRouter,
+  templates: templateRouter,
 });
 
 export type AppRouter = typeof appRouter;

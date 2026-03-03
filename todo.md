@@ -589,3 +589,26 @@
   - Dashboard com novo tema
   - Sidebar com cores corretas
   - Login com branding TechXap
+
+
+## Sistema Profissional de Modelos de Advertências (COMPLETO)
+- [x] Extrair e organizar 134 modelos de advertências em banco de dados
+  - 101 Advertências + 33 Suspensões extraídas de arquivos DOCX
+  - Modelos organizados por categoria (22 categorias)
+- [x] Criar schema de modelos de advertências e categorias
+  - Tabela model_categories para organizar tipos de infração
+  - Tabela warning_templates para armazenar 134 modelos
+  - Tabela template_usage_history para rastrear uso
+- [x] Implementar serviço de modelos com busca e filtros
+  - Router tRPC completo com 7 endpoints
+  - Busca por texto, categoria, tipo
+  - Rastreamento de uso e estatísticas
+- [x] Criar página de Biblioteca de Modelos com preview
+  - Interface profissional com abas (Modelos/Informações)
+  - Filtros por tipo e categoria
+  - Preview de conteúdo com botão copiar
+  - Integrada ao menu lateral
+- [ ] Refatorar página de Advertências com campo único e integração de modelos
+  - Próximo passo: integrar biblioteca na tela de cadastro
+- [ ] Implementar geração de PDF com branding Framento
+  - Próximo passo: você enviará modelo de PDF da Framento
