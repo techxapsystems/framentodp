@@ -593,10 +593,11 @@
 
 ## Sistema Profissional de Modelos de Advertências (COMPLETO)
 - [x] Extrair e organizar 134 modelos de advertências em banco de dados
-  - 134 Modelos (Advertências + Suspensões) extraídos de arquivos DOCX/DOC
-  - 16 Categorias criadas no banco de dados
-  - 10 Modelos de exemplo já inseridos
-  - Estrutura pronta para adicionar os 124 modelos restantes
+  - 134 Modelos (101 Advertências + 33 Suspensões) extraídos de arquivos DOCX/DOC
+  - 26 Categorias criadas no banco de dados (16 originais + 10 novas)
+  - 20 Modelos inseridos (10 Advertências + 10 Suspensões)
+  - Script SQL gerado com 270 linhas para os 134 modelos completos
+  - Pronto para completar inserção dos 114 modelos restantes
 - [x] Criar schema de modelos de advertências e categorias
   - Tabela model_categories com 16 categorias
   - Tabela warning_templates com campos: categoryId, title, type, content, summary, tags, sourceFile, isActive, usageCount
