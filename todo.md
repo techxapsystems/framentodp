@@ -617,5 +617,10 @@
   - Tipo: Advertência ou Suspensão
   - Instruções claras no card informativo
   - Corrigido erro SelectItem vazio (value="all" ao invés de "")
-- [ ] Implementar geração de PDF com branding Framento
-  - Próximo passo: você enviará modelo de PDF da Framento
+- [x] Implementar geração de PDF com branding Framento
+  - Analisado layout do PDF da Framento (suspensão disciplinar)
+  - Criado serviço pdfService.ts com função generateWarningPDF
+  - Implementado router tRPC com endpoints para gerar PDF
+  - Botão "Imprimir PDF" integrado na tela de Advertências
+  - Usa jsPDF para geração no frontend (rápido e sem dependências de servidor)
+  - Suporta Advertência e Suspensão com layout profissional
