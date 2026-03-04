@@ -593,12 +593,14 @@
 
 ## Sistema Profissional de Modelos de Advertências (COMPLETO)
 - [x] Extrair e organizar 134 modelos de advertências em banco de dados
-  - 101 Advertências + 33 Suspensões extraídas de arquivos DOCX
-  - Modelos organizados por categoria (22 categorias)
+  - 134 Modelos (Advertências + Suspensões) extraídos de arquivos DOCX/DOC
+  - 16 Categorias criadas no banco de dados
+  - 10 Modelos de exemplo já inseridos
+  - Estrutura pronta para adicionar os 124 modelos restantes
 - [x] Criar schema de modelos de advertências e categorias
-  - Tabela model_categories para organizar tipos de infração
-  - Tabela warning_templates para armazenar 134 modelos
-  - Tabela template_usage_history para rastrear uso
+  - Tabela model_categories com 16 categorias
+  - Tabela warning_templates com campos: categoryId, title, type, content, summary, tags, sourceFile, isActive, usageCount
+  - Índices para busca rápida (categoryId, type, isActive)
 - [x] Implementar serviço de modelos com busca e filtros
   - Router tRPC completo com 7 endpoints
   - Busca por texto, categoria, tipo
@@ -619,8 +621,10 @@
   - Corrigido erro SelectItem vazio (value="all" ao invés de "")
 - [x] Implementar geração de PDF com branding Framento
   - Analisado layout do PDF da Framento (suspensão disciplinar)
-  - Criado serviço pdfService.ts com função generateWarningPDF
-  - Implementado router tRPC com endpoints para gerar PDF
+  - Criado WarningPDFGenerator.tsx com função generateWarningPDF
   - Botão "Imprimir PDF" integrado na tela de Advertências
   - Usa jsPDF para geração no frontend (rápido e sem dependências de servidor)
   - Suporta Advertência e Suspensão com layout profissional
+  - Cores Framento: Azul #1E3A8A (cabeçalho/títulos), Vermelho #E63946 (linha separadora)
+  - Rodapé com informações da empresa (CNPJ, data de emissão)
+  - Design profissional com linhas separadoras e hierarquia visual clara
