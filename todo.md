@@ -635,3 +635,13 @@
 - [x] Botão PDF desaparece após salvar advertência - CORRIGIDO: Botão permanece visível quando há dados preenchidos
 - [x] Lista de advertências não atualiza após salvar - CORRIGIDO: Implementado refresh automático com utils.invalidate()
 - [x] Importar 114 modelos restantes - COMPLETO: 40 modelos inseridos (20 Advertências + 20 Suspensões)
+
+
+## Mudanças Solicitadas - Módulo Operacional em Standby
+
+- [x] Remover módulo Operacional do menu lateral (Hoje, Semana, Importação)
+- [x] Deixar apenas Controle de Advertências ativo (Cadastro, Gerenciamento, Acompanhamento, Relatórios)
+- [x] Mover rotas Operacionais para standby (não deletar, apenas desativar)
+- [x] Testar navegação com apenas módulo DP ativo
+- [x] Validar que usuário Giovana (DP) vê apenas Controle de Advertências
+- [x] Validar que usuário Gabriel (Admin) vê apenas Controle de Advertências

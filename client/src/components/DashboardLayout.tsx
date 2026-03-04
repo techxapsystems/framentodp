@@ -35,11 +35,6 @@ type MenuItem = {
 };
 
 const menuItems: MenuItem[] = [
-  // Módulo: Operacional Jornada
-  { icon: Home, label: "Hoje", path: "/", module: "operacional_jornada" },
-  { icon: BarChart3, label: "Semana", path: "/semana", module: "operacional_jornada" },
-  { icon: Upload, label: "Importação", path: "/importacao", module: "operacional_jornada" },
-  
   // Módulo: Controle de Advertências
   { icon: AlertTriangle, label: "Cadastro de Advertências", path: "/reincidentes", module: "controle_de_advertencias" },
   { icon: AlertCircle, label: "Gerenciamento de Advertências", path: "/advertencias", module: "controle_de_advertencias" },
