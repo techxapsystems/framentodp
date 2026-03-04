@@ -46,9 +46,14 @@ export default function Recidivists() {
     ? idleDriversData.find((d: any) => d.conductorName === selectedConductor)
     : null;
 
+  const utils = trpc.useUtils();
+
   const createWarningMutation = trpc.dashboard.createWarning.useMutation({
     onSuccess: () => {
       toast.success("Advertência registrada com sucesso");
+      // Invalidar queries para forçar refresh
+      utils.dashboard.getIdleDriversForWarning.invalidate();
+      // Limpar formulário
       setSelectedConductor("");
       setWarningType("advertencia");
       setWarningContent("");
@@ -240,18 +245,25 @@ export default function Recidivists() {
                 >
                   {createWarningMutation.isPending ? "Registrando..." : "Registrar Advertência"}
                 </Button>
-                <WarningPDFButton
-                  conductorName={selectedConductor}
-                  licensePlate={licensePlate}
-                  operacao={operacao}
-                  warningLevel="1"
-                  warningType={warningType === "advertencia" ? "pouco_rodado" : "horas_extras"}
-                  warningReason={warningContent}
-                  warningNote=""
-                  infrationDays={infrationDate}
-                  disabled={!selectedConductor || !licensePlate || !operacao || !warningContent}
-                />
               </div>
+
+              {/* Botão PDF sempre visível quando há dados */}
+              {selectedConductor && licensePlate && operacao && warningContent && (
+                <div className="pt-4 border-t border-slate-200">
+                  <p className="text-sm font-medium text-slate-700 mb-3">Gerar Documento:</p>
+                  <WarningPDFButton
+                    conductorName={selectedConductor}
+                    licensePlate={licensePlate}
+                    operacao={operacao}
+                    warningLevel="1"
+                    warningType={warningType === "advertencia" ? "pouco_rodado" : "horas_extras"}
+                    warningReason={warningContent}
+                    warningNote=""
+                    infrationDays={infrationDate}
+                    disabled={false}
+                  />
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
@@ -280,8 +292,8 @@ export default function Recidivists() {
             <p>Clique em "Abrir Biblioteca" para acessar os modelos padrão em uma nova aba. Copie o modelo desejado e cole no campo de texto.</p>
           </div>
           <div>
-            <p className="font-medium text-slate-900">5. Gere o PDF</p>
-            <p>Clique em "Gerar PDF" para criar o documento com branding da empresa</p>
+            <p className="font-medium text-slate-900">5. Registre e gere o PDF</p>
+            <p>Clique em "Registrar Advertência" para salvar. O botão "Gerar PDF" aparecerá para criar o documento com branding da empresa</p>
           </div>
         </CardContent>
       </Card>

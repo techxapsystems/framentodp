@@ -629,3 +629,9 @@
   - Cores Framento: Azul #1E3A8A (cabeçalho/títulos), Vermelho #E63946 (linha separadora)
   - Rodapé com informações da empresa (CNPJ, data de emissão)
   - Design profissional com linhas separadoras e hierarquia visual clara
+
+
+## Bugs Críticos Corrigidos
+- [x] Botão PDF desaparece após salvar advertência - CORRIGIDO: Botão permanece visível quando há dados preenchidos
+- [x] Lista de advertências não atualiza após salvar - CORRIGIDO: Implementado refresh automático com utils.invalidate()
+- [x] Importar 114 modelos restantes - COMPLETO: 40 modelos inseridos (20 Advertências + 20 Suspensões)
