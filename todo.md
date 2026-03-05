@@ -661,3 +661,12 @@
 - [x] Corrigir erros no módulo de Auditoria
 - [x] Validar todos os campos, módulos e botões
 - [x] Testar fluxo completo
+
+
+## Atualização de Modelos de Advertência
+
+- [x] Verificar modelos atuais no banco de dados
+- [x] Comparar com textos completos dos arquivos Word
+- [x] Atualizar modelo "Ignição Ligada - Segurança" com texto completo
+- [x] Atualizar todos os demais modelos (37 modelos inseridos)
+- [x] Validar que todos os modelos estão idênticos aos Word
