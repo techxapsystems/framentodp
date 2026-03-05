@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl, TECHXAP_LOGO, APP_NAME } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { BarChart3, LogOut, PanelLeft, Upload, Settings, Home, AlertTriangle, AlertCircle, FileText, TrendingUp, Shield, Trash2, BookOpen } from "lucide-react";
+import { BarChart3, LogOut, PanelLeft, Upload, Settings, Home, AlertTriangle, AlertCircle, FileText, TrendingUp, Shield, Trash2, BookOpen, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -43,6 +43,7 @@ const menuItems: MenuItem[] = [
   { icon: BookOpen, label: "Biblioteca de Modelos", path: "/biblioteca-modelos", module: "controle_de_advertencias" },
   
   // Admin
+  { icon: Users, label: "Gerenciamento de Usuários", path: "/usuarios" },
   { icon: Shield, label: "Auditoria", path: "/auditoria" },
   { icon: Trash2, label: "Retenção de Dados", path: "/retenção-dados" },
   
@@ -79,13 +80,17 @@ export default function DashboardLayout({
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-black to-gray-900">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
-            <img src={TECHXAP_LOGO} alt="TechXap" className="h-16 w-auto" />
+            <div className="flex items-center gap-4">
+              <img src={TECHXAP_LOGO} alt="TechXap" className="h-12 w-auto" />
+              <div className="w-px h-12 bg-yellow-500"></div>
+              <img src="/framento-logo.png" alt="Framento" className="h-12 w-auto" />
+            </div>
             <div className="text-center">
               <h1 className="text-2xl font-semibold tracking-tight text-white">
                 {APP_NAME}
               </h1>
               <p className="text-sm text-yellow-400 mt-2">
-                Dashboard Operacional de Motoristas
+                Sistema de Gestão de Motoristas
               </p>
             </div>
             <p className="text-sm text-gray-400 text-center max-w-sm">
@@ -249,13 +254,13 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <img src="/framento_logo.webp" alt="Framento" className="h-8 w-auto" />
+                  <img src="/framento-logo.png" alt="Framento" className="h-8 w-auto" />
                   <div className="flex flex-col">
                     <span className="font-bold tracking-tight truncate text-white text-sm leading-tight">
-                      Ociosidade
+                      Framento
                     </span>
                     <span className="text-xs text-slate-400">
-                      BRF Primária
+                      Sistema de Gestão
                     </span>
                   </div>
                 </div>

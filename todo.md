@@ -651,3 +651,13 @@
 
 - [x] Advertências não estão sendo registradas ao clicar em salvar - CORRIGIDO: Payload da mutation estava com campos extras
 - [x] Botão PDF desapareceu ou não está acessível após remover módulo Operacional - CORRIGIDO: Adicionado import de jsPDF
+
+
+## Tarefas Solicitadas - Sprint Atual
+
+- [x] Adicionar logo Framento mantendo aparência TechXap System
+- [x] Remover título "Status de Ociosidade BRF Primária" do topo (módulo antigo)
+- [x] Criar CRUD completo de usuários (criar, editar, deletar, listar)
+- [x] Corrigir erros no módulo de Auditoria
+- [x] Validar todos os campos, módulos e botões
+- [x] Testar fluxo completo

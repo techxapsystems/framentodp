@@ -18,6 +18,7 @@ import Reports from "./pages/Reports";
 import Audit from "./pages/Audit";
 import DataRetention from "./pages/DataRetention";
 import TemplateLibrary from "./pages/TemplateLibrary";
+import UserManagement from "./pages/UserManagement";
 
 function Router() {
   return (
@@ -67,6 +68,11 @@ function Router() {
         <Route path="/retenção-dados" component={() => (
           <ProtectedRoute requiredRole="admin">
             <DataRetention />
+          </ProtectedRoute>
+        )} />
+        <Route path="/usuarios" component={() => (
+          <ProtectedRoute requiredRole="admin">
+            <UserManagement />
           </ProtectedRoute>
         )} />
         <Route path="/biblioteca-modelos" component={() => (
