@@ -75,21 +75,10 @@ export default function Recidivists() {
 
     createWarningMutation.mutate({
       conductorName: selectedConductor,
-      placa: licensePlate,
-      operacao: operacao,
       nivelAdvertencia: 1,
       motivo: warningContent,
-      observacoes: "",
+      observacao: "",
       tipo: warningType === "advertencia" ? "pouco_rodado" : "horas_extras",
-      tipoColaborador: "",
-      dataAnotacao: "",
-      sequencia: "",
-      tipoAnotacao: "",
-      codigoTreinamento: "",
-      numeroDocumento: "",
-      empresaResponsavel: "",
-      tipoResponsavel: "",
-      responsavelAnotacao: "",
     });
   };
 

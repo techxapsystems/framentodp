@@ -645,3 +645,9 @@
 - [x] Testar navegação com apenas módulo DP ativo
 - [x] Validar que usuário Giovana (DP) vê apenas Controle de Advertências
 - [x] Validar que usuário Gabriel (Admin) vê apenas Controle de Advertências
+
+
+## Bugs Críticos - Após Remover Módulo Operacional
+
+- [x] Advertências não estão sendo registradas ao clicar em salvar - CORRIGIDO: Payload da mutation estava com campos extras
+- [x] Botão PDF desapareceu ou não está acessível após remover módulo Operacional - CORRIGIDO: Adicionado import de jsPDF
