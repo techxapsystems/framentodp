@@ -50,6 +50,11 @@ export default function Recidivists() {
 
   const createWarningMutation = trpc.dashboard.createWarning.useMutation({
     onSuccess: (data: any) => {
+      if (!data?.success) {
+        toast.error(data?.message || "Falha ao registrar advertência");
+        return;
+      }
+      
       toast.success("Advertência registrada com sucesso");
       // Gerar PDF automaticamente se houver ID
       if (data?.id) {

@@ -442,12 +442,20 @@ export const dashboardRouter = router({
         const { createWarning: createWarningDb } = await import("../db");
         const result = await createWarningDb({
           conductorName: input.conductorName,
-          tipo: input.tipo,
+          tipo: "advertencia",
+          categoria: input.tipo,
           nivelAdvertencia: input.nivelAdvertencia,
           motivo: input.motivo,
           observacao: input.observacao,
           aplicadoPor: ctx.user.email || ctx.user.name || "Sistema",
         });
+
+        if (!result?.id) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Falha ao criar advertência: ID não retornado",
+          });
+        }
 
         return {
           success: true,
@@ -455,10 +463,12 @@ export const dashboardRouter = router({
           message: "Advertência registrada com sucesso",
         };
       } catch (error) {
-        return {
-          success: false,
-          message: String(error),
-        };
+        console.error("[createWarning] Erro:", error);
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Erro ao registrar advertência: ${String(error)}`,
+        });
       }
     }),
 

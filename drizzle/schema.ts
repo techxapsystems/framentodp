@@ -167,7 +167,7 @@ export const suggestedActions = mysqlTable(
     journeyId: int("journeyId").notNull(),
     conductorName: varchar("conductorName", { length: 255 }).notNull(),
     data: timestamp("data").notNull(),
-    tipo: mysqlEnum("tipo", ["advertencia", "suspensao"]).notNull(),
+    tipo: mysqlEnum("tipo", ["advertencia", "suspensao", "pouco_rodado", "horas_extras"]).notNull(),
     acao: text("acao").notNull(), // Descrição da ação sugerida
     severidade: mysqlEnum("severidade", ["info", "warning", "critical"]).notNull(),
     
@@ -192,7 +192,7 @@ export const treatments = mysqlTable(
     journeyId: int("journeyId").notNull(),
     conductorName: varchar("conductorName", { length: 255 }).notNull(),
     data: timestamp("data").notNull(),
-    tipo: mysqlEnum("tipo", ["advertencia", "suspensao"]).notNull(),
+    tipo: mysqlEnum("tipo", ["advertencia", "suspensao", "pouco_rodado", "horas_extras"]).notNull(),
     
     status: mysqlEnum("status", ["pendente", "em_andamento", "resolvido", "ignorado"])
       .notNull()
@@ -337,6 +337,7 @@ export const warnings = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     conductorName: varchar("conductorName", { length: 255 }).notNull(),
     tipo: mysqlEnum("tipo", ["advertencia", "suspensao"]).notNull(),
+    categoria: mysqlEnum("categoria", ["pouco_rodado", "horas_extras", "outro"]).default("outro"),
     nivelAdvertencia: int("nivelAdvertencia").notNull(),
     motivo: text("motivo").notNull(),
     observacao: text("observacao"),

@@ -174,17 +174,17 @@ export async function getReincidentsWithWarnings() {
     
     const rec = recurrenceData.length > 0 ? recurrenceData[0] : null;
     
-    // Calcular nível máximo de aviso por tipo
+    // Calcular nível máximo de aviso por categoria
     const driverWarnings = warningsByDriver.get(conductorName) || [];
     const avisosPoucoRodado = Math.max(
       ...driverWarnings
-        .filter(w => w.tipo === "pouco_rodado")
+        .filter(w => w.categoria === "pouco_rodado")
         .map(w => w.nivelAdvertencia),
       0
     );
     const avisosHorasExtras = Math.max(
       ...driverWarnings
-        .filter(w => w.tipo === "horas_extras")
+        .filter(w => w.categoria === "horas_extras")
         .map(w => w.nivelAdvertencia),
       0
     );

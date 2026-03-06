@@ -679,3 +679,37 @@
 - [x] Advertência não está sendo salva no banco de dados - CORRIGIDO: backend retorna ID
 - [x] Botão PDF não está funcionando após salvar - CORRIGIDO: PDF gerado automaticamente
 - [x] Mudar cores: branco suave + amarelo (não vermelho) - CORRIGIDO: botões amarelos
+
+
+## AUDITORIA PROFISSIONAL - 3 DIAS PARA TESTE COM USUÁRIOS
+
+### Bugs Críticos P0 (Bloqueadores)
+
+- [ ] Advertências NÃO estão registrando no banco de dados
+- [ ] Dados não computam nas outras telas (Gerenciamento, Acompanhamento, Relatórios)
+- [ ] Descrições dos modelos não aparecem corretamente (truncadas/incompletas)
+
+### Auditoria de Experiência do Usuário (UX)
+
+- [ ] Validar fluxo completo: login → cadastro → salvar → PDF → visualizar em outras telas
+- [ ] Verificar mensagens de erro/sucesso (toasts)
+- [ ] Validar responsividade em diferentes tamanhos de tela
+- [ ] Testar com diferentes tipos de usuários (admin, DP, gestor)
+- [ ] Verificar performance e tempo de carregamento
+- [ ] Validar acessibilidade (cores, contraste, navegação por teclado)
+
+### Testes Funcionais
+
+- [ ] Criar advertência → verificar se salva no banco
+- [ ] Listar advertências → verificar se aparecem
+- [ ] Editar advertência → verificar se atualiza
+- [ ] Deletar advertência → verificar se remove
+- [ ] Gerar PDF → verificar conteúdo e formatação
+- [ ] Testar com todos os 37 modelos
+
+### Documentação para Teste
+
+- [ ] Criar guia de uso para usuários
+- [ ] Documentar campos obrigatórios
+- [ ] Criar checklist de validação
+- [ ] Preparar dados de teste

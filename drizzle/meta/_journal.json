@@ -120,6 +120,20 @@
       "when": 1772710160462,
       "tag": "0016_chilly_whirlwind",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1772798730268,
+      "tag": "0017_lazy_supernaut",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1772798838303,
+      "tag": "0018_white_thing",
+      "breakpoints": true
     }
   ]
 }
