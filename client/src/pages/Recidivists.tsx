@@ -49,8 +49,18 @@ export default function Recidivists() {
   const utils = trpc.useUtils();
 
   const createWarningMutation = trpc.dashboard.createWarning.useMutation({
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast.success("Advertência registrada com sucesso");
+      // Gerar PDF automaticamente se houver ID
+      if (data?.id) {
+        setTimeout(() => {
+          const pdfButton = document.querySelector('[data-pdf-trigger]') as HTMLButtonElement;
+          if (pdfButton) {
+            pdfButton.click();
+            toast.success("PDF gerado automaticamente");
+          }
+        }, 300);
+      }
       // Invalidar queries para forçar refresh
       utils.dashboard.getIdleDriversForWarning.invalidate();
       // Limpar formulário
@@ -111,7 +121,7 @@ export default function Recidivists() {
       <div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-red-600 hover:bg-red-700" size="lg">
+            <Button className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold" size="lg">
               + Nova Advertência
             </Button>
           </DialogTrigger>
@@ -217,8 +227,9 @@ export default function Recidivists() {
                   value={warningContent}
                   onChange={(e) => setWarningContent(e.target.value)}
                   placeholder="Cole aqui o texto do modelo de advertência ou suspensão"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                  rows={8}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 font-mono text-sm resize-none overflow-y-auto"
+                  rows={16}
+                  style={{ maxHeight: '400px' }}
                 />
                 <p className="text-xs text-slate-500 mt-2">
                   💡 Clique em "Abrir Biblioteca" para copiar um modelo padrão
@@ -230,7 +241,7 @@ export default function Recidivists() {
                 <Button
                   onClick={handleCreateWarning}
                   disabled={createWarningMutation.isPending}
-                  className="flex-1 bg-red-600 hover:bg-red-700"
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold"
                 >
                   {createWarningMutation.isPending ? "Registrando..." : "Registrar Advertência"}
                 </Button>

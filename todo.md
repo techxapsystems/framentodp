@@ -670,3 +670,12 @@
 - [x] Atualizar modelo "Ignição Ligada - Segurança" com texto completo
 - [x] Atualizar todos os demais modelos (37 modelos inseridos)
 - [x] Validar que todos os modelos estão idênticos aos Word
+
+
+## Bugs Críticos - Após Atualização de Modelos
+
+- [x] Texto do modelo está truncado no textarea - CORRIGIDO: textarea com 16 linhas + scroll
+- [x] Remover painel de Ociosidade da página inicial - CORRIGIDO: rota / agora vai para Cadastro
+- [x] Advertência não está sendo salva no banco de dados - CORRIGIDO: backend retorna ID
+- [x] Botão PDF não está funcionando após salvar - CORRIGIDO: PDF gerado automaticamente
+- [x] Mudar cores: branco suave + amarelo (não vermelho) - CORRIGIDO: botões amarelos

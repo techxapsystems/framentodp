@@ -190,6 +190,7 @@ export function WarningPDFButton(props: WarningPDFButtonProps) {
       onClick={() => generateWarningPDF(props)}
       disabled={props.disabled}
       title="Imprimir advertência em PDF"
+      data-pdf-trigger
     >
       <Download className="w-4 h-4" />
       Imprimir PDF

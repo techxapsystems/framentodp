@@ -25,8 +25,13 @@ function Router() {
     <DashboardLayout>
       <Switch>
         <Route path="/" component={() => (
-          <ProtectedRoute requiredModules={["operacional_jornada"]}>
-            <Today />
+          <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
+            <Recidivists />
+          </ProtectedRoute>
+        )} />
+        <Route path="/cadastro-advertencias" component={() => (
+          <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
+            <Recidivists />
           </ProtectedRoute>
         )} />
         <Route path="/semana" component={() => (

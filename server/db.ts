@@ -354,7 +354,9 @@ export async function createWarning(data: any) {
     criadoEm: new Date(),
   });
   
-  return result;
+  // Retornar o ID da advertência criada
+  const insertId = (result as any)?.insertId || (result as any)?.[0]?.id || 0;
+  return { success: true, id: Number(insertId), message: "Advertência criada com sucesso" };
 }
 
 export async function getWarningsByConductor(conductorName: string) {

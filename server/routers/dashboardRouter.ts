@@ -440,7 +440,7 @@ export const dashboardRouter = router({
         if (!db) throw new Error("Database not available");
 
         const { createWarning: createWarningDb } = await import("../db");
-        await createWarningDb({
+        const result = await createWarningDb({
           conductorName: input.conductorName,
           tipo: input.tipo,
           nivelAdvertencia: input.nivelAdvertencia,
@@ -451,6 +451,7 @@ export const dashboardRouter = router({
 
         return {
           success: true,
+          id: result.id,
           message: "Advertência registrada com sucesso",
         };
       } catch (error) {
