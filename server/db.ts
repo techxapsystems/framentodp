@@ -326,7 +326,7 @@ export async function createWarning(data: any) {
       nivelAdvertencia: data.nivelAdvertencia,
       motivo: data.motivo,
       observacao: data.observacao || "",
-      aplicadoPor: data.aplicadoPor,
+      aplicadoPor: data.aplicadoPor || "Sistema",
       advertenciaGerada: true,
       advertenciaAplicada: false,
       criadoEm: new Date(),
