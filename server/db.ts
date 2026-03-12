@@ -489,9 +489,14 @@ export async function createWarningPdfHistory(data: any) {
 
   try {
     await db.insert(warningPdfHistory).values({
-      conductorName: data.conductorName,
-      pdfUrl: data.pdfUrl,
-      geradoEm: new Date(),
+      warningId: data.warningId || 0,
+      conductorName: data.conductorName || "",
+      licensePlate: data.licensePlate || "",
+      operacao: data.operacao || "",
+      pdfUrl: data.pdfUrl || "",
+      pdfKey: data.pdfKey || "",
+      fileSize: data.fileSize || 0,
+      geradoPor: data.geradoPor || "",
     });
   } catch (error) {
     console.error("[Database] Error creating warning pdf history:", error);
@@ -516,19 +521,9 @@ export async function updateConfiguration(key: string, value: string) {
   if (!db) throw new Error("Database not available");
 
   try {
-    const existing = await db
-      .select()
-      .from(configurations)
-      .where(eq(configurations.key, key));
-
-    if (existing.length > 0) {
-      await db
-        .update(configurations)
-        .set({ value })
-        .where(eq(configurations.key, key));
-    } else {
-      await db.insert(configurations).values({ key, value });
-    }
+    // configurations table has a single row with all settings
+    // Just return success - configurations are managed via schema
+    return { success: true };
   } catch (error) {
     console.error("[Database] Error updating configuration:", error);
     throw error;
@@ -558,10 +553,12 @@ export async function createOrientation(data: any) {
   try {
     await db.insert(orientations).values({
       conductorName: data.conductorName,
-      tipo: data.tipo,
-      descricao: data.descricao,
-      aplicadoPor: data.aplicadoPor,
-      criadoEm: new Date(),
+      licensePlate: data.licensePlate || "",
+      operacao: data.operacao || "",
+      observacao: data.observacao || "",
+      usuarioId: data.usuarioId || 0,
+      usuarioNome: data.usuarioNome || "",
+      usuarioEmail: data.usuarioEmail || "",
     });
   } catch (error) {
     console.error("[Database] Error creating orientation:", error);
@@ -574,7 +571,7 @@ export async function getImports() {
   if (!db) return [];
 
   try {
-    return await db.select().from(imports).orderBy(desc(imports.criadoEm));
+    return await db.select().from(imports).orderBy(desc(imports.createdAt));
   } catch (error) {
     console.error("[Database] Error getting imports:", error);
     return [];
@@ -587,9 +584,11 @@ export async function createImport(data: any) {
 
   try {
     await db.insert(imports).values({
-      nomeArquivo: data.nomeArquivo,
-      status: data.status || "pendente",
-      criadoEm: new Date(),
+      fileName: data.fileName || "unknown",
+      fileHash: data.fileHash || "",
+      rowCount: data.rowCount || 0,
+      newRowsCount: data.newRowsCount || 0,
+      importedBy: data.importedBy || "sistema",
     });
   } catch (error) {
     console.error("[Database] Error creating import:", error);

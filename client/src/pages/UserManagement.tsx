@@ -21,10 +21,18 @@ import { toast } from "sonner";
 
 const MODULES = [
   { id: "controle_de_advertencias", label: "Controle de Advertências" },
-  { id: "auditoria", label: "Auditoria" },
-  { id: "relatorios", label: "Relatórios" },
-  { id: "configuracoes", label: "Configurações" },
+  { id: "banco_de_horas", label: "Banco de Horas" },
+  { id: "operacional_jornada", label: "Operacional Jornada" },
 ];
+
+function generateTemporaryPassword() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
+  let password = "";
+  for (let i = 0; i < 12; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
 
 export default function UserManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -36,6 +44,7 @@ export default function UserManagement() {
     department: "",
     modules: [] as string[],
     status: "ativo" as "ativo" | "inativo",
+    password: "",
   });
 
   const { data: users = [] } = trpc.users.listUsers.useQuery();
@@ -93,6 +102,7 @@ export default function UserManagement() {
       department: "",
       modules: [],
       status: "ativo",
+      password: "",
     });
     setEditingId(null);
   };
@@ -105,6 +115,7 @@ export default function UserManagement() {
       department: user.department || "",
       modules: user.modules || [],
       status: user.status,
+      password: user.password || "",
     });
     setEditingId(user.id);
     setDialogOpen(true);
@@ -116,13 +127,19 @@ export default function UserManagement() {
       return;
     }
 
+    // Gerar senha temporária se for novo usuário
+    const dataToSave = {
+      ...formData,
+      password: editingId ? formData.password : generateTemporaryPassword(),
+    };
+
     if (editingId) {
       updateMutation.mutate({
         id: editingId,
-        ...formData,
+        ...dataToSave,
       });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(dataToSave);
     }
   };
 
@@ -258,6 +275,35 @@ export default function UserManagement() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Senha Temporária */}
+              {!editingId && (
+                <div>
+                  <label className="text-sm font-medium text-slate-700 block mb-2">
+                    Senha Temporária (gerada automaticamente):
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={formData.password}
+                      readOnly
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          password: generateTemporaryPassword(),
+                        }))
+                      }
+                      className="px-3 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-sm font-medium"
+                    >
+                      Gerar Nova
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Módulos */}
               <div>

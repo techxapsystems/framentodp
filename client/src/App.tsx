@@ -21,6 +21,7 @@ import DataRetention from "./pages/DataRetention";
 import TemplateLibrary from "./pages/TemplateLibrary";
 import UserManagement from "./pages/UserManagement";
 import Login from "./pages/Login";
+import { AnaliseGifBrf } from "./pages/AnaliseGifBrf";
 
 function Router() {
   const [user, setUser] = useState<any>(null);
@@ -114,6 +115,11 @@ function Router() {
         <Route path="/biblioteca-modelos" component={() => (
           <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
             <TemplateLibrary />
+          </ProtectedRoute>
+        )} />
+        <Route path="/analise-gif-brf" component={() => (
+          <ProtectedRoute requiredModules={["analise_gif_brf"]}>
+            <AnaliseGifBrf />
           </ProtectedRoute>
         )} />
         <Route path="/404" component={NotFound} />

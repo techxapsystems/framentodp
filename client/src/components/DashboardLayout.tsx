@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl, TECHXAP_LOGO, APP_NAME } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { BarChart3, LogOut, PanelLeft, Upload, Settings, Home, AlertTriangle, AlertCircle, FileText, TrendingUp, Shield, Trash2, BookOpen, Users } from "lucide-react";
+import { BarChart3, LogOut, PanelLeft, Upload, Settings, Home, AlertTriangle, AlertCircle, FileText, TrendingUp, Shield, Trash2, BookOpen, Users, Thermometer } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -31,7 +31,7 @@ type MenuItem = {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   path: string;
-  module?: "operacional_jornada" | "controle_de_advertencias";
+  module?: "operacional_jornada" | "controle_de_advertencias" | "analise_gif_brf";
 };
 
 const menuItems: MenuItem[] = [
@@ -41,6 +41,7 @@ const menuItems: MenuItem[] = [
   { icon: TrendingUp, label: "Acompanhamento", path: "/acompanhamento", module: "controle_de_advertencias" },
   { icon: FileText, label: "Relatórios", path: "/relatorios", module: "controle_de_advertencias" },
   { icon: BookOpen, label: "Biblioteca de Modelos", path: "/biblioteca-modelos", module: "controle_de_advertencias" },
+  { icon: Thermometer, label: "Análise GIF BRF", path: "/analise-gif-brf", module: "analise_gif_brf" },
   
   // Admin
   { icon: Users, label: "Gerenciamento de Usuários", path: "/usuarios" },
@@ -282,6 +283,16 @@ function DashboardLayoutContent({
             {renderMenuSection(
               "Controle de Advertências",
               menuItems.filter(item => item.module === "controle_de_advertencias")
+            )}
+            
+            {filteredMenuItems.some(item => item.module === "analise_gif_brf") && (
+              <>
+                <div className="border-t border-slate-700" />
+                {renderMenuSection(
+                  "Análise de Dados",
+                  menuItems.filter(item => item.module === "analise_gif_brf")
+                )}
+              </>
             )}
             
             <div className="border-t border-slate-700 mt-auto" />

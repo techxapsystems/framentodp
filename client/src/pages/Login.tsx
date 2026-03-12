@@ -88,7 +88,7 @@ export default function Login() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@techxap.com"
+                  placeholder="gabriel.ferreira"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
@@ -141,18 +141,7 @@ export default function Login() {
               </Button>
             </form>
 
-            {/* Informações de Demo */}
-            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm font-semibold text-yellow-900 mb-2">
-                Credenciais de Administrador:
-              </p>
-              <p className="text-sm text-yellow-800">
-                <strong>Email:</strong> admin@techxap.com
-              </p>
-              <p className="text-sm text-yellow-800">
-                <strong>Senha:</strong> admin123
-              </p>
-            </div>
+
           </CardContent>
         </Card>
 

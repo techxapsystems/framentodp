@@ -823,3 +823,16 @@
 - [ ] Adicionar validação de entrada
 - [ ] Implementar rate limiting para login
 - [ ] Adicionar CSRF protection
+
+
+## Integração TXTEMP - Módulo Análise GIF BRF (EM PROGRESSO)
+- [x] Copiar estrutura do projeto TXTEMP
+- [x] Criar componente DropZone para upload de arquivos
+- [x] Criar página AnaliseGifBrf.tsx com interface de análise
+- [x] Adicionar rota /analise-gif-brf em App.tsx
+- [x] Adicionar item de menu "Análise GIF BRF" no DashboardLayout
+- [x] Adicionar permissão de módulo "analise_gif_brf" ao sistema
+- [ ] Implementar lógica de análise térmica (backend)
+- [ ] Integrar upload de arquivos para S3
+- [ ] Testar fluxo completo de análise
+- [ ] Adicionar exportação de resultados em Excel

@@ -37,15 +37,15 @@ async function initAdmin() {
 
     console.log("Criando usuário admin...");
 
-    const adminPassword = hashPassword("admin123");
+    const adminPassword = hashPassword("gabriel12");
     const modulos = JSON.stringify(["controle_de_advertencias", "banco_de_horas"]);
 
     await connection.execute(
       `INSERT INTO users (email, name, password, role, modules, status, loginMethod, createdAt, updatedAt, lastSignedIn)
        VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
       [
-        "admin@techxap.com",
-        "Administrador TechXap",
+        "gabriel.ferreira",
+        "Gabriel Ferreira",
         adminPassword,
         "admin",
         modulos,
@@ -55,8 +55,8 @@ async function initAdmin() {
     );
 
     console.log("✅ Admin criado com sucesso!");
-    console.log("📧 Email: admin@techxap.com");
-    console.log("🔐 Senha: admin123");
+    console.log("📧 Email: gabriel.ferreira");
+    console.log("🔐 Senha: gabriel12");
   } catch (error) {
     console.error("❌ Erro ao criar admin:", error.message);
     process.exit(1);

@@ -529,7 +529,7 @@ export const dashboardRouter = router({
     }),
 
   /**
-   * Estatísticas de advertências por motorista
+   * Estatisticas de advertencias por motorista
    */
   getWarningsStatsByDriver: protectedProcedure.query(async () => {
     const { getWarningsStatsByDriver } = await import("../db");

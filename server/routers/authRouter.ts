@@ -11,7 +11,7 @@ export const authRouter = router({
   login: publicProcedure
     .input(
       z.object({
-        email: z.string().email(),
+        email: z.string().min(1),
         password: z.string().min(1),
       })
     )
