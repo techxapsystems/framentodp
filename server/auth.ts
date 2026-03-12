@@ -22,9 +22,9 @@ export function verifyPassword(password: string, hash: string): boolean {
  * Credenciais padrão do admin
  */
 export const ADMIN_CREDENTIALS = {
-  email: "admin@techxap.com",
-  password: "admin123",
-  name: "Administrador TechXap",
+  email: "gabriel.ferreira",
+  password: "gabriel12",
+  name: "Administrador",
   role: "admin" as const,
 };
 

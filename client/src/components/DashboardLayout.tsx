@@ -82,8 +82,6 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
             <div className="flex items-center gap-4">
-              <img src={TECHXAP_LOGO} alt="TechXap" className="h-12 w-auto" />
-              <div className="w-px h-12 bg-yellow-500"></div>
               <img src="/framento-logo.png" alt="Framento" className="h-12 w-auto" />
             </div>
             <div className="text-center">
@@ -95,18 +93,9 @@ export default function DashboardLayout({
               </p>
             </div>
             <p className="text-sm text-gray-400 text-center max-w-sm">
-              Faça login com sua conta Google para acessar o dashboard.
+              Faça login para acessar o dashboard.
             </p>
           </div>
-          <Button
-            onClick={() => {
-              window.location.href = getLoginUrl();
-            }}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all bg-yellow-500 text-black hover:bg-yellow-600"
-          >
-            Entrar com Google
-          </Button>
         </div>
       </div>
     );

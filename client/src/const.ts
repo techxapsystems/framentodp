@@ -1,9 +1,9 @@
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
-// TechXap Branding
-export const TECHXAP_LOGO = "/techxap-logo.webp";
-export const APP_NAME = "TechXap Systems SaaS";
-export const APP_TAGLINE = "Dashboard Operacional de Motoristas";
+// Sistema de Gestão Branding
+export const TECHXAP_LOGO = "/framento-logo.png";
+export const APP_NAME = "Sistema de Gestão";
+export const APP_TAGLINE = "Gestão de Motoristas";
 
 // Generate login URL at runtime so redirect URI reflects the current origin.
 export const getLoginUrl = () => {

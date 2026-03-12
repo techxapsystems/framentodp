@@ -8,7 +8,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +23,7 @@ export default function Login() {
 
     try {
       const result = await loginMutation.mutateAsync({
-        email: email.trim(),
+        email: username.trim(),
         password,
       });
 
@@ -62,10 +62,10 @@ export default function Login() {
             />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">
-            TechXap Systems
+            Sistema de Gestão
           </h1>
           <p className="text-yellow-400 font-semibold">
-            Sistema de Gestão de Motoristas
+            Gestão de Motoristas
           </p>
         </div>
 
@@ -80,20 +80,21 @@ export default function Login() {
 
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
-              {/* Email */}
+              {/* Usuário */}
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                  Email
+                <label htmlFor="username" className="text-sm font-medium text-gray-700">
+                  Usuário
                 </label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="gabriel.ferreira"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="username"
+                  type="text"
+                  placeholder="Digite seu usuário"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   disabled={isLoading}
                   className="border-gray-300"
                   required
+                  autoComplete="username"
                 />
               </div>
 
@@ -111,6 +112,7 @@ export default function Login() {
                   disabled={isLoading}
                   className="border-gray-300"
                   required
+                  autoComplete="current-password"
                 />
               </div>
 
@@ -127,7 +129,7 @@ export default function Login() {
               {/* Botão de Login */}
               <Button
                 type="submit"
-                disabled={isLoading || !email || !password}
+                disabled={isLoading || !username || !password}
                 className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold h-10"
               >
                 {isLoading ? (
