@@ -93,7 +93,8 @@ export default function Recidivists() {
       nivelAdvertencia: 1,
       motivo: warningContent,
       observacao: "",
-      tipo: warningType === "advertencia" ? "pouco_rodado" : "horas_extras",
+      tipo: warningType,
+      categoria: warningType === "advertencia" ? "pouco_rodado" : "horas_extras",
     });
   };
 
@@ -202,7 +203,7 @@ export default function Recidivists() {
                 </label>
                 <Select value={warningType} onValueChange={(v: any) => setWarningType(v)}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="advertencia">Advertência</SelectItem>

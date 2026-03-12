@@ -713,3 +713,26 @@
 - [ ] Documentar campos obrigatórios
 - [ ] Criar checklist de validação
 - [ ] Preparar dados de teste
+
+
+## ABORDAGEM PROFISSIONAL - SPRINT FINAL (3 DIAS)
+
+### Fase 1: Modelos Completos
+- [x] Extrair 100% dos textos do RAR com validação - 134 modelos
+- [x] Criar documento único com todos os modelos
+- [ ] Importar para Biblioteca de Modelos
+
+### Fase 2: Gerenciamento de Advertências
+- [x] Remover coluna "Ações"
+- [x] Adicionar campo "Observação" editável
+- [x] Testar edição de observações
+
+### Fase 3: Relatórios
+- [x] Adicionar observações ao relatório
+- [x] Implementar filtro "Aplicadas" vs "Todas"
+- [ ] Gerar PDFs de advertências aplicadas
+
+### Fase 4: Testes
+- [ ] Teste de fluxo completo
+- [ ] Validação de dados
+- [ ] Preparação para usuários

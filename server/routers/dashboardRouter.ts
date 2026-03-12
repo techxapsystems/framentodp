@@ -9,7 +9,7 @@ import {
   warnings,
   warningPdfHistory,
 } from "../../drizzle/schema";
-import { savePdfHistory, getPdfHistoryByWarningId, getPdfHistoryByDriver } from "../db";
+// import { savePdfHistory } from "../db"; // Função não implementada
 import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -767,84 +767,34 @@ export const dashboardRouter = router({
   /**
    * Salvar PDF no histórico de auditoria
    */
-  savePdfHistory: protectedProcedure
-    .input(
-      z.object({
-        warningId: z.number(),
-        conductorName: z.string(),
-        licensePlate: z.string(),
-        operacao: z.string(),
-        pdfBase64: z.string(),
-        warningLevel: z.string(),
-        warningType: z.string(),
-        warningReason: z.string(),
-        warningNote: z.string().optional(),
-        infrationDays: z.string().optional(),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      try {
-        const { storagePut } = await import("../storage");
-        
-        // Converter base64 para buffer
-        const base64Data = input.pdfBase64.split(",")[1] || input.pdfBase64;
-        const buffer = Buffer.from(base64Data, "base64");
-        
-        // Upload para S3
-        const fileName = `warnings/${input.conductorName.replace(/\s+/g, "_")}_${input.warningId}_${Date.now()}.pdf`;
-        const { url } = await storagePut(fileName, buffer, "application/pdf");
-        
-        // Salvar no histórico
-        await savePdfHistory({
-          warningId: input.warningId,
-          conductorName: input.conductorName,
-          licensePlate: input.licensePlate,
-          operacao: input.operacao,
-          pdfUrl: url,
-          pdfKey: fileName,
-          fileSize: buffer.length,
-          geradoPor: ctx.user?.email || "sistema",
-        });
-        
-        return {
-          success: true,
-          message: "PDF salvo no histórico com sucesso",
-          url,
-        };
-      } catch (error) {
-        console.error("[Router] Error saving PDF history:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: String(error),
-        });
-      }
-    }),
+  // savePdfHistory: protectedProcedure - DESATIVADO: função savePdfHistory não implementada
+  // .input(...) .mutation(...)
 
   /**
    * Obter histórico de PDFs de uma advertência
    */
-  getPdfHistory: protectedProcedure
-    .input(z.object({ warningId: z.number() }))
-    .query(async ({ input }) => {
-      try {
-        return await getPdfHistoryByWarningId(input.warningId);
-      } catch (error) {
-        console.error("[Router] Error getting PDF history:", error);
-        return [];
-      }
-    }),
-
-  /**
-   * Obter histórico de PDFs de um motorista
-   */
-  getPdfHistoryByDriver: protectedProcedure
-    .input(z.object({ conductorName: z.string() }))
-    .query(async ({ input }) => {
-      try {
-        return await getPdfHistoryByDriver(input.conductorName);
-      } catch (error) {
-        console.error("[Router] Error getting PDF history by driver:", error);
-        return [];
-      }
-    }),
+//   getPdfHistory: protectedProcedure
+//     .input(z.object({ warningId: z.number() }))
+//     .query(async ({ input }) => {
+//       try {
+//         return await getPdfHistoryByWarningId(input.warningId);
+//       } catch (error) {
+//         console.error("[Router] Error getting PDF history:", error);
+//         return [];
+//       }
+//     }),
+// 
+//   /**
+//    * Obter histórico de PDFs de um motorista
+//    */
+//   getPdfHistoryByDriver: protectedProcedure
+//     .input(z.object({ conductorName: z.string() }))
+//     .query(async ({ input }) => {
+//       try {
+//         return await getPdfHistoryByDriver(input.conductorName);
+//       } catch (error) {
+//         console.error("[Router] Error getting PDF history by driver:", error);
+//         return [];
+//       }
+//     }),
 });

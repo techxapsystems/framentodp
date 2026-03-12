@@ -180,8 +180,8 @@ export default function WarningsManagement() {
                     <TableHead>Aviso Pouco Rodado</TableHead>
                     <TableHead>Aviso Horas Extras</TableHead>
                     <TableHead>Último Aviso</TableHead>
+                    <TableHead>Observação</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -214,6 +214,32 @@ export default function WarningsManagement() {
                           : "-"}
                       </TableCell>
                       <TableCell>
+                        <div className="max-w-xs">
+                          {item.historico && item.historico.length > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-slate-700 truncate">
+                                {item.historico[0].observacao || "-"}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  if (item.historico && item.historico.length > 0) {
+                                    handleEditWarning(item.historico[0]);
+                                  }
+                                }}
+                                className="h-6 w-6 p-0"
+                                title="Editar observação"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-slate-500">-</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         {item.historico && item.historico.length > 0 ? (
                           <div className="space-y-1">
                             {!item.historico[0].advertenciaAplicada ? (
@@ -233,85 +259,6 @@ export default function WarningsManagement() {
                         ) : (
                           <span className="text-slate-500">-</span>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1 flex-wrap">
-                          {/* Botão Orientação */}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedMotoristaForOrientation({
-                                name: item.conductorName,
-                                placa: item.placa,
-                              });
-                              setOrientationDialogOpen(true);
-                            }}
-                            className="gap-2"
-                            title="Registrar orientação"
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                            Orientação
-                          </Button>
-                          
-                          {/* Botão Marcar como Aplicada */}
-                          {item.historico && item.historico.length > 0 && !item.historico[0].advertenciaAplicada && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
-                              title="Marcar como aplicada"
-                              onClick={() => {
-                                markAppliedMutation.mutate({
-                                  warningId: item.historico[0].id,
-                                  dataAplicacao: new Date().toISOString().split('T')[0],
-                                  assinada: false,
-                                });
-                              }}
-                              disabled={markAppliedMutation.isPending}
-                            >
-                              <Check className="w-4 h-4" />
-                              Aplicada
-                            </Button>
-                          )}
-                          
-                          {/* Botao Reverter para Pendente */}
-                          {item.historico && item.historico.length > 0 && item.historico[0].advertenciaAplicada && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="gap-2 border-red-300 text-red-700 hover:bg-red-50"
-                              title="Reverter para pendente"
-                              onClick={() => {
-                                if (confirm("Tem certeza que deseja reverter esta advertencia para pendente?")) {
-                                  revertWarningMutation.mutate({
-                                    warningId: item.historico[0].id,
-                                  });
-                                }
-                              }}
-                              disabled={revertWarningMutation.isPending}
-                            >
-                              <X className="w-4 h-4" />
-                              Reverter
-                            </Button>
-                          )}
-                          
-                          {/* Botao Editar */}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              if (item.historico && item.historico.length > 0) {
-                                handleEditWarning(item.historico[0]);
-                              }
-                            }}
-                            className="gap-2"
-                            title="Editar advertência"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                            Editar
-                          </Button>
-                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

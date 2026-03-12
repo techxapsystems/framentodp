@@ -29,6 +29,7 @@ export default function Reports() {
   const [motoristaBusca, setMotoristaBusca] = useState("");
   const [selectedTipo, setSelectedTipo] = useState<"" | "pouco_rodado" | "horas_extras">("");
   const [selectedOperacao, setSelectedOperacao] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState<"" | "aplicadas" | "todas">("");
 
   const handleDateStartChange = (newDate: string) => {
     // Converter de DD/MM/YYYY para YYYY-MM-DD
@@ -210,7 +211,7 @@ export default function Reports() {
           <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
             <div>
               <label className="text-sm font-medium text-slate-700 block mb-2">
                 Data Início:
@@ -299,6 +300,21 @@ export default function Reports() {
                 <SelectContent>
                   <SelectItem value="pouco_rodado">Pouco Rodado</SelectItem>
                   <SelectItem value="horas_extras">Horas Extras</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700 block mb-2">
+                Status:
+              </label>
+              <Select value={selectedStatus} onValueChange={(v: any) => setSelectedStatus(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value="aplicadas">Apenas Aplicadas</SelectItem>
                 </SelectContent>
               </Select>
             </div>
