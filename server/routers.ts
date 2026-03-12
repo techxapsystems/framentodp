@@ -2,7 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
-import { importRouter } from "./routers/importRouter";
+// import { importRouter } from "./routers/importRouter"; // Desativado: módulo incompleto
 import { dashboardRouter } from "./routers/dashboardRouter";
 import { configRouter } from "./routers/configRouter";
 import { auditRouter } from "./routers/auditRouter";
@@ -24,7 +24,7 @@ export const appRouter = router({
       } as const;
     }),
   }),
-  import: importRouter,
+  // import: importRouter, // Desativado: módulo incompleto
   dashboard: dashboardRouter,
   config: configRouter,
   audit: auditRouter,

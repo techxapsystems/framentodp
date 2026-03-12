@@ -501,3 +501,162 @@ export async function createImport(data: any) {
     throw error;
   }
 }
+
+
+/**
+ * Obter estatísticas de advertências
+ */
+export async function getWarningsStats(params: {
+  startDate?: Date;
+  endDate?: Date;
+  operacao?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    // Placeholder - retorna estrutura vazia
+    return {
+      total: 0,
+      assinadas: 0,
+      naoAssinadas: 0,
+      taxaDevolucao: 0,
+      warnings: [],
+    };
+  } catch (error) {
+    console.error("[DB] Error getting warnings stats:", error);
+    return null;
+  }
+}
+
+/**
+ * Obter tendência de advertências por período
+ */
+export async function getWarningsTrend(params: {
+  startDate: Date;
+  endDate: Date;
+  groupBy: "day" | "week" | "month";
+  operacao?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    // Placeholder - retorna array vazio
+    return [];
+  } catch (error) {
+    console.error("[DB] Error getting warnings trend:", error);
+    return [];
+  }
+}
+
+/**
+ * Obter advertências agrupadas por operação
+ */
+export async function getWarningsByOperation(params: {
+  startDate?: Date;
+  endDate?: Date;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    // Placeholder - retorna array vazio
+    return [];
+  } catch (error) {
+    console.error("[DB] Error getting warnings by operation:", error);
+    return [];
+  }
+}
+
+
+/**
+ * Obter estatísticas de advertências por operação
+ */
+export async function getWarningsStatsByOperation() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    return [];
+  } catch (error) {
+    console.error("[DB] Error getting warnings stats by operation:", error);
+    return [];
+  }
+}
+
+/**
+ * Obter orientações por motorista
+ */
+export async function getOrientationsByDriver(driverId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    return [];
+  } catch (error) {
+    console.error("[DB] Error getting orientations by driver:", error);
+    return [];
+  }
+}
+
+/**
+ * Contar orientações
+ */
+export async function countOrientations() {
+  const db = await getDb();
+  if (!db) return 0;
+
+  try {
+    return 0;
+  } catch (error) {
+    console.error("[DB] Error counting orientations:", error);
+    return 0;
+  }
+}
+
+/**
+ * Obter todas as operações
+ */
+export async function getAllOperations() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    return [];
+  } catch (error) {
+    console.error("[DB] Error getting all operations:", error);
+    return [];
+  }
+}
+
+
+/**
+ * Obter relatório de advertências
+ */
+export async function getWarningsReport() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    return [];
+  } catch (error) {
+    console.error("[DB] Error getting warnings report:", error);
+    return [];
+  }
+}
+
+/**
+ * Obter estatísticas de advertências por motorista
+ */
+export async function getWarningsStatsByDriver() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    return [];
+  } catch (error) {
+    console.error("[DB] Error getting warnings stats by driver:", error);
+    return [];
+  }
+}

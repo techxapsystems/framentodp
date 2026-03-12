@@ -16,10 +16,11 @@ import {
  */
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
-  name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
+  openId: varchar("openId", { length: 64 }).unique(),
+  name: text("name").notNull(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  password: varchar("password", { length: 255 }),
+  loginMethod: varchar("loginMethod", { length: 64 }).default("email"),
   role: mysqlEnum("role", ["user", "admin", "gestor"]).default("user").notNull(),
   department: varchar("department", { length: 100 }).default("geral"),
   modules: text("modules"), // JSON array de módulos permitidos
@@ -565,3 +566,63 @@ export const templateUsageHistory = mysqlTable(
 
 export type TemplateUsageHistory = typeof templateUsageHistory.$inferSelect;
 export type InsertTemplateUsageHistory = typeof templateUsageHistory.$inferInsert;
+
+
+/**
+ * Uploads de PDF de Banco de Horas - rastreia cada upload semanal
+ */
+export const hourlyUploads = mysqlTable(
+  "hourly_uploads",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    fileName: varchar("fileName", { length: 255 }).notNull(),
+    uploadedBy: int("uploadedBy").notNull(), // ID do usuário que fez upload
+    uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
+    processedAt: timestamp("processedAt"), // Quando foi processado
+    periodStart: timestamp("periodStart").notNull(), // Data inicial do período (ex: 01/03/2026)
+    periodEnd: timestamp("periodEnd").notNull(), // Data final do período (ex: 09/03/2026)
+    totalRecords: int("totalRecords").default(0), // Total de registros processados
+    status: mysqlEnum("status", ["pendente", "processado", "erro"]).default("pendente"),
+    errorMessage: text("errorMessage"), // Mensagem de erro se houver
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_uploadedAt").on(table.uploadedAt),
+    index("idx_periodStart").on(table.periodStart),
+  ]
+);
+
+export type HourlyUpload = typeof hourlyUploads.$inferSelect;
+export type InsertHourlyUpload = typeof hourlyUploads.$inferInsert;
+
+/**
+ * Registros de Banco de Horas - dados diários de cada motorista
+ */
+export const hourlyRecords = mysqlTable(
+  "hourly_records",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    uploadId: int("uploadId").notNull(), // Referência ao upload
+    motoristaNome: varchar("motoristaNome", { length: 255 }).notNull(),
+    cargo: varchar("cargo", { length: 100 }).notNull(), // Ex: MOTORISTA DE TRUCK, MOTORISTA DE CARRETA
+    cpf: varchar("cpf", { length: 20 }), // CPF do motorista
+    matricula: varchar("matricula", { length: 50 }), // Matrícula
+    data: timestamp("data").notNull(), // Data do registro
+    zeramento: varchar("zeramento", { length: 50 }), // Zeramento (se houver)
+    credito: varchar("credito", { length: 50 }), // Crédito (formato HH:MM)
+    debito: varchar("debito", { length: 50 }), // Débito (formato HH:MM)
+    saldo: varchar("saldo", { length: 50 }).notNull(), // Saldo final (formato HH:MM)
+    saldoMinutos: int("saldoMinutos").notNull(), // Saldo em minutos (para cálculos)
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_uploadId").on(table.uploadId),
+    index("idx_motoristaNome").on(table.motoristaNome),
+    index("idx_cargo").on(table.cargo),
+    index("idx_data").on(table.data),
+    index("idx_saldoMinutos").on(table.saldoMinutos),
+  ]
+);
+
+export type HourlyRecord = typeof hourlyRecords.$inferSelect;
+export type InsertHourlyRecord = typeof hourlyRecords.$inferInsert;

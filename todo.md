@@ -736,3 +736,47 @@
 - [ ] Teste de fluxo completo
 - [ ] Validação de dados
 - [ ] Preparação para usuários
+
+
+## NOVO MÓDULO - Controle de Banco de Horas
+
+### Fase 1: Login Simplificado
+- [ ] Remover fluxo de OAuth complexo
+- [ ] Implementar login simples (email/senha)
+- [ ] Validar que usuário existe no banco (criado por admin)
+- [ ] Redirecionar para dashboard após login
+
+### Fase 2: Sistema de Permissões por Módulo
+- [ ] Adicionar campo "modulosAcesso" na tabela users (array de strings: "dp", "banco_horas")
+- [ ] Implementar verificação de permissões no backend
+- [ ] Criar middleware de proteção de rotas
+- [ ] Exibir apenas módulos permitidos no menu lateral
+
+### Fase 3: Schema de Banco de Horas
+- [ ] Criar tabela hourlyRecords (id, motoristaNome, cargo, data, credito, debito, saldo, uploadId)
+- [ ] Criar tabela hourlyUploads (id, dataUpload, arquivo, processadoEm)
+- [ ] Criar índices para performance
+
+### Fase 4: Upload e Extração de PDF
+- [ ] Criar página de upload de PDF
+- [ ] Implementar parser de PDF (extrair tabela com nome, cargo, data, crédito, débito, saldo)
+- [ ] Validar dados extraídos
+- [ ] Salvar no banco de dados
+
+### Fase 5: Página de Banco de Horas
+- [ ] Criar dashboard com gráficos (saldo por motorista)
+- [ ] Implementar ranking (top 20 maiores saldos)
+- [ ] Gráfico de créditos vs débitos
+- [ ] Tabela com histórico de registros
+
+### Fase 6: Filtros
+- [ ] Filtro por data (range)
+- [ ] Filtro por motorista (select)
+- [ ] Filtro por cargo (multi-select)
+- [ ] Aplicar filtros em tempo real
+
+### Fase 7: Testes
+- [ ] Teste de upload de PDF
+- [ ] Teste de extração de dados
+- [ ] Teste de permissões
+- [ ] Teste de filtros
