@@ -150,6 +150,101 @@ export async function deleteUser(openId: string) {
   }
 }
 
+export async function getUserByOpenId(openId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.openId, openId));
+    return result[0] || null;
+  } catch (error) {
+    console.error("[Database] Error getting user by openId:", error);
+    return null;
+  }
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
+    return result[0] || null;
+  } catch (error) {
+    console.error("[Database] Error getting user by email:", error);
+    return null;
+  }
+}
+
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id));
+    return result[0] || null;
+  } catch (error) {
+    console.error("[Database] Error getting user by id:", error);
+    return null;
+  }
+}
+
+export async function createUser(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const result = await db.insert(users).values({
+      email: data.email,
+      name: data.name,
+      password: data.password,
+      role: data.role || "user",
+      modulos: data.modulos || JSON.stringify([]),
+      status: data.status || "ativo",
+      loginMethod: data.loginMethod || "email",
+      openId: null,
+    });
+
+    return (result as any).insertId || result[0]?.id;
+  } catch (error) {
+    console.error("[Database] Error creating user:", error);
+    throw error;
+  }
+}
+
+export async function updateUserById(id: number, updates: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    await db.update(users).set(updates).where(eq(users.id, id));
+  } catch (error) {
+    console.error("[Database] Error updating user:", error);
+    throw error;
+  }
+}
+
+export async function deleteUserById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    await db.delete(users).where(eq(users.id, id));
+  } catch (error) {
+    console.error("[Database] Error deleting user:", error);
+    throw error;
+  }
+}
+
 export async function getJourneys(userId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -657,6 +752,33 @@ export async function getWarningsStatsByDriver() {
     return [];
   } catch (error) {
     console.error("[DB] Error getting warnings stats by driver:", error);
+    return [];
+  }
+}
+
+
+/**
+ * Obter todos os motoristas ociosos (para seleção em novo cadastro de advertência)
+ */
+export async function getAllIdleDrivers() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    // Buscar todos os motoristas únicos das jornadas
+    const result = await db
+      .selectDistinct({
+        conductorName: journeys.conductorName,
+        cargo: journeys.cargo,
+        operacao: journeys.operacao,
+        placa: journeys.placa,
+      })
+      .from(journeys)
+      .orderBy(journeys.conductorName);
+
+    return result || [];
+  } catch (error) {
+    console.error("[Database] Error getting idle drivers:", error);
     return [];
   }
 }

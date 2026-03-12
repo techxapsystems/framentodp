@@ -780,3 +780,46 @@
 - [ ] Teste de extração de dados
 - [ ] Teste de permissões
 - [ ] Teste de filtros
+
+
+## CORREÇÕES URGENTES - FASE ATUAL
+
+### Autenticação (REMOVENDO GOOGLE OAUTH)
+- [ ] Remover Google OAuth completamente do sistema
+- [ ] Implementar login com email/senha simples
+- [ ] Criar usuário admin fixo (email: admin@techxap.com, senha: admin123)
+- [ ] Remover OAuth routes e contexto
+- [ ] Remover dependências de OAuth
+
+### Banco de Dados - Correções Críticas
+- [ ] Adicionar função getUserByOpenId (faltando em db.ts)
+- [ ] Corrigir createWarning para retornar insertId
+- [ ] Adicionar campo password com hash na tabela users
+- [ ] Migração: adicionar coluna password ao users
+
+### Tela de Cadastro de Usuários
+- [ ] Criar formulário de cadastro de usuários (nome, email, senha, módulos)
+- [ ] Implementar seleção de módulos (checkboxes)
+- [ ] Implementar validação de email único
+- [ ] Adicionar botão de editar/deletar usuários
+- [ ] Implementar hash de senha com bcrypt
+
+### TypeScript - Correções (114 erros)
+- [ ] Corrigir tipos em Recidivists.tsx (tipo vs categoria)
+- [ ] Corrigir tipos em Reports.tsx
+- [ ] Corrigir tipos em WarningPDFWithHistory.tsx
+- [ ] Remover referências a trpc.import (módulo desativado)
+- [ ] Adicionar tipagem correta para parâmetros
+
+### Testes
+- [ ] Testar login com admin
+- [ ] Testar cadastro de usuário
+- [ ] Testar permissões de módulos
+- [ ] Testar criação de advertência com novo sistema
+- [ ] Executar todos os testes (70+ testes devem passar)
+
+### Segurança
+- [ ] Remover vulnerabilidades npm críticas
+- [ ] Adicionar validação de entrada
+- [ ] Implementar rate limiting para login
+- [ ] Adicionar CSRF protection

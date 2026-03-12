@@ -512,16 +512,15 @@ export const dashboardRouter = router({
    */
   getWarningsReport: protectedProcedure
     .input(z.object({
-      dateStart: z.string().optional(),
-      dateEnd: z.string().optional(),
-      conductorName: z.string().optional(),
-      tipo: z.string().optional(),
+      dataInicio: z.string().optional(),
+      dataFim: z.string().optional(),
+      motorista: z.string().optional(),
       operacao: z.string().optional(),
-    }).optional())
+    }))
     .query(async ({ input }) => {
       try {
         const { getWarningsReport } = await import("../db");
-        const data = await getWarningsReport(input || {});
+        const data = await getWarningsReport();
         return data || [];
       } catch (error) {
         console.error("Error fetching warnings report:", error);
@@ -530,7 +529,7 @@ export const dashboardRouter = router({
     }),
 
   /**
-   * Estatisticas de advertencias por motorista
+   * Estatísticas de advertências por motorista
    */
   getWarningsStatsByDriver: protectedProcedure.query(async () => {
     const { getWarningsStatsByDriver } = await import("../db");
@@ -574,8 +573,8 @@ export const dashboardRouter = router({
       conductorName: z.string(),
     }))
     .query(async ({ input }) => {
-      const { getOrientationsByDriver } = await import("../db");
-      return await getOrientationsByDriver(input.conductorName);
+      const { getOrientations } = await import("../db");
+      return await getOrientations(input.conductorName);
     }),
 
   countOrientations: protectedProcedure
@@ -584,7 +583,7 @@ export const dashboardRouter = router({
     }))
     .query(async ({ input }) => {
       const { countOrientations } = await import("../db");
-      return await countOrientations(input.conductorName);
+      return await countOrientations();
     }),
   
   /**
