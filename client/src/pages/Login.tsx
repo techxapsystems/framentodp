@@ -143,16 +143,6 @@ export default function Login() {
               </Button>
             </form>
 
-            <div className="text-center mt-4">
-              <Button
-                type="button"
-                variant="link"
-                onClick={() => navigate("/forgot-password")}
-                className="text-slate-400 hover:text-yellow-400 p-0 h-auto"
-              >
-                Esqueci minha senha
-              </Button>
-            </div>
 
           </CardContent>
         </Card>
