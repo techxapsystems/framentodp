@@ -848,3 +848,10 @@
 - [x] Atualizar branding em DashboardLayout.tsx
 - [x] Testar login funcionando perfeitamente
 - [x] Pronto para publicacao
+
+
+## Correção de Segurança - Alerta do Google
+- [x] Gerar nova senha forte para admin (não em banco de dados vazado)
+- [x] Atualizar credenciais no banco de dados
+- [x] Testar login com nova senha
+- [x] Comunicar nova senha ao usuário
