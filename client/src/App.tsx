@@ -21,6 +21,8 @@ import DataRetention from "./pages/DataRetention";
 import TemplateLibrary from "./pages/TemplateLibrary";
 import UserManagement from "./pages/UserManagement";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import { AnaliseGifBrf } from "./pages/AnaliseGifBrf";
 
 function Router() {
@@ -50,7 +52,14 @@ function Router() {
   }
 
   if (!user) {
-    return <Login />;
+    return (
+      <Switch>
+        <Route path="/login" component={Login} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
+        <Route component={Login} />
+      </Switch>
+    );
   }
 
   return (
