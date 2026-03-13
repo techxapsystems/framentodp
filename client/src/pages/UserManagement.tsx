@@ -207,18 +207,18 @@ export default function UserManagement() {
                 />
               </div>
 
-              {/* Email */}
+              {/* Usuário (Login) */}
               <div>
                 <label className="text-sm font-medium text-slate-700 block mb-2">
-                  Email: *
+                  Usuário (Login): *
                 </label>
                 <input
-                  type="email"
+                  type="text"
                   value={formData.email}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, email: e.target.value }))
                   }
-                  placeholder="usuario@email.com"
+                  placeholder="nome.sobrenome"
                   disabled={!!editingId}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50"
                 />
@@ -370,7 +370,7 @@ export default function UserManagement() {
                     Nome
                   </th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-700">
-                    Email
+                    Usuário
                   </th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-700">
                     Função

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Loader2, Eye, EyeOff, User, Lock } from "lucide-react";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -26,7 +26,7 @@ export default function Login() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: username.trim(),
+          username: username.trim(),
           password,
         }),
       });
@@ -39,13 +39,7 @@ export default function Login() {
       const result = await response.json();
 
       if (result.success) {
-        // Armazenar dados do usuário no localStorage
-        localStorage.setItem(
-          "user",
-          JSON.stringify(result.user)
-        );
-        
-        // Redirecionar para dashboard
+        localStorage.setItem("user", JSON.stringify(result.user));
         navigate("/");
       }
     } catch (err: any) {
@@ -82,9 +76,9 @@ export default function Login() {
 
         {/* Card de Login */}
         <Card className="bg-white shadow-2xl border-0">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl">Acesso ao Sistema</CardTitle>
-            <CardDescription>
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="text-2xl text-center">Acesso ao Sistema</CardTitle>
+            <CardDescription className="text-center">
               Digite suas credenciais para entrar
             </CardDescription>
           </CardHeader>
@@ -96,17 +90,20 @@ export default function Login() {
                 <label htmlFor="username" className="text-sm font-medium text-gray-700">
                   Usuário
                 </label>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="Digite seu usuário"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={isLoading}
-                  className="border-gray-300"
-                  required
-                  autoComplete="username"
-                />
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="Digite seu usuário"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={isLoading}
+                    className="border-gray-300 pl-10"
+                    required
+                    autoComplete="username"
+                  />
+                </div>
               </div>
 
               {/* Senha */}
@@ -115,6 +112,7 @@ export default function Login() {
                   Senha
                 </label>
                 <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
@@ -122,7 +120,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
-                    className="border-gray-300 pr-10"
+                    className="border-gray-300 pl-10 pr-10"
                     required
                     autoComplete="current-password"
                   />
@@ -130,8 +128,9 @@ export default function Login() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={isLoading}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50 focus:outline-none"
                     aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}
+                    tabIndex={-1}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -156,7 +155,7 @@ export default function Login() {
               <Button
                 type="submit"
                 disabled={isLoading || !username || !password}
-                className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold h-10"
+                className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold h-11 text-base"
               >
                 {isLoading ? (
                   <>
@@ -168,14 +167,12 @@ export default function Login() {
                 )}
               </Button>
             </form>
-
-
           </CardContent>
         </Card>
 
         {/* Footer */}
         <p className="text-center text-gray-400 text-xs mt-6">
-          © 2026 Framento Transportes. Todos os direitos reservados.
+          &copy; 2026 Framento Transportes. Todos os direitos reservados.
         </p>
       </div>
     </div>

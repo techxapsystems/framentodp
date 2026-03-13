@@ -855,3 +855,14 @@
 - [x] Atualizar credenciais no banco de dados
 - [x] Testar login com nova senha
 - [x] Comunicar nova senha ao usuário
+
+## Padronização Profissional do Sistema
+- [x] Corrigir login: campo deve ser "Usuário" e não "Email"
+- [x] Implementar botão mostrar/esconder senha com ícone Eye/EyeOff
+- [x] Credenciais do admin: gabriel.ferreira / gabriel12
+- [x] Atualizar hash da senha gabriel12 no banco de dados
+- [x] Padronizar endpoint REST /api/auth/login (aceitar username e email)
+- [x] Padronizar mensagens de erro: "Usuário ou senha inválidos" (não "Email")
+- [x] Padronizar tela de Gerenciamento de Usuários: campo "Usuário (Login)" em vez de "Email"
+- [x] Padronizar tabela de usuários: coluna "Usuário" em vez de "Email"
+- [x] Adicionar ícones User e Lock nos campos do login
