@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { trpc } from "@/lib/trpc";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -14,18 +13,29 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [, navigate] = useLocation();
 
-  const loginMutation = trpc.auth.login.useMutation();
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     try {
-      const result = await loginMutation.mutateAsync({
-        email: username.trim(),
-        password,
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: username.trim(),
+          password,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao fazer login");
+      }
+
+      const result = await response.json();
 
       if (result.success) {
         // Armazenar dados do usuário no localStorage

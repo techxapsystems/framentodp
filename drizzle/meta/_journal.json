@@ -148,6 +148,34 @@
       "when": 1773339582664,
       "tag": "0020_spotty_unus",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1773397013498,
+      "tag": "0021_condemned_venom",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1773398387413,
+      "tag": "0022_far_kang",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1773399245022,
+      "tag": "0023_pretty_speedball",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1773399889949,
+      "tag": "0024_first_jetstream",
+      "breakpoints": true
     }
   ]
 }
