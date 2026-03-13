@@ -90,7 +90,7 @@ export const authRouter = router({
         name: z.string().min(1),
         password: z.string().min(6),
         role: z.enum(["user", "admin", "gestor"]).default("user"),
-        modulos: z.array(z.string()).default([]),
+        modules: z.array(z.string()).default([]),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -101,32 +101,28 @@ export const authRouter = router({
         });
       }
 
-      const existing = await db.getUserByEmail(input.email);
-      if (existing) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Email já cadastrado",
-        });
-      }
-
+      const hashedPassword = hashPassword(input.password);
       try {
-        const result = await db.createUser({
+        const user = await db.createUser({
           email: input.email,
           name: input.name,
-          password: hashPassword(input.password),
+          password: hashedPassword,
           role: input.role,
-          modulos: JSON.stringify(input.modulos),
-          status: "ativo",
-          loginMethod: "email",
+          modules: JSON.stringify(input.modules),
         });
 
         return {
           success: true,
-          message: "Usuário criado com sucesso",
-          userId: result,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            modules: input.modules,
+          },
         };
       } catch (error) {
-        console.error("[Auth] Error creating user:", error);
+        console.error("[Auth] Erro ao criar usuário:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Erro ao criar usuário",
@@ -135,40 +131,37 @@ export const authRouter = router({
     }),
 
   /**
-   * Atualizar usuário (admin pode atualizar qualquer um, user pode atualizar a si mesmo)
+   * Atualizar usuário (apenas admin)
    */
   updateUser: protectedProcedure
     .input(
       z.object({
-        userId: z.number(),
-        name: z.string().optional(),
-        password: z.string().min(6).optional(),
+        id: z.number(),
+        name: z.string().min(1).optional(),
         role: z.enum(["user", "admin", "gestor"]).optional(),
-        modulos: z.array(z.string()).optional(),
+        modules: z.array(z.string()).optional(),
         status: z.enum(["ativo", "inativo"]).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Apenas admin pode atualizar outros usuários
-      if (ctx.user.id !== input.userId && ctx.user.role !== "admin") {
+      if (ctx.user.role !== "admin") {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Você não tem permissão para atualizar este usuário",
+          message: "Apenas admin pode atualizar usuários",
         });
       }
 
-      const updates: any = {};
-      if (input.name) updates.name = input.name;
-      if (input.password) updates.password = hashPassword(input.password);
-      if (input.role && ctx.user.role === "admin") updates.role = input.role;
-      if (input.modulos) updates.modulos = JSON.stringify(input.modulos);
-      if (input.status && ctx.user.role === "admin") updates.status = input.status;
-
       try {
-        await db.updateUserById(input.userId, updates);
-        return { success: true, message: "Usuário atualizado com sucesso" };
+        await db.updateUserById(input.id, {
+          name: input.name,
+          role: input.role,
+          modules: input.modules ? JSON.stringify(input.modules) : undefined,
+          status: input.status,
+        });
+
+        return { success: true };
       } catch (error) {
-        console.error("[Auth] Error updating user:", error);
+        console.error("[Auth] Erro ao atualizar usuário:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Erro ao atualizar usuário",
@@ -180,7 +173,7 @@ export const authRouter = router({
    * Deletar usuário (apenas admin)
    */
   deleteUser: protectedProcedure
-    .input(z.object({ userId: z.number() }))
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {
         throw new TRPCError({
@@ -189,18 +182,11 @@ export const authRouter = router({
         });
       }
 
-      if (ctx.user.id === input.userId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Você não pode deletar sua própria conta",
-        });
-      }
-
       try {
-        await db.deleteUserById(input.userId);
-        return { success: true, message: "Usuário deletado com sucesso" };
+        await db.deleteUserById(input.id);
+        return { success: true };
       } catch (error) {
-        console.error("[Auth] Error deleting user:", error);
+        console.error("[Auth] Erro ao deletar usuário:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Erro ao deletar usuário",
@@ -218,7 +204,6 @@ export const authRouter = router({
         message: "Apenas admin pode listar usuários",
       });
     }
-
     const allUsers = await db.getAllUsers();
     return allUsers.map((u) => ({
       id: u.id,
@@ -230,4 +215,103 @@ export const authRouter = router({
       createdAt: u.createdAt,
     }));
   }),
+
+  /**
+   * Solicitar reset de senha
+   */
+  requestPasswordReset: publicProcedure
+    .input(
+      z.object({
+        email: z.string().min(1),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const user = await db.getUserByEmail(input.email);
+      if (!user) {
+        return { success: true, message: "Se o email existe, um link de reset foi enviado" };
+      }
+
+      const crypto = await import("crypto");
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
+
+      try {
+        await db.createPasswordResetToken(user.id, token, expiresAt);
+        console.log(`[Password Reset] Token gerado para ${user.email}`);
+        return { success: true, message: "Se o email existe, um link de reset foi enviado" };
+      } catch (error) {
+        console.error("[Password Reset] Erro ao criar token:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erro ao solicitar reset de senha",
+        });
+      }
+    }),
+
+  /**
+   * Validar token de reset
+   */
+  validatePasswordResetToken: publicProcedure
+    .input(
+      z.object({
+        token: z.string().min(1),
+      })
+    )
+    .query(async ({ input }) => {
+      const resetToken = await db.getValidPasswordResetToken(input.token);
+      if (!resetToken) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Token inválido ou expirado",
+        });
+      }
+
+      const user = await db.getUserById(resetToken.userId);
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Usuário não encontrado",
+        });
+      }
+
+      return {
+        valid: true,
+        email: user.email,
+        name: user.name,
+      };
+    }),
+
+  /**
+   * Redefinir senha com token
+   */
+  resetPassword: publicProcedure
+    .input(
+      z.object({
+        token: z.string().min(1),
+        newPassword: z.string().min(6),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const resetToken = await db.getValidPasswordResetToken(input.token);
+      if (!resetToken) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Token inválido ou expirado",
+        });
+      }
+
+      try {
+        const hashedPassword = hashPassword(input.newPassword);
+        await db.updateUserPassword(resetToken.userId, hashedPassword);
+        await db.markPasswordResetTokenAsUsed(resetToken.id);
+
+        return { success: true, message: "Senha redefinida com sucesso" };
+      } catch (error) {
+        console.error("[Password Reset] Erro ao redefinir senha:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erro ao redefinir senha",
+        });
+      }
+    }),
 });
