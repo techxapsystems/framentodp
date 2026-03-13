@@ -23,8 +23,8 @@ export function verifyPassword(password: string, hash: string): boolean {
  */
 export const ADMIN_CREDENTIALS = {
   email: "gabriel.ferreira",
-  password: "82459f03a017375f998091d21f315c7b",
-  name: "Administrador",
+  password: "gabriel12",
+  name: "Gabriel Ferreira",
   role: "admin" as const,
 };
 
