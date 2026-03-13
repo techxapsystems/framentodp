@@ -626,27 +626,3 @@ export const hourlyRecords = mysqlTable(
 
 export type HourlyRecord = typeof hourlyRecords.$inferSelect;
 export type InsertHourlyRecord = typeof hourlyRecords.$inferInsert;
-
-
-/**
- * Tabela para armazenar tokens de reset de senha
- */
-export const passwordResetTokens = mysqlTable(
-  "password_reset_tokens",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
-    token: varchar("token", { length: 255 }).notNull().unique(),
-    expiresAt: timestamp("expiresAt").notNull(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    used: boolean("used").default(false).notNull(),
-  },
-  (table) => [
-    index("idx_userId").on(table.userId),
-    index("idx_token").on(table.token),
-    index("idx_expiresAt").on(table.expiresAt),
-  ]
-);
-
-export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
-export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
