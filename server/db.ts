@@ -274,7 +274,6 @@ export async function createJourney(
       data: data.data,
       dirigidoMin: data.dirigidoMin || 0,
       heMin: data.heMin || 0,
-      ...data,
     });
   } catch (error) {
     console.error("[Database] Error creating journey:", error);

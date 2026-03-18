@@ -63,10 +63,11 @@ export default function Reports() {
   ) : "";
 
   // Query para buscar lista de motoristas (DEVE VIR PRIMEIRO)
-  const { data: idleDriversData } = trpc.dashboard.getIdleDriversForWarning.useQuery(
+  const { data: queryResult } = trpc.dashboard.getIdleDriversForWarning.useQuery(
     {},
     { enabled: true, staleTime: 0 }
   );
+  const idleDriversData = Array.isArray(queryResult) ? queryResult : (queryResult as any)?.json || [];
 
   // Query para buscar dados do relatório
   const { data: reportData, isLoading } = trpc.dashboard.getWarningsReport.useQuery(

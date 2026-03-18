@@ -34,13 +34,16 @@ export default function Recidivists() {
   const { data: operacoes = [] } = trpc.dashboard.getAllOperations.useQuery();
 
   // Query para buscar todos os motoristas ociosos no dialog
-  const { data: idleDriversData } = trpc.dashboard.getIdleDriversForWarning.useQuery(
+  const { data: queryResult } = trpc.dashboard.getIdleDriversForWarning.useQuery(
     {},
     {
       enabled: true,
       staleTime: 0,
     }
   );
+
+  // Extrair o array de motoristas do resultado da query
+  const idleDriversData = Array.isArray(queryResult) ? queryResult : (queryResult as any)?.json || [];
 
   const selectedConductorData = idleDriversData && Array.isArray(idleDriversData)
     ? idleDriversData.find((d: any) => d.conductorName === selectedConductor)

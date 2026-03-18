@@ -19,10 +19,13 @@ import {
 const COLORS = ["#00FF00", "#FFA500", "#FF6B6B"];
 
 export default function WarningsDashboard() {
-  const { data: driverStats, isLoading: loadingDriver } =
+  const { data: driverStatsResult, isLoading: loadingDriver } =
     trpc.dashboard.getWarningsStatsByDriver.useQuery();
-  const { data: operationStats, isLoading: loadingOperation } =
+  const { data: operationStatsResult, isLoading: loadingOperation } =
     trpc.dashboard.getWarningsStatsByOperation.useQuery();
+  
+  const driverStats = Array.isArray(driverStatsResult) ? driverStatsResult : (driverStatsResult as any)?.json || [];
+  const operationStats = Array.isArray(operationStatsResult) ? operationStatsResult : (operationStatsResult as any)?.json || [];
 
   if (loadingDriver || loadingOperation) {
     return (
