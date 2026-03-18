@@ -59,18 +59,13 @@ export default function Recidivists() {
       }
       
       toast.success("Advertência registrada com sucesso");
-      // Gerar PDF automaticamente se houver ID
-      if (data?.id) {
-        setTimeout(() => {
-          const pdfButton = document.querySelector('[data-pdf-trigger]') as HTMLButtonElement;
-          if (pdfButton) {
-            pdfButton.click();
-            toast.success("PDF gerado automaticamente");
-          }
-        }, 300);
-      }
-      // Invalidar queries para forçar refresh
+      toast.info("Clique em 'Imprimir PDF' para gerar o documento");
+      
+      // Invalidar todas as queries para forçar refresh dos dashboards
       utils.dashboard.getIdleDriversForWarning.invalidate();
+      utils.dashboard.getWarningsStatsByDriver.invalidate();
+      utils.dashboard.getWarningsStatsByOperation.invalidate();
+      utils.dashboard.getWarningsReport.invalidate();
       // Limpar formulário
       setSelectedConductor("");
       setWarningType("advertencia");

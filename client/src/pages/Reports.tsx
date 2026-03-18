@@ -309,12 +309,12 @@ export default function Reports() {
               <label className="text-sm font-medium text-slate-700 block mb-2">
                 Status:
               </label>
-              <Select value={selectedStatus} onValueChange={(v: any) => setSelectedStatus(v)}>
+              <Select value={selectedStatus} onValueChange={(v: any) => setSelectedStatus(v === 'todas' ? '' : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value="todas">Todas</SelectItem>
                   <SelectItem value="aplicadas">Apenas Aplicadas</SelectItem>
                 </SelectContent>
               </Select>
