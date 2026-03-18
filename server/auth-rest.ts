@@ -1,6 +1,9 @@
 import express from "express";
 import * as db from "./db";
 import { verifyPassword } from "./auth";
+import { sdk } from "./_core/sdk";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { getSessionCookieOptions } from "./_core/cookies";
 
 export const authRestRouter = express.Router();
 
@@ -27,6 +30,33 @@ authRestRouter.post("/login", express.json(), async (req, res) => {
     if (user.status !== "ativo") {
       return res.status(403).json({ error: "Usuário inativo. Contate o administrador." });
     }
+
+    // Garantir que o usuário tem um openId para o JWT
+    let openId = user.openId;
+    if (!openId) {
+      openId = `local_${user.email}_${user.id}`;
+      // Atualizar o openId no banco
+      try {
+        const dbInstance = await db.getDb();
+        if (dbInstance) {
+          const { users } = await import("../drizzle/schema");
+          const { eq } = await import("drizzle-orm");
+          await dbInstance.update(users).set({ openId }).where(eq(users.id, user.id));
+        }
+      } catch (e) {
+        console.error("[Auth REST] Error updating openId:", e);
+      }
+    }
+
+    // Criar token JWT de sessão (mesmo formato que o OAuth usa)
+    const sessionToken = await sdk.createSessionToken(openId, {
+      name: user.name || "",
+      expiresInMs: ONE_YEAR_MS,
+    });
+
+    // Setar o cookie de sessão (mesmo que o OAuth faz)
+    const cookieOptions = getSessionCookieOptions(req);
+    res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
     return res.json({
       success: true,

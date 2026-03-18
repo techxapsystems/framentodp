@@ -30,9 +30,12 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
+    // Primeiro, verificar se o usuário já existe
+    const existing = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.openId, user.openId));
+
     const updateSet: Record<string, unknown> = {};
 
     const textFields = ["name", "email", "loginMethod"] as const;
@@ -42,43 +45,37 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       const value = user[field];
       if (value === undefined) return;
       const normalized = value ?? null;
-      values[field] = normalized;
       updateSet[field] = normalized;
     };
 
     textFields.forEach(assignNullable);
 
-    if (user.role) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    }
+    if (user.role) updateSet.role = user.role;
+    if (user.departamento) updateSet.departamento = user.departamento;
+    if (user.setor) updateSet.setor = user.setor;
+    if (user.modulos) updateSet.modulos = user.modulos;
+    if (user.status) updateSet.status = user.status;
+    if (user.lastSignedIn) updateSet.lastSignedIn = user.lastSignedIn;
 
-    if (user.departamento) {
-      values.departamento = user.departamento;
-      updateSet.departamento = user.departamento;
+    if (existing.length > 0) {
+      // Usuário já existe: fazer UPDATE simples
+      if (Object.keys(updateSet).length === 0) {
+        updateSet.updatedAt = new Date();
+      }
+      await db
+        .update(users)
+        .set(updateSet)
+        .where(eq(users.openId, user.openId));
+    } else {
+      // Usuário novo: fazer INSERT com todos os campos necessários
+      const values: InsertUser = {
+        openId: user.openId,
+        name: user.name || "Usuário",
+        email: user.email || `${user.openId}@local`,
+        ...updateSet,
+      };
+      await db.insert(users).values(values);
     }
-
-    if (user.setor) {
-      values.setor = user.setor;
-      updateSet.setor = user.setor;
-    }
-
-    if (user.modulos) {
-      values.modulos = user.modulos;
-      updateSet.modulos = user.modulos;
-    }
-
-    if (user.status) {
-      values.status = user.status;
-      updateSet.status = user.status;
-    }
-
-    await db
-      .insert(users)
-      .values(values)
-      .onDuplicateKeyUpdate({
-        set: updateSet,
-      });
   } catch (error) {
     console.error("[Database] Error upserting user:", error);
     throw error;
@@ -245,12 +242,12 @@ export async function deleteUserById(id: number) {
   }
 }
 
-export async function getJourneys(userId: number) {
+export async function getJourneys() {
   const db = await getDb();
   if (!db) return [];
 
   try {
-    return await db.select().from(journeys).where(eq(journeys.userId, userId));
+    return await db.select().from(journeys);
   } catch (error) {
     console.error("[Database] Error getting journeys:", error);
     return [];
@@ -258,12 +255,13 @@ export async function getJourneys(userId: number) {
 }
 
 export async function createJourney(
-  userId: number,
   data: {
-    startTime: Date;
-    endTime?: Date;
-    distance?: number;
-    status?: string;
+    conductorName: string;
+    importId: number;
+    data: Date;
+    dirigidoMin?: number;
+    heMin?: number;
+    [key: string]: any;
   }
 ) {
   const db = await getDb();
@@ -271,11 +269,12 @@ export async function createJourney(
 
   try {
     await db.insert(journeys).values({
-      userId,
-      startTime: data.startTime,
-      endTime: data.endTime,
-      distance: data.distance,
-      status: data.status || "active",
+      conductorName: data.conductorName,
+      importId: data.importId,
+      data: data.data,
+      dirigidoMin: data.dirigidoMin || 0,
+      heMin: data.heMin || 0,
+      ...data,
     });
   } catch (error) {
     console.error("[Database] Error creating journey:", error);

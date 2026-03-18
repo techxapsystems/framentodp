@@ -428,7 +428,8 @@ export const dashboardRouter = router({
     .input(
       z.object({
         conductorName: z.string(),
-        tipo: z.enum(["pouco_rodado", "horas_extras"]),
+        tipo: z.enum(["advertencia", "suspensao"]),
+        categoria: z.enum(["pouco_rodado", "horas_extras", "outro"]).optional().default("outro"),
         nivelAdvertencia: z.number().min(1).max(3),
         motivo: z.string(),
         observacao: z.string().optional(),
@@ -442,8 +443,8 @@ export const dashboardRouter = router({
         const { createWarning: createWarningDb } = await import("../db");
         const result = await createWarningDb({
           conductorName: input.conductorName,
-          tipo: "advertencia",
-          categoria: input.tipo,
+          tipo: input.tipo,
+          categoria: input.categoria || "outro",
           nivelAdvertencia: input.nivelAdvertencia,
           motivo: input.motivo,
           observacao: input.observacao,

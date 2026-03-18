@@ -866,3 +866,20 @@
 - [x] Padronizar tela de Gerenciamento de Usuários: campo "Usuário (Login)" em vez de "Email"
 - [x] Padronizar tabela de usuários: coluna "Usuário" em vez de "Email"
 - [x] Adicionar ícones User e Lock nos campos do login
+
+## Auditoria Completa do Sistema (Março 2026)
+- [ ] Auditar login: campo Usuário, mostrar/esconder senha, credenciais
+- [ ] Auditar sidebar: navegação, módulos, filtro por permissão
+- [ ] Auditar Cadastro de Advertências: motoristas não listam no dialog
+- [ ] Auditar Gerenciamento de Advertências: tabela, filtros, observações
+- [ ] Auditar Acompanhamento: dashboard de advertências pendentes
+- [ ] Auditar Relatórios: filtros, exportação PDF
+- [ ] Auditar Biblioteca de Modelos
+- [ ] Auditar Análise GIF BRF (TXTEMP)
+- [ ] Auditar Importação de dados
+- [ ] Auditar Gerenciamento de Usuários
+- [ ] Auditar Auditoria
+- [ ] Auditar Retenção de Dados
+- [ ] Auditar Configurações
+- [ ] Corrigir erros TypeScript (106 errors)
+- [ ] Corrigir bug: motoristas não listam no cadastro de advertência
