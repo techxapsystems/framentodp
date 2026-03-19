@@ -71,7 +71,9 @@ export function DateMaskInput({
       placeholder={placeholder}
       disabled={disabled}
       maxLength={10}
-      className={`px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+      className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+        value ? 'border-slate-300' : 'border-red-300 bg-red-50'
+      } ${
         disabled ? "bg-slate-50 cursor-not-allowed" : "bg-white"
       } ${className}`}
       name={name}

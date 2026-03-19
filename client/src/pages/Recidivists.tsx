@@ -141,7 +141,7 @@ export default function Recidivists() {
                   Motorista: *
                 </label>
                 <Select value={selectedConductor} onValueChange={handleConductorChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className={selectedConductor ? '' : 'border-red-300 bg-red-50'}>
                     <SelectValue placeholder="Selecione um motorista" />
                   </SelectTrigger>
                   <SelectContent>
@@ -231,7 +231,9 @@ export default function Recidivists() {
                   value={warningContent}
                   onChange={(e) => setWarningContent(e.target.value)}
                   placeholder="Cole aqui o texto do modelo de advertência ou suspensão"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-yellow-500 font-mono text-sm resize-none overflow-y-auto"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 font-mono text-sm resize-none overflow-y-auto ${
+                    warningContent ? 'border-slate-300' : 'border-red-300 bg-red-50'
+                  }`}
                   rows={16}
                   style={{ maxHeight: '400px' }}
                 />
