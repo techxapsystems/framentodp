@@ -25,25 +25,28 @@ export default function WarningsTracking() {
   const { data: operations = [] } = trpc.dashboard.getAllOperations.useQuery();
 
   // Buscar estatísticas gerais
-  const { data: stats } = trpc.dashboard.getWarningsStats.useQuery({
+  const { data: statsRaw } = trpc.dashboard.getWarningsStats.useQuery({
     startDate,
     endDate,
     operacao: selectedOperation !== "all" ? selectedOperation : undefined,
   });
+  const stats = statsRaw?.result?.data?.json || statsRaw || null;
 
   // Buscar tendência
-  const { data: trend = [] } = trpc.dashboard.getWarningsTrend.useQuery({
+  const { data: trendRaw = [] } = trpc.dashboard.getWarningsTrend.useQuery({
     startDate,
     endDate,
     groupBy,
     operacao: selectedOperation !== "all" ? selectedOperation : undefined,
   });
+  const trend = Array.isArray(trendRaw) ? trendRaw : trendRaw?.result?.data?.json || [];
 
   // Buscar por operação
-  const { data: byOperation = [] } = trpc.dashboard.getWarningsByOperation.useQuery({
+  const { data: byOperationRaw = [] } = trpc.dashboard.getWarningsByOperation.useQuery({
     startDate,
     endDate,
   });
+  const byOperation = Array.isArray(byOperationRaw) ? byOperationRaw : byOperationRaw?.result?.data?.json || [];
 
   const warningStats = stats || { total: 0, assinadas: 0, naoAssinadas: 0, taxaDevolucao: 0, warnings: [] };
 

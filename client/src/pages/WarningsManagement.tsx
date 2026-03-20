@@ -39,7 +39,7 @@ export default function WarningsManagement() {
   const [orientationDialogOpen, setOrientationDialogOpen] = useState(false);
   const [selectedMotoristaForOrientation, setSelectedMotoristaForOrientation] = useState<{ name: string; placa: string } | null>(null);
 
-  const { data, isLoading, refetch } = trpc.dashboard.getReincidents.useQuery(
+  const { data: dataRaw, isLoading, refetch } = trpc.dashboard.getReincidents.useQuery(
     {
       tipo: selectedType && selectedType !== "__all__" ? (selectedType as "pouco_rodado" | "horas_extras") : undefined,
     },
@@ -48,6 +48,8 @@ export default function WarningsManagement() {
       staleTime: 0,
     }
   );
+  
+  const data = dataRaw?.result?.data?.json || dataRaw || { reincidents: [] };
 
   const updateWarningMutation = trpc.dashboard.updateWarning.useMutation({
     onSuccess: () => {

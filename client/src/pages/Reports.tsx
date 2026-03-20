@@ -21,46 +21,32 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Download, FileText } from "lucide-react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 export default function Reports() {
-  const [dateStart, setDateStart] = useState("");
-  const [dateEnd, setDateEnd] = useState("");
+  const [dateStartDisplay, setDateStartDisplay] = useState("");
+  const [dateEndDisplay, setDateEndDisplay] = useState("");
   const [selectedMotorista, setSelectedMotorista] = useState("");
   const [motoristaBusca, setMotoristaBusca] = useState("");
   const [selectedTipo, setSelectedTipo] = useState<"" | "pouco_rodado" | "horas_extras">("");
   const [selectedOperacao, setSelectedOperacao] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<"" | "aplicadas" | "todas">("");
 
-  const handleDateStartChange = (newDate: string) => {
-    // Converter de DD/MM/YYYY para YYYY-MM-DD
-    if (newDate.length === 10 && newDate.includes("/")) {
-      const [day, month, year] = newDate.split("/");
-      const isoDate = `${year}-${month}-${day}`;
-      setDateStart(isoDate);
-    } else if (newDate === "") {
-      setDateStart("");
-    }
-  };
+  // Converter DD/MM/YYYY para YYYY-MM-DD para query
+  const dateStart = dateStartDisplay.length === 10 && dateStartDisplay.includes("/")
+    ? (() => {
+        const [day, month, year] = dateStartDisplay.split("/");
+        return `${year}-${month}-${day}`;
+      })()
+    : "";
 
-  const handleDateEndChange = (newDate: string) => {
-    // Converter de DD/MM/YYYY para YYYY-MM-DD
-    if (newDate.length === 10 && newDate.includes("/")) {
-      const [day, month, year] = newDate.split("/");
-      const isoDate = `${year}-${month}-${day}`;
-      setDateEnd(isoDate);
-    } else if (newDate === "") {
-      setDateEnd("");
-    }
-  };
-
-  // Converter datas para formato DD/MM/YYYY para exibição
-  const dateStartFormatted = dateStart ? (
-    dateStart.split("-").reverse().join("/")
-  ) : "";
-  
-  const dateEndFormatted = dateEnd ? (
-    dateEnd.split("-").reverse().join("/")
-  ) : "";
+  const dateEnd = dateEndDisplay.length === 10 && dateEndDisplay.includes("/")
+    ? (() => {
+        const [day, month, year] = dateEndDisplay.split("/");
+        return `${year}-${month}-${day}`;
+      })()
+    : "";
 
   // Query para buscar lista de motoristas (DEVE VIR PRIMEIRO)
   const { data: queryResult } = trpc.dashboard.getIdleDriversForWarning.useQuery(
@@ -100,53 +86,30 @@ export default function Reports() {
     }
 
     try {
-      const { jsPDF } = await import("jspdf");
-      const { autoTable } = await import("jspdf-autotable");
-
       const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-
-      // Título
       doc.setFontSize(16);
-      doc.text("Relatório de Advertências", pageWidth / 2, 15, { align: "center" });
-
-      // Filtros aplicados
+      doc.text("Relatório de Advertências", 10, 10);
       doc.setFontSize(10);
-      let filterText = "Filtros: ";
-      if (dateStart) filterText += `De ${dateStart} `;
-      if (dateEnd) filterText += `até ${dateEnd} `;
-      if (selectedMotorista) filterText += `Motorista: ${selectedMotorista} `;
-      if (selectedTipo) filterText += `Tipo: ${selectedTipo === "pouco_rodado" ? "Pouco Rodado" : "Horas Extras"} `;
+      doc.text(
+        `Período: ${dateStartDisplay || "Início"} a ${dateEndDisplay || "Fim"}`,
+        10,
+        20
+      );
 
-      doc.text(filterText, 10, 25);
-
-      // Tabela
       const tableData = warnings.map((w: any) => [
-        w.conductorName,
-        w.tipo === "pouco_rodado" ? "Pouco Rodado" : "Horas Extras",
-        `Aviso ${w.nivelAdvertencia}`,
-        new Date(w.criadoEm).toLocaleDateString("pt-BR"),
-        w.motivo.substring(0, 30) + (w.motivo.length > 30 ? "..." : ""),
+        w.conductorName || "",
+        w.operacao || "",
+        w.placa || "",
+        w.data ? new Date(w.data).toLocaleDateString("pt-BR") : "",
+        w.tipo || "",
+        w.assinada ? "Sim" : "Não",
       ]);
 
-      autoTable(doc, {
-        head: [["Motorista", "Tipo", "Nível", "Data", "Motivo"]],
+      (doc as any).autoTable({
+        head: [["Motorista", "Operação", "Placa", "Data", "Tipo", "Assinada"]],
         body: tableData,
-        startY: 35,
-        margin: { top: 35 },
-        styles: {
-          fontSize: 9,
-          cellPadding: 3,
-        },
-        headStyles: {
-          fillColor: [0, 31, 63],
-          textColor: [255, 255, 255],
-          fontStyle: "bold",
-        },
-        alternateRowStyles: {
-          fillColor: [240, 240, 240],
-        },
+        startY: 30,
+        margin: { top: 30 },
       });
 
       // Rodapé
@@ -218,8 +181,8 @@ export default function Reports() {
                 Data Início:
               </label>
               <DateMaskInput
-                value={dateStartFormatted}
-                onChange={handleDateStartChange}
+                value={dateStartDisplay}
+                onChange={setDateStartDisplay}
                 placeholder="DD/MM/YYYY"
               />
             </div>
@@ -229,8 +192,8 @@ export default function Reports() {
                 Data Fim:
               </label>
               <DateMaskInput
-                value={dateEndFormatted}
-                onChange={handleDateEndChange}
+                value={dateEndDisplay}
+                onChange={setDateEndDisplay}
                 placeholder="DD/MM/YYYY"
               />
             </div>
@@ -248,46 +211,31 @@ export default function Reports() {
               />
               {motoristaBusca && motoristasFiltrados.length > 0 && (
                 <div className="absolute bg-white border border-slate-300 rounded-lg mt-1 max-h-48 overflow-y-auto w-full z-10 shadow-lg">
-                  {motoristasFiltrados.map((d: any) => (
-                    <button
-                      key={d.conductorName}
+                  {motoristasFiltrados.map((motorista: any) => (
+                    <div
+                      key={motorista.conductorName}
+                      className="px-3 py-2 hover:bg-slate-100 cursor-pointer"
                       onClick={() => {
-                        setSelectedMotorista(d.conductorName);
+                        setSelectedMotorista(motorista.conductorName);
                         setMotoristaBusca("");
                       }}
-                      className="w-full text-left px-3 py-2 hover:bg-slate-100 text-sm border-b last:border-b-0"
                     >
-                      {d.conductorName}
-                    </button>
+                      {motorista.conductorName}
+                    </div>
                   ))}
                 </div>
               )}
               {selectedMotorista && (
-                <div className="mt-2 text-sm text-slate-600">
-                  Selecionado: <span className="font-medium">{selectedMotorista}</span>
+                <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200 flex justify-between items-center">
+                  <span className="text-sm">{selectedMotorista}</span>
                   <button
                     onClick={() => setSelectedMotorista("")}
-                    className="ml-2 text-blue-600 hover:underline"
+                    className="text-blue-600 hover:text-blue-800"
                   >
-                    Limpar
+                    ✕
                   </button>
                 </div>
               )}
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Operação:
-              </label>
-              <Select value={selectedOperacao} onValueChange={(v) => setSelectedOperacao(v === "" ? "" : v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BRF Primária">BRF Primária</SelectItem>
-                  <SelectItem value="BRF Secundária">BRF Secundária</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div>
@@ -299,6 +247,7 @@ export default function Reports() {
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
                   <SelectItem value="pouco_rodado">Pouco Rodado</SelectItem>
                   <SelectItem value="horas_extras">Horas Extras</SelectItem>
                 </SelectContent>
@@ -307,86 +256,95 @@ export default function Reports() {
 
             <div>
               <label className="text-sm font-medium text-slate-700 block mb-2">
-                Status:
+                Operação:
               </label>
-              <Select value={selectedStatus} onValueChange={(v: any) => setSelectedStatus(v === 'todas' ? '' : v)}>
+              <Select value={selectedOperacao} onValueChange={setSelectedOperacao}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas</SelectItem>
-                  <SelectItem value="aplicadas">Apenas Aplicadas</SelectItem>
+                  {/* Adicionar operações dinamicamente */}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="flex items-end gap-2">
+            <div>
+              <label className="text-sm font-medium text-slate-700 block mb-2">
+                Status:
+              </label>
+              <Select value={selectedStatus} onValueChange={(v: any) => setSelectedStatus(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  <SelectItem value="aplicadas">Aplicadas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-end">
               <Button
                 onClick={generatePDF}
-                disabled={!reportData || (Array.isArray(reportData) ? reportData.length === 0 : !reportData.warnings || reportData.warnings.length === 0)}
-                className="flex-1 bg-green-600 hover:bg-green-700 gap-2"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
               >
                 <Download className="w-4 h-4" />
-                PDF
+                Gerar PDF
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Resultados */}
+      {/* Tabela de Resultados */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            Resultados ({(Array.isArray(reportData) ? reportData.length : reportData?.warnings?.length) || 0} advertências)
-          </CardTitle>
+          <CardTitle>Resultados</CardTitle>
         </CardHeader>
         <CardContent>
-          {reportData && (Array.isArray(reportData) ? reportData.length > 0 : reportData.warnings && reportData.warnings.length > 0) ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Motorista</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Nível</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Motivo</TableHead>
-                    <TableHead>Observação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(Array.isArray(reportData) ? reportData : reportData?.warnings || []).map((warning: any, idx: number) => (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Motorista</TableHead>
+                  <TableHead>Operação</TableHead>
+                  <TableHead>Placa</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.isArray(reportData) && reportData.length > 0 ? (
+                  reportData.map((warning: any, idx: number) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-medium">{warning.conductorName}</TableCell>
+                      <TableCell>{warning.conductorName}</TableCell>
+                      <TableCell>{warning.operacao}</TableCell>
+                      <TableCell>{warning.placa}</TableCell>
                       <TableCell>
-                        {warning.tipo === "pouco_rodado" ? "Pouco Rodado" : "Horas Extras"}
+                        {warning.data ? new Date(warning.data).toLocaleDateString("pt-BR") : "-"}
                       </TableCell>
                       <TableCell>
-                        <Badge className={getWarningBadgeColor(warning.nivelAdvertencia)}>
-                          Aviso {warning.nivelAdvertencia}
+                        <Badge>{warning.tipo}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={warning.assinada ? "default" : "secondary"}>
+                          {warning.assinada ? "Assinada" : "Pendente"}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {new Date(warning.criadoEm).toLocaleDateString("pt-BR")}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {warning.motivo}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {warning.observacao || "-"}
-                      </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <FileText className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-              <p className="text-slate-600">Nenhuma advertência encontrada com os filtros selecionados</p>
-            </div>
-          )}
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-slate-500">
+                      Nenhum resultado encontrado
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
