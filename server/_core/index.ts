@@ -36,6 +36,7 @@ async function startServer() {
   app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
     console.log(`[HEADERS] Content-Type: ${req.get('Content-Type')}`);
+    console.log(`[QUERY] ${JSON.stringify(req.query)}`);
     next();
   });
 
@@ -45,6 +46,14 @@ async function startServer() {
   // Middleware para logar o body após parsing
   app.use((req, res, next) => {
     console.log(`[BODY] ${req.method} ${req.path}`, req.body);
+    // Parse query string input para objeto se for string
+    if (req.query.input && typeof req.query.input === 'string') {
+      try {
+        req.query.input = JSON.parse(req.query.input);
+      } catch (e) {
+        // Se não conseguir fazer parse, deixa como está
+      }
+    }
     next();
   });
 
