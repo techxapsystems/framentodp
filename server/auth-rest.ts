@@ -89,3 +89,51 @@ authRestRouter.get("/reincidents", async (req, res) => {
     return res.status(500).json({ error: "Erro ao buscar reincidentes" });
   }
 });
+
+authRestRouter.get("/warnings-stats", async (req, res) => {
+  try {
+    const stats = await db.getWarningsStats({});
+    return res.json({
+      result: {
+        data: {
+          json: stats,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[API] Error getting warnings stats:", error);
+    return res.status(500).json({ error: "Erro ao buscar estatísticas" });
+  }
+});
+
+authRestRouter.get("/warnings-stats-by-operation", async (req, res) => {
+  try {
+    const stats = await db.getWarningsStatsByOperation();
+    return res.json({
+      result: {
+        data: {
+          json: stats,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[API] Error getting warnings stats by operation:", error);
+    return res.status(500).json({ error: "Erro ao buscar estatísticas por operação" });
+  }
+});
+
+authRestRouter.get("/warnings-stats-by-driver", async (req, res) => {
+  try {
+    const stats = await db.getWarningsStatsByDriver();
+    return res.json({
+      result: {
+        data: {
+          json: stats,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[API] Error getting warnings stats by driver:", error);
+    return res.status(500).json({ error: "Erro ao buscar estatísticas por motorista" });
+  }
+});
