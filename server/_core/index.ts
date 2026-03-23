@@ -46,18 +46,27 @@ async function startServer() {
   // Middleware para logar o body após parsing
   app.use((req, res, next) => {
     console.log(`[BODY] ${req.method} ${req.path}`, req.body);
-    // Parse query string input para objeto se for string
-    if (req.query.input && typeof req.query.input === 'string') {
-      try {
-        req.query.input = JSON.parse(req.query.input);
-      } catch (e) {
-        // Se não conseguir fazer parse, deixa como está
-      }
-    }
+    console.log(`[QUERY] ${req.method} ${req.path}`, req.query);
     next();
   });
 
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  
+  // Middleware para fazer parse do input do tRPC quando for string
+  app.use((req, res, next) => {
+    if (req.query.input && typeof req.query.input === 'string') {
+      try {
+        // tRPC envia input como JSON string na query
+        const parsed = JSON.parse(req.query.input);
+        // Copiar para req.body para que o tRPC reconheça
+        req.body = parsed;
+        console.log(`[PARSED INPUT] ${req.path}`, parsed);
+      } catch (e) {
+        console.error(`[PARSE ERROR] ${req.path}`, e.message);
+      }
+    }
+    next();
+  });
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);

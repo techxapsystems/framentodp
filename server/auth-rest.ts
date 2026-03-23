@@ -73,3 +73,19 @@ authRestRouter.post("/login", express.json(), async (req, res) => {
     return res.status(500).json({ error: "Erro interno do servidor. Tente novamente." });
   }
 });
+
+authRestRouter.get("/reincidents", async (req, res) => {
+  try {
+    const reincidents = await db.getReincidentsWithWarnings();
+    return res.json({
+      result: {
+        data: {
+          json: reincidents,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[API] Error getting reincidents:", error);
+    return res.status(500).json({ error: "Erro ao buscar reincidentes" });
+  }
+});

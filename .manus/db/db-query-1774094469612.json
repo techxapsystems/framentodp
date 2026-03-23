@@ -1,0 +1,34 @@
+{
+  "query": "SELECT conductorName, COUNT(*) as count FROM warnings GROUP BY conductorName HAVING COUNT(*) >= 2;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3dGJWfvPW4PQcvR.root --database niJQc4ibt4VMW3Ni9Ahpj8 --execute SELECT conductorName, COUNT(*) as count FROM warnings GROUP BY conductorName HAVING COUNT(*) >= 2;",
+  "rows": [
+    {
+      "conductorName": "ADILSON SANTOS",
+      "count": "3"
+    },
+    {
+      "conductorName": "ADRIANO DA CRUZ",
+      "count": "2"
+    },
+    {
+      "conductorName": "TEST_MOTORISTA_001",
+      "count": "3"
+    },
+    {
+      "conductorName": "TEST_MOTORISTA_002",
+      "count": "6"
+    },
+    {
+      "conductorName": "TEST_MOTORISTA_FLUXO_001",
+      "count": "4"
+    },
+    {
+      "conductorName": "TEST_MOTORISTA_UPDATE_001",
+      "count": "4"
+    }
+  ],
+  "messages": [],
+  "stdout": "conductorName\tcount\nADILSON SANTOS\t3\nADRIANO DA CRUZ\t2\nTEST_MOTORISTA_001\t3\nTEST_MOTORISTA_002\t6\nTEST_MOTORISTA_FLUXO_001\t4\nTEST_MOTORISTA_UPDATE_001\t4\n",
+  "stderr": "",
+  "execution_time_ms": 422
+}

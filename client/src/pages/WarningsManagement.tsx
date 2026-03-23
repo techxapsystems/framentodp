@@ -38,18 +38,36 @@ export default function WarningsManagement() {
   const [editWarningType, setEditWarningType] = useState<"pouco_rodado" | "horas_extras">("pouco_rodado");
   const [orientationDialogOpen, setOrientationDialogOpen] = useState(false);
   const [selectedMotoristaForOrientation, setSelectedMotoristaForOrientation] = useState<{ name: string; placa: string } | null>(null);
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: dataRaw, isLoading, refetch } = trpc.dashboard.getReincidents.useQuery(
-    {
-      tipo: selectedType && selectedType !== "__all__" ? (selectedType as "pouco_rodado" | "horas_extras") : undefined,
-    },
-    {
-      enabled: true,
-      staleTime: 0,
+  // Carregar dados via fetch
+  useEffect(() => {
+    const loadReincidents = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch("/api/auth/reincidents");
+        const result = await response.json();
+        setData(result.result?.data?.json || []);
+      } catch (error) {
+        console.error("Erro ao carregar reincidentes:", error);
+        toast.error("Erro ao carregar dados");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadReincidents();
+  }, []);
+
+  const refetch = async () => {
+    try {
+      const response = await fetch("/api/auth/reincidents");
+      const result = await response.json();
+      setData(result.result?.data?.json || []);
+    } catch (error) {
+      console.error("Erro ao recarregar reincidentes:", error);
     }
-  );
-  
-  const data = dataRaw?.result?.data?.json || dataRaw || { reincidents: [] };
+  };
 
   const updateWarningMutation = trpc.dashboard.updateWarning.useMutation({
     onSuccess: () => {
@@ -97,83 +115,71 @@ export default function WarningsManagement() {
 
   const handleSaveEdit = () => {
     if (!editingWarningId) return;
-    
+
     updateWarningMutation.mutate({
-      warningId: editingWarningId,
+      id: editingWarningId,
       nivelAdvertencia: parseInt(editWarningLevel),
       motivo: editWarningReason,
-      observacao: editWarningNote,
+      observacoes: editWarningNote,
       tipo: editWarningType,
     });
   };
 
-  const getWarningBadgeColor = (nivel: number) => {
-    switch (nivel) {
-      case 1:
-        return "bg-yellow-100 text-yellow-800";
-      case 2:
-        return "bg-orange-100 text-orange-800";
-      case 3:
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  const handleMarkApplied = (warningId: number) => {
+    markAppliedMutation.mutate({ id: warningId });
   };
 
-  const getWarningIcon = (nivel: number) => {
-    if (nivel >= 3) {
-      return <AlertTriangle className="w-4 h-4 text-red-600" />;
-    }
-    return <AlertCircle className="w-4 h-4 text-orange-600" />;
+  const handleRevertWarning = (warningId: number) => {
+    revertWarningMutation.mutate({ id: warningId });
   };
+
+  const filteredData = Array.isArray(data)
+    ? data.filter((item: any) => {
+        if (selectedType && selectedType !== "__all__") {
+          return item.warnings?.some((w: any) => w.categoria === selectedType);
+        }
+        return true;
+      })
+    : [];
 
   return (
-    <div className="p-8 space-y-6">
-      {/* Header */}
+    <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          Gerenciamento de Advertências
-        </h1>
-        <p className="text-slate-600 mt-2">
-          Gerencie advertências e acompanhe motoristas reincidentes
-        </p>
+        <h1 className="text-3xl font-bold">Gerenciamento de Advertências</h1>
+        <p className="text-gray-600">Gerencie advertências e acompanhe motoristas reincidentes</p>
       </div>
 
-      {/* Filtros */}
+      {/* Filtro por tipo */}
       <Card>
         <CardHeader>
           <CardTitle>Filtrar por tipo</CardTitle>
         </CardHeader>
         <CardContent>
-          <Select value={selectedType || "__all__"} onValueChange={(v: any) => setSelectedType(v === "__all__" ? "" : v)}>
-            <SelectTrigger className="w-full">
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger>
               <SelectValue placeholder="Todos os tipos" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__all__">Todos os tipos</SelectItem>
-              <SelectItem value="pouco_rodado">Pouco Rodado</SelectItem>
-              <SelectItem value="horas_extras">Horas Extras</SelectItem>
+              <SelectItem value="pouco_rodado">Aviso Pouco Rodado</SelectItem>
+              <SelectItem value="horas_extras">Aviso Horas Extras</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
       </Card>
 
-      {/* Tabela de Motoristas */}
+      {/* Tabela de motoristas com advertências */}
       <Card>
         <CardHeader>
           <CardTitle>Motoristas com Advertências</CardTitle>
-          <p className="text-sm text-slate-600 mt-2">
-            {data?.reincidents?.length || 0} motorista(s) com advertências
-          </p>
+          <p className="text-sm text-gray-600">{filteredData.length} motorista(s) com advertências</p>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="animate-pulse space-y-4">
-              <div className="h-10 bg-slate-200 rounded-lg" />
-              <div className="h-10 bg-slate-200 rounded-lg" />
-              <div className="h-10 bg-slate-200 rounded-lg" />
-            </div>
-          ) : data?.reincidents && data.reincidents.length > 0 ? (
+            <div className="text-center py-8">Carregando...</div>
+          ) : filteredData.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">Nenhum motorista encontrado</div>
+          ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -184,92 +190,45 @@ export default function WarningsManagement() {
                     <TableHead>Último Aviso</TableHead>
                     <TableHead>Observação</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.reincidents.map((item: any) => (
+                  {filteredData.map((item: any) => (
                     <TableRow key={item.conductorName}>
                       <TableCell className="font-medium">{item.conductorName}</TableCell>
+                      <TableCell>{item.avisosPoucoRodado || "-"}</TableCell>
+                      <TableCell>{item.avisosHorasExtras || "-"}</TableCell>
                       <TableCell>
-                        {item.avisosPoucoRodado > 0 ? (
-                          <Badge className={getWarningBadgeColor(item.avisosPoucoRodado)}>
-                            {getWarningIcon(item.avisosPoucoRodado)}
-                            <span className="ml-1">Aviso {item.avisosPoucoRodado}</span>
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-500">-</span>
-                        )}
+                        {item.ultimoAviso ? new Date(item.ultimoAviso).toLocaleDateString("pt-BR") : "-"}
+                      </TableCell>
+                      <TableCell>{item.observacao || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant={item.maxLevel >= 3 ? "destructive" : "secondary"}>
+                          {item.maxLevel >= 3 ? "Crítico" : "Ativo"}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        {item.avisosHorasExtras > 0 ? (
-                          <Badge className={getWarningBadgeColor(item.avisosHorasExtras)}>
-                            {getWarningIcon(item.avisosHorasExtras)}
-                            <span className="ml-1">Aviso {item.avisosHorasExtras}</span>
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-500">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {item.ultimoAviso
-                          ? new Date(item.ultimoAviso).toLocaleDateString("pt-BR")
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs">
-                          {item.historico && item.historico.length > 0 ? (
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-slate-700 truncate">
-                                {item.historico[0].observacao || "-"}
-                              </span>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
-                                  if (item.historico && item.historico.length > 0) {
-                                    handleEditWarning(item.historico[0]);
-                                  }
-                                }}
-                                className="h-6 w-6 p-0"
-                                title="Editar observação"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-slate-500">-</span>
-                          )}
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedMotoristaForOrientation({
+                                name: item.conductorName,
+                                placa: "",
+                              });
+                              setOrientationDialogOpen(true);
+                            }}
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </Button>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        {item.historico && item.historico.length > 0 ? (
-                          <div className="space-y-1">
-                            {!item.historico[0].advertenciaAplicada ? (
-                              <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300">
-                                ⏳ Pendente
-                              </Badge>
-                            ) : !item.historico[0].assinada ? (
-                              <Badge className="bg-blue-100 text-blue-800 border border-blue-300">
-                                ✓ Aplicada
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-green-100 text-green-800 border border-green-300">
-                                ✓✓ Assinada
-                              </Badge>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-slate-500">-</span>
-                        )}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-slate-500">Nenhuma advertência encontrada</p>
             </div>
           )}
         </CardContent>
@@ -278,90 +237,61 @@ export default function WarningsManagement() {
       {/* Dialog de Orientação */}
       {selectedMotoristaForOrientation && (
         <OrientationDialog
-          open={orientationDialogOpen}
-          onOpenChange={setOrientationDialogOpen}
+          isOpen={orientationDialogOpen}
+          onClose={() => {
+            setOrientationDialogOpen(false);
+            setSelectedMotoristaForOrientation(null);
+          }}
           motorista={selectedMotoristaForOrientation}
           onSuccess={() => {
             refetch();
             setOrientationDialogOpen(false);
+            setSelectedMotoristaForOrientation(null);
           }}
         />
       )}
 
       {/* Dialog de Edição */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Advertência</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Tipo:
-              </label>
-              <Select value={editWarningType} onValueChange={(v: any) => setEditWarningType(v)}>
+              <label className="text-sm font-medium">Nível</label>
+              <Select value={editWarningLevel} onValueChange={setEditWarningLevel}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pouco_rodado">Pouco Rodado</SelectItem>
-                  <SelectItem value="horas_extras">Horas Extras</SelectItem>
+                  <SelectItem value="1">1 - Leve</SelectItem>
+                  <SelectItem value="2">2 - Médio</SelectItem>
+                  <SelectItem value="3">3 - Grave</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
             <div>
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Nível de Advertência:
-              </label>
-              <Select value={editWarningLevel} onValueChange={(v: any) => setEditWarningLevel(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Aviso 1</SelectItem>
-                  <SelectItem value="2">Aviso 2</SelectItem>
-                  <SelectItem value="3">Aviso 3 (Crítico)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Motivo:
-              </label>
-              <textarea
+              <label className="text-sm font-medium">Motivo</label>
+              <input
+                type="text"
                 value={editWarningReason}
                 onChange={(e) => setEditWarningReason(e.target.value)}
-                placeholder="Descreva o motivo da advertência"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                rows={3}
+                className="w-full px-3 py-2 border rounded"
               />
             </div>
-
             <div>
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Observação (opcional):
-              </label>
+              <label className="text-sm font-medium">Observação</label>
               <textarea
                 value={editWarningNote}
                 onChange={(e) => setEditWarningNote(e.target.value)}
-                placeholder="Adicione observações adicionais"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                rows={2}
+                className="w-full px-3 py-2 border rounded"
               />
             </div>
-
-            <div className="flex gap-2 justify-end">
+            <div className="flex gap-2">
+              <Button onClick={handleSaveEdit}>Salvar</Button>
               <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                 Cancelar
-              </Button>
-              <Button
-                onClick={handleSaveEdit}
-                disabled={updateWarningMutation.isPending}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {updateWarningMutation.isPending ? "Salvando..." : "Salvar Alterações"}
               </Button>
             </div>
           </div>

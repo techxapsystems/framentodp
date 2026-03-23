@@ -1,0 +1,10 @@
+{
+  "query": "SELECT COUNT(*) as total FROM warnings; SELECT COUNT(*) as total_reincidentes FROM (SELECT DISTINCT driver_id FROM warnings GROUP BY driver_id HAVING COUNT(*) > 1) as reincidentes;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3dGJWfvPW4PQcvR.root --database niJQc4ibt4VMW3Ni9Ahpj8 --execute SELECT COUNT(*) as total FROM warnings; SELECT COUNT(*) as total_reincidentes FROM (SELECT DISTINCT driver_id FROM warnings GROUP BY driver_id HAVING COUNT(*) > 1) as reincidentes;",
+  "returncode": 1,
+  "logs": [
+    "total",
+    "27",
+    "ERROR 1054 (42S22) at line 1: Unknown column 'driver_id' in 'group statement'"
+  ]
+}

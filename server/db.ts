@@ -386,7 +386,11 @@ export async function getReincidentsWithWarnings() {
           conductorName: warning.conductorName,
           warnings: [],
           maxLevel: 0,
-          categoryCounts: {},
+          avisosPoucoRodado: 0,
+          avisosHorasExtras: 0,
+          avisoOutro: 0,
+          ultimoAviso: null,
+          observacao: "",
         };
       }
       grouped[warning.conductorName].warnings.push(warning);
@@ -394,13 +398,24 @@ export async function getReincidentsWithWarnings() {
         grouped[warning.conductorName].maxLevel,
         warning.nivelAdvertencia || 0
       );
+      grouped[warning.conductorName].ultimoAviso = warning.criadoEm;
+      grouped[warning.conductorName].observacao = warning.observacao || "";
 
-      const cat = warning.categoria || "unknown";
-      grouped[warning.conductorName].categoryCounts[cat] =
-        (grouped[warning.conductorName].categoryCounts[cat] || 0) + 1;
+      // Contar por categoria
+      if (warning.categoria === "pouco_rodado") {
+        grouped[warning.conductorName].avisosPoucoRodado++;
+      } else if (warning.categoria === "horas_extras") {
+        grouped[warning.conductorName].avisosHorasExtras++;
+      } else {
+        grouped[warning.conductorName].avisoOutro++;
+      }
     });
 
-    return Object.values(grouped);
+    // Filtrar apenas reincidentes (motoristas com 2+ advertências)
+    const reincidents = Object.values(grouped).filter(
+      (group: any) => group.warnings.length >= 2
+    );
+    return reincidents;
   } catch (error) {
     console.error("[Database] Error getting reincidents:", error);
     return [];
