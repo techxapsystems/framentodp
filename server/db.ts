@@ -622,13 +622,36 @@ export async function getWarningsStats(params: {
   if (!db) return null;
 
   try {
-    // Placeholder - retorna estrutura vazia
+    let conditions: any[] = [];
+
+    // Filtrar por data se fornecido
+    if (params.startDate) {
+      conditions.push(gte(warnings.criadoEm, params.startDate));
+    }
+    if (params.endDate) {
+      const endOfDay = new Date(params.endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      conditions.push(lte(warnings.criadoEm, endOfDay));
+    }
+
+    let query = db.select().from(warnings);
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    const allWarnings = await query;
+
+    // Contar assinadas vs não assinadas
+    const assinadas = allWarnings.filter((w: any) => w.advertenciaAplicada).length;
+    const naoAssinadas = allWarnings.length - assinadas;
+    const taxaDevolucao = allWarnings.length > 0 ? (naoAssinadas / allWarnings.length) * 100 : 0;
+
     return {
-      total: 0,
-      assinadas: 0,
-      naoAssinadas: 0,
-      taxaDevolucao: 0,
-      warnings: [],
+      total: allWarnings.length,
+      assinadas,
+      naoAssinadas,
+      taxaDevolucao: parseFloat(taxaDevolucao.toFixed(1)),
+      warnings: allWarnings,
     };
   } catch (error) {
     console.error("[DB] Error getting warnings stats:", error);
@@ -678,14 +701,36 @@ export async function getWarningsByOperation(params: {
 
 
 /**
- * Obter estatísticas de advertências por operação
+ * Obter estatísticas de advertências por operação (agrupado por tipo)
  */
 export async function getWarningsStatsByOperation() {
   const db = await getDb();
   if (!db) return [];
 
   try {
-    return [];
+    const allWarnings = await db.select().from(warnings);
+
+    // Agrupar por tipo de advertência (já que não há campo operacao)
+    const grouped: Record<string, any> = {};
+    allWarnings.forEach((warning: any) => {
+      const tipo = warning.tipo || "Desconhecido";
+      if (!grouped[tipo]) {
+        grouped[tipo] = {
+          operacao: tipo,
+          total: 0,
+          assinadas: 0,
+          naoAssinadas: 0,
+        };
+      }
+      grouped[tipo].total++;
+      if (warning.advertenciaAplicada) {
+        grouped[tipo].assinadas++;
+      } else {
+        grouped[tipo].naoAssinadas++;
+      }
+    });
+
+    return Object.values(grouped);
   } catch (error) {
     console.error("[DB] Error getting warnings stats by operation:", error);
     return [];
@@ -761,7 +806,29 @@ export async function getWarningsStatsByDriver() {
   if (!db) return [];
 
   try {
-    return [];
+    const allWarnings = await db.select().from(warnings);
+
+    // Agrupar por motorista
+    const grouped: Record<string, any> = {};
+    allWarnings.forEach((warning: any) => {
+      const conductor = warning.conductorName || "Desconhecido";
+      if (!grouped[conductor]) {
+        grouped[conductor] = {
+          conductorName: conductor,
+          total: 0,
+          assinadas: 0,
+          naoAssinadas: 0,
+        };
+      }
+      grouped[conductor].total++;
+      if (warning.advertenciaAplicada) {
+        grouped[conductor].assinadas++;
+      } else {
+        grouped[conductor].naoAssinadas++;
+      }
+    });
+
+    return Object.values(grouped);
   } catch (error) {
     console.error("[DB] Error getting warnings stats by driver:", error);
     return [];

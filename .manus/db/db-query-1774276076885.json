@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, conductorName, tipo, advertenciaAplicada, criadoEm FROM warnings LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3dGJWfvPW4PQcvR.root --database niJQc4ibt4VMW3Ni9Ahpj8 --execute SELECT id, conductorName, tipo, advertenciaAplicada, criadoEm FROM warnings LIMIT 5;",
+  "rows": [
+    {
+      "id": "150001",
+      "conductorName": "TEST_MOTORISTA_001",
+      "tipo": "advertencia",
+      "advertenciaAplicada": "0",
+      "criadoEm": "2026-03-06 12:08:35"
+    },
+    {
+      "id": "150002",
+      "conductorName": "TEST_MOTORISTA_002",
+      "tipo": "advertencia",
+      "advertenciaAplicada": "0",
+      "criadoEm": "2026-03-06 12:08:35"
+    },
+    {
+      "id": "150003",
+      "conductorName": "TEST_MOTORISTA_002",
+      "tipo": "advertencia",
+      "advertenciaAplicada": "0",
+      "criadoEm": "2026-03-06 12:08:35"
+    },
+    {
+      "id": "150007",
+      "conductorName": "TEST_MOTORISTA_001",
+      "tipo": "advertencia",
+      "advertenciaAplicada": "0",
+      "criadoEm": "2026-03-06 12:09:24"
+    },
+    {
+      "id": "150008",
+      "conductorName": "TEST_MOTORISTA_002",
+      "tipo": "advertencia",
+      "advertenciaAplicada": "0",
+      "criadoEm": "2026-03-06 12:09:24"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tconductorName\ttipo\tadvertenciaAplicada\tcriadoEm\n150001\tTEST_MOTORISTA_001\tadvertencia\t0\t2026-03-06 12:08:35\n150002\tTEST_MOTORISTA_002\tadvertencia\t0\t2026-03-06 12:08:35\n150003\tTEST_MOTORISTA_002\tadvertencia\t0\t2026-03-06 12:08:35\n150007\tTEST_MOTORISTA_001\tadvertencia\t0\t2026-03-06 12:09:24\n150008\tTEST_MOTORISTA_002\tadvertencia\t0\t2026-03-06 12:09:24\n",
+  "stderr": "",
+  "execution_time_ms": 389
+}
