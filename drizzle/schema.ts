@@ -626,3 +626,29 @@ export const hourlyRecords = mysqlTable(
 
 export type HourlyRecord = typeof hourlyRecords.$inferSelect;
 export type InsertHourlyRecord = typeof hourlyRecords.$inferInsert;
+
+/**
+ * Motoristas - cadastro de todos os motoristas da empresa
+ */
+export const conductors = mysqlTable(
+  "conductors",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    nome: varchar("nome", { length: 255 }).notNull(),
+    cpf: varchar("cpf", { length: 20 }).notNull().unique(),
+    operacao: varchar("operacao", { length: 255 }).notNull(),
+    cargo: varchar("cargo", { length: 255 }).notNull(),
+    placa: varchar("placa", { length: 50 }).notNull(),
+    status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
+    criadoEm: timestamp("criadoEm").defaultNow().notNull(),
+    atualizadoEm: timestamp("atualizadoEm").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [
+    index("idx_cpf").on(table.cpf),
+    index("idx_operacao").on(table.operacao),
+    index("idx_nome").on(table.nome),
+  ]
+);
+
+export type Conductor = typeof conductors.$inferSelect;
+export type InsertConductor = typeof conductors.$inferInsert;

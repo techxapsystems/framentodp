@@ -22,6 +22,7 @@ import TemplateLibrary from "./pages/TemplateLibrary";
 import UserManagement from "./pages/UserManagement";
 import Login from "./pages/Login";
 import { AnaliseGifBrf } from "./pages/AnaliseGifBrf";
+import WarningSignOff from "./pages/WarningSignOff";
 
 function Router() {
   const [user, setUser] = useState<any>(null);
@@ -84,6 +85,11 @@ function Router() {
         <Route path="/acompanhamento" component={() => (
           <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
             <WarningsTracking />
+          </ProtectedRoute>
+        )} />
+        <Route path="/baixa-advertencias" component={() => (
+          <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
+            <WarningSignOff />
           </ProtectedRoute>
         )} />
         <Route path="/relatorios" component={() => (

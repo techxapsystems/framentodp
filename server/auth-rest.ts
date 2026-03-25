@@ -137,3 +137,102 @@ authRestRouter.get("/warnings-stats-by-driver", async (req, res) => {
     return res.status(500).json({ error: "Erro ao buscar estatísticas por motorista" });
   }
 });
+
+
+/**
+ * Importar motoristas em lote
+ */
+authRestRouter.post("/import-conductors", express.json(), async (req, res) => {
+  try {
+    const { conductors: conductorsList } = req.body;
+    
+    if (!Array.isArray(conductorsList) || conductorsList.length === 0) {
+      return res.status(400).json({ error: "Lista de motoristas é obrigatória" });
+    }
+    
+    const result = await db.importConductors(conductorsList);
+    
+    return res.json({
+      result: {
+        data: {
+          json: result,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[API] Error importing conductors:", error);
+    return res.status(500).json({ error: "Erro ao importar motoristas" });
+  }
+});
+
+/**
+ * Obter todos os motoristas
+ */
+authRestRouter.get("/conductors", async (req, res) => {
+  try {
+    const conductorsList = await db.getAllConductors();
+    
+    return res.json({
+      result: {
+        data: {
+          json: conductorsList,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[API] Error getting conductors:", error);
+    return res.status(500).json({ error: "Erro ao buscar motoristas" });
+  }
+});
+
+/**
+ * Dar baixa em advertência (marcar como assinada)
+ */
+authRestRouter.post("/mark-warning-signed", express.json(), async (req, res) => {
+  try {
+    const { warningId } = req.body;
+    
+    if (!warningId) {
+      return res.status(400).json({ error: "ID da advertência é obrigatório" });
+    }
+    
+    const result = await db.markWarningAsSigned(warningId);
+    
+    return res.json({
+      result: {
+        data: {
+          json: { success: true, message: "Advertência marcada como assinada" },
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[API] Error marking warning as signed:", error);
+    return res.status(500).json({ error: "Erro ao marcar advertência como assinada" });
+  }
+});
+
+/**
+ * Obter advertências não assinadas de um motorista
+ */
+authRestRouter.get("/unsigned-warnings/:conductorName", async (req, res) => {
+  try {
+    const { conductorName } = req.params;
+    
+    if (!conductorName) {
+      return res.status(400).json({ error: "Nome do motorista é obrigatório" });
+    }
+    
+    const warnings = await db.getUnsignedWarningsByDriver(decodeURIComponent(conductorName));
+    
+    return res.json({
+      result: {
+        data: {
+          json: warnings,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[API] Error getting unsigned warnings:", error);
+    return res.status(500).json({ error: "Erro ao buscar advertências não assinadas" });
+  }
+});

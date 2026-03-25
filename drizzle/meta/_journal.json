@@ -176,6 +176,13 @@
       "when": 1773399889949,
       "tag": "0024_first_jetstream",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1774444284891,
+      "tag": "0025_oval_golden_guardian",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { eq, and, gte, lte, desc, inArray, or, isNotNull, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations, warningPdfHistory } from "../drizzle/schema";
+import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations, warningPdfHistory, conductors, InsertConductor } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -858,6 +858,129 @@ export async function getAllIdleDrivers() {
     return result || [];
   } catch (error) {
     console.error("[Database] Error getting idle drivers:", error);
+    return [];
+  }
+}
+
+
+/**
+ * Importar motoristas em lote
+ */
+export async function importConductors(conductorsList: InsertConductor[]) {
+  const db = await getDb();
+  if (!db) {
+    console.error("[DB] Database not available");
+    return { success: false, message: "Database not available", inserted: 0 };
+  }
+
+  try {
+    let inserted = 0;
+    
+    // Inserir em lotes de 100
+    const batchSize = 100;
+    for (let i = 0; i < conductorsList.length; i += batchSize) {
+      const batch = conductorsList.slice(i, i + batchSize);
+      
+      try {
+        await db.insert(conductors).values(batch);
+        inserted += batch.length;
+        console.log(`[DB] Inserted batch ${Math.floor(i / batchSize) + 1}: ${batch.length} conductors`);
+      } catch (error: any) {
+        // Se houver erro de duplicação de CPF, continuar com próximo lote
+        if (error.message && error.message.includes('Duplicate entry')) {
+          console.warn(`[DB] Duplicate CPF in batch, skipping...`);
+          continue;
+        }
+        throw error;
+      }
+    }
+    
+    return { success: true, message: `Imported ${inserted} conductors`, inserted };
+  } catch (error) {
+    console.error("[DB] Error importing conductors:", error);
+    return { success: false, message: `Error importing conductors: ${error}`, inserted: 0 };
+  }
+}
+
+/**
+ * Obter todos os motoristas
+ */
+export async function getAllConductors() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    return await db.select().from(conductors);
+  } catch (error) {
+    console.error("[DB] Error getting all conductors:", error);
+    return [];
+  }
+}
+
+/**
+ * Obter motorista por nome
+ */
+export async function getConductorByName(name: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .select()
+      .from(conductors)
+      .where(eq(conductors.nome, name))
+      .limit(1);
+    
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error("[DB] Error getting conductor by name:", error);
+    return null;
+  }
+}
+
+/**
+ * Dar baixa em advertência (marcar como assinada)
+ */
+export async function markWarningAsSigned(warningId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .update(warnings)
+      .set({ 
+        advertenciaAplicada: true,
+        dataAplicacao: new Date()
+      })
+      .where(eq(warnings.id, warningId));
+    
+    return result;
+  } catch (error) {
+    console.error("[DB] Error marking warning as signed:", error);
+    return null;
+  }
+}
+
+/**
+ * Obter advertências não assinadas de um motorista
+ */
+export async function getUnsignedWarningsByDriver(conductorName: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    return await db
+      .select()
+      .from(warnings)
+      .where(
+        and(
+          eq(warnings.conductorName, conductorName),
+          eq(warnings.advertenciaAplicada, false)
+        )
+      )
+      .orderBy(desc(warnings.criadoEm));
+  } catch (error) {
+    console.error("[DB] Error getting unsigned warnings by driver:", error);
     return [];
   }
 }
