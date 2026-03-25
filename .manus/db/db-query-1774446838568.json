@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) as total FROM conductors;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3dGJWfvPW4PQcvR.root --database niJQc4ibt4VMW3Ni9Ahpj8 --execute SELECT COUNT(*) as total FROM conductors;",
+  "rows": [
+    {
+      "total": "437"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n437\n",
+  "stderr": "",
+  "execution_time_ms": 357
+}
