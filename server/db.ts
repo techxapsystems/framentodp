@@ -875,27 +875,27 @@ export async function importConductors(conductorsList: InsertConductor[]) {
 
   try {
     let inserted = 0;
+    let skipped = 0;
     
-    // Inserir em lotes de 100
-    const batchSize = 100;
-    for (let i = 0; i < conductorsList.length; i += batchSize) {
-      const batch = conductorsList.slice(i, i + batchSize);
+    // Inserir um por um para melhor controle de erros
+    for (let i = 0; i < conductorsList.length; i++) {
+      const conductor = conductorsList[i];
       
       try {
-        await db.insert(conductors).values(batch);
-        inserted += batch.length;
-        console.log(`[DB] Inserted batch ${Math.floor(i / batchSize) + 1}: ${batch.length} conductors`);
+        await db.insert(conductors).values(conductor);
+        inserted++;
       } catch (error: any) {
-        // Se houver erro de duplicação de CPF, continuar com próximo lote
+        // Se houver erro de duplicação de CPF, pular este motorista
         if (error.message && error.message.includes('Duplicate entry')) {
-          console.warn(`[DB] Duplicate CPF in batch, skipping...`);
+          skipped++;
           continue;
         }
         throw error;
       }
     }
     
-    return { success: true, message: `Imported ${inserted} conductors`, inserted };
+    console.log(`[DB] Import complete: ${inserted} inserted, ${skipped} skipped`);
+    return { success: true, message: `Imported ${inserted} conductors (${skipped} skipped)`, inserted };
   } catch (error) {
     console.error("[DB] Error importing conductors:", error);
     return { success: false, message: `Error importing conductors: ${error}`, inserted: 0 };

@@ -412,11 +412,17 @@ export const dashboardRouter = router({
   getIdleDriversForWarning: protectedProcedure
     .query(async () => {
       try {
-        const { getAllIdleDrivers } = await import("../db");
-        const drivers = await getAllIdleDrivers();
-        return drivers || [];
+        const { getAllConductors } = await import("../db");
+        const conductors = await getAllConductors();
+        // Mapear para o formato esperado (conductorName, placa, operacao, cargo)
+        return conductors.map((c: any) => ({
+          conductorName: c.nome,
+          placa: c.placa,
+          operacao: c.operacao,
+          cargo: c.cargo,
+        })) || [];
       } catch (error) {
-        console.error("Error fetching idle drivers:", error);
+        console.error("Error fetching conductors:", error);
         return [];
       }
     }),
