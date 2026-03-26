@@ -37,7 +37,7 @@ type MenuItem = {
 const menuItems: MenuItem[] = [
   // Módulo: Controle de Advertências
   { icon: AlertTriangle, label: "Cadastro de Advertências", path: "/reincidentes", module: "controle_de_advertencias" },
-  { icon: AlertCircle, label: "Gerenciamento de Advertências", path: "/advertencias", module: "controle_de_advertencias" },
+
   { icon: TrendingUp, label: "Acompanhamento", path: "/acompanhamento", module: "controle_de_advertencias" },
   { icon: CheckCircle2, label: "Baixa de Advertências", path: "/baixa-advertencias", module: "controle_de_advertencias" },
   { icon: FileText, label: "Relatórios", path: "/relatorios", module: "controle_de_advertencias" },

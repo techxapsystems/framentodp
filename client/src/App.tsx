@@ -13,7 +13,7 @@ import Week from "./pages/Week";
 import Import from "./pages/Import";
 import Settings from "./pages/Settings";
 import Recidivists from "./pages/Recidivists";
-import WarningsManagement from "./pages/WarningsManagement";
+
 import WarningsTracking from "./pages/WarningsTracking";
 import Reports from "./pages/Reports";
 import Audit from "./pages/Audit";
@@ -77,11 +77,7 @@ function Router() {
             <Recidivists />
           </ProtectedRoute>
         )} />
-        <Route path="/advertencias" component={() => (
-          <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
-            <WarningsManagement />
-          </ProtectedRoute>
-        )} />
+
         <Route path="/acompanhamento" component={() => (
           <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
             <WarningsTracking />

@@ -1,7 +1,5 @@
-import { useState, useMemo } from "react";
-import { trpc } from "@/lib/trpc";
-import { DateMaskInput } from "@/components/DateMaskInput";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -19,68 +17,72 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, Filter } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { Input } from "@/components/ui/input";
 
 export default function Reports() {
-  const [dateStartDisplay, setDateStartDisplay] = useState("");
-  const [dateEndDisplay, setDateEndDisplay] = useState("");
-  const [selectedMotorista, setSelectedMotorista] = useState("");
-  const [motoristaBusca, setMotoristaBusca] = useState("");
-  const [selectedTipo, setSelectedTipo] = useState<"" | "pouco_rodado" | "horas_extras">("");
-  const [selectedOperacao, setSelectedOperacao] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<"" | "aplicadas" | "todas">("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [selectedOperation, setSelectedOperation] = useState<string>("");
+  const [searchText, setSearchText] = useState<string>("");
+  const [warnings, setWarnings] = useState<any[]>([]);
+  const [operations, setOperations] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Converter DD/MM/YYYY para YYYY-MM-DD para query
-  const dateStart = dateStartDisplay.length === 10 && dateStartDisplay.includes("/")
-    ? (() => {
-        const [day, month, year] = dateStartDisplay.split("/");
-        return `${year}-${month}-${day}`;
-      })()
-    : "";
+  // Carregar dados de advertências
+  useEffect(() => {
+    const loadWarnings = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch("/api/auth/warnings-stats-by-driver");
+        const result = await response.json();
+        const data = result.result?.data?.json || [];
+        
+        // Extrair operações únicas
+        const uniqueOps = new Set<string>();
+        data.forEach((item: any) => {
+          if (item.operacao) uniqueOps.add(item.operacao);
+        });
+        setOperations(Array.from(uniqueOps).sort());
+        
+        setWarnings(data);
+      } catch (error) {
+        console.error("Erro ao carregar advertências:", error);
+        toast.error("Erro ao carregar advertências");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadWarnings();
+  }, []);
 
-  const dateEnd = dateEndDisplay.length === 10 && dateEndDisplay.includes("/")
-    ? (() => {
-        const [day, month, year] = dateEndDisplay.split("/");
-        return `${year}-${month}-${day}`;
-      })()
-    : "";
-
-  // Query para buscar lista de motoristas (DEVE VIR PRIMEIRO)
-  const { data: queryResult } = trpc.dashboard.getIdleDriversForWarning.useQuery(
-    {},
-    { enabled: true, staleTime: 0 }
-  );
-  const idleDriversData = Array.isArray(queryResult) ? queryResult : (queryResult as any)?.json || [];
-
-  // Query para buscar dados do relatório
-  const { data: reportData, isLoading } = trpc.dashboard.getWarningsReport.useQuery(
-    {
-      dateStart: dateStart || undefined,
-      dateEnd: dateEnd || undefined,
-      conductorName: selectedMotorista || undefined,
-      tipo: selectedTipo || undefined,
-      operacao: selectedOperacao || undefined,
-    },
-    {
-      enabled: true,
-      staleTime: 0,
-    }
-  );
-
-  // Filtrar motoristas baseado na busca
-  const motoristasFiltrados = useMemo(() => {
-    if (!Array.isArray(idleDriversData)) return [];
-    return idleDriversData.filter((d: any) =>
-      d.conductorName.toLowerCase().includes(motoristaBusca.toLowerCase())
-    );
-  }, [idleDriversData, motoristaBusca]);
+  // Filtrar advertências por critérios
+  const filteredWarnings = useMemo(() => {
+    return warnings.filter((warning) => {
+      const matchesSearch = searchText === "" || 
+        warning.nome?.toLowerCase().includes(searchText.toLowerCase());
+      const matchesOperation = selectedOperation === "" || warning.operacao === selectedOperation;
+      
+      // Filtro por data (se aplicável)
+      let matchesDate = true;
+      if (startDate || endDate) {
+        const warningDate = warning.data ? new Date(warning.data) : null;
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+        
+        if (start && warningDate && warningDate < start) matchesDate = false;
+        if (end && warningDate && warningDate > end) matchesDate = false;
+      }
+      
+      return matchesSearch && matchesOperation && matchesDate;
+    });
+  }, [warnings, searchText, selectedOperation, startDate, endDate]);
 
   const generatePDF = async () => {
-    const warnings = Array.isArray(reportData) ? reportData : reportData?.warnings || [];
-    if (!warnings || warnings.length === 0) {
+    if (filteredWarnings.length === 0) {
       toast.error("Nenhum dado para gerar relatório");
       return;
     }
@@ -91,17 +93,17 @@ export default function Reports() {
       doc.text("Relatório de Advertências", 10, 10);
       doc.setFontSize(10);
       doc.text(
-        `Período: ${dateStartDisplay || "Início"} a ${dateEndDisplay || "Fim"}`,
+        `Período: ${startDate || "Início"} a ${endDate || "Fim"}`,
         10,
         20
       );
 
-      const tableData = warnings.map((w: any) => [
-        w.conductorName || "",
+      const tableData = filteredWarnings.map((w: any) => [
+        w.nome || "",
         w.operacao || "",
         w.placa || "",
         w.data ? new Date(w.data).toLocaleDateString("pt-BR") : "",
-        w.tipo || "",
+        w.tipo || "Advertência",
         w.assinada ? "Sim" : "Não",
       ]);
 
@@ -116,7 +118,7 @@ export default function Reports() {
       const finalY = (doc as any).lastAutoTable.finalY || 35;
       doc.setFontSize(8);
       doc.text(
-        `Total de advertências: ${warnings.length}`,
+        `Total de advertências: ${filteredWarnings.length}`,
         10,
         finalY + 10
       );
@@ -135,19 +137,6 @@ export default function Reports() {
     }
   };
 
-  const getWarningBadgeColor = (nivel: number) => {
-    switch (nivel) {
-      case 1:
-        return "bg-yellow-100 text-yellow-800";
-      case 2:
-        return "bg-orange-100 text-orange-800";
-      case 3:
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="p-8">
@@ -160,139 +149,85 @@ export default function Reports() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Relatórios de Advertências</h1>
-        <p className="text-slate-600 mt-2">
-          Gere relatórios filtrados por período, motorista ou tipo de advertência
+        <h1 className="text-3xl font-bold">Relatórios de Advertências</h1>
+        <p className="text-muted-foreground mt-2">
+          Gere relatórios filtrados por período, motorista ou operação
         </p>
       </div>
 
       {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="w-5 h-5" />
+            Filtros
+          </CardTitle>
+          <CardDescription>Customize os filtros para gerar o relatório desejado</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Busca por Motorista */}
             <div>
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Data Início:
-              </label>
-              <DateMaskInput
-                value={dateStartDisplay}
-                onChange={setDateStartDisplay}
-                placeholder="DD/MM/YYYY"
+              <label className="text-sm font-medium mb-2 block">Buscar Motorista</label>
+              <Input
+                placeholder="Digite o nome do motorista..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
               />
             </div>
 
+            {/* Filtro por Operação */}
             <div>
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Data Fim:
-              </label>
-              <DateMaskInput
-                value={dateEndDisplay}
-                onChange={setDateEndDisplay}
-                placeholder="DD/MM/YYYY"
-              />
-            </div>
-
-            <div className="relative">
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Motorista:
-              </label>
-              <input
-                type="text"
-                placeholder="Buscar motorista..."
-                value={motoristaBusca}
-                onChange={(e) => setMotoristaBusca(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              {motoristaBusca && motoristasFiltrados.length > 0 && (
-                <div className="absolute bg-white border border-slate-300 rounded-lg mt-1 max-h-48 overflow-y-auto w-full z-10 shadow-lg">
-                  {motoristasFiltrados.map((motorista: any) => (
-                    <div
-                      key={motorista.conductorName}
-                      className="px-3 py-2 hover:bg-slate-100 cursor-pointer"
-                      onClick={() => {
-                        setSelectedMotorista(motorista.conductorName);
-                        setMotoristaBusca("");
-                      }}
-                    >
-                      {motorista.conductorName}
-                    </div>
+              <label className="text-sm font-medium mb-2 block">Operação</label>
+              <Select value={selectedOperation} onValueChange={setSelectedOperation}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as operações" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas as operações</SelectItem>
+                  {operations.map((op) => (
+                    <SelectItem key={op} value={op}>
+                      {op}
+                    </SelectItem>
                   ))}
-                </div>
-              )}
-              {selectedMotorista && (
-                <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200 flex justify-between items-center">
-                  <span className="text-sm">{selectedMotorista}</span>
-                  <button
-                    onClick={() => setSelectedMotorista("")}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Tipo:
-              </label>
-              <Select value={selectedTipo} onValueChange={(v: any) => setSelectedTipo(v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  <SelectItem value="pouco_rodado">Pouco Rodado</SelectItem>
-                  <SelectItem value="horas_extras">Horas Extras</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
+            {/* Data Inicial */}
             <div>
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Operação:
-              </label>
-              <Select value={selectedOperacao} onValueChange={setSelectedOperacao}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  {/* Adicionar operações dinamicamente */}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium mb-2 block">Data Inicial</label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
             </div>
 
+            {/* Data Final */}
             <div>
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Status:
-              </label>
-              <Select value={selectedStatus} onValueChange={(v: any) => setSelectedStatus(v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  <SelectItem value="aplicadas">Aplicadas</SelectItem>
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium mb-2 block">Data Final</label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
             </div>
+          </div>
 
-            <div className="flex items-end">
-              <Button
-                onClick={generatePDF}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Gerar PDF
-              </Button>
-            </div>
+          {/* Botão Gerar PDF */}
+          <div className="flex gap-2 justify-end">
+            <Button
+              onClick={generatePDF}
+              disabled={filteredWarnings.length === 0}
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Gerar PDF
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -300,7 +235,12 @@ export default function Reports() {
       {/* Tabela de Resultados */}
       <Card>
         <CardHeader>
-          <CardTitle>Resultados</CardTitle>
+          <CardTitle>Resultados ({filteredWarnings.length})</CardTitle>
+          <CardDescription>
+            {filteredWarnings.length === 0 
+              ? "Nenhuma advertência encontrada com os filtros aplicados" 
+              : `Mostrando ${filteredWarnings.length} advertência(s)`}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -316,17 +256,17 @@ export default function Reports() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {Array.isArray(reportData) && reportData.length > 0 ? (
-                  reportData.map((warning: any, idx: number) => (
+                {filteredWarnings.length > 0 ? (
+                  filteredWarnings.map((warning: any, idx: number) => (
                     <TableRow key={idx}>
-                      <TableCell>{warning.conductorName}</TableCell>
+                      <TableCell className="font-medium">{warning.nome}</TableCell>
                       <TableCell>{warning.operacao}</TableCell>
-                      <TableCell>{warning.placa}</TableCell>
+                      <TableCell>{warning.placa || "-"}</TableCell>
                       <TableCell>
                         {warning.data ? new Date(warning.data).toLocaleDateString("pt-BR") : "-"}
                       </TableCell>
                       <TableCell>
-                        <Badge>{warning.tipo}</Badge>
+                        <Badge variant="outline">Advertência</Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={warning.assinada ? "default" : "secondary"}>
@@ -337,7 +277,7 @@ export default function Reports() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-slate-500">
+                    <TableCell colSpan={6} className="text-center text-slate-500 py-8">
                       Nenhum resultado encontrado
                     </TableCell>
                   </TableRow>

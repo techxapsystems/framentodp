@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,11 +7,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Search, Filter } from "lucide-react";
 
 export default function WarningSignOff() {
   const [conductors, setConductors] = useState<any[]>([]);
   const [selectedConductor, setSelectedConductor] = useState<string>("");
+  const [searchText, setSearchText] = useState<string>("");
+  const [selectedOperation, setSelectedOperation] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [unsignedWarnings, setUnsignedWarnings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningOff, setIsSigningOff] = useState(false);
@@ -58,6 +62,36 @@ export default function WarningSignOff() {
 
     loadUnsignedWarnings();
   }, [selectedConductor]);
+
+  // Filtrar motoristas por busca
+  const filteredConductors = useMemo(() => {
+    return conductors.filter((conductor) => {
+      const matchesSearch = searchText === "" || 
+        conductor.nome.toLowerCase().includes(searchText.toLowerCase()) ||
+        conductor.cpf.includes(searchText);
+      const matchesOperation = selectedOperation === "" || conductor.operacao === selectedOperation;
+      return matchesSearch && matchesOperation;
+    });
+  }, [conductors, searchText, selectedOperation]);
+
+  // Filtrar advertências por data
+  const filteredWarnings = useMemo(() => {
+    return unsignedWarnings.filter((warning) => {
+      const warningDate = new Date(warning.criadoEm);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      if (start && warningDate < start) return false;
+      if (end && warningDate > end) return false;
+      return true;
+    });
+  }, [unsignedWarnings, startDate, endDate]);
+
+  // Obter lista de operações únicas
+  const operations = useMemo(() => {
+    const ops = new Set(conductors.map((c) => c.operacao));
+    return Array.from(ops).sort();
+  }, [conductors]);
 
   const handleSignOff = async (warning: any) => {
     setSelectedWarning(warning);
@@ -108,19 +142,49 @@ export default function WarningSignOff() {
         </p>
       </div>
 
-      {/* Seleção de Motorista */}
+      {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle>Selecionar Motorista</CardTitle>
-          <CardDescription>Escolha o motorista para visualizar suas advertências pendentes</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="w-5 h-5" />
+            Filtros de Busca
+          </CardTitle>
+          <CardDescription>Busque motoristas por nome, CPF ou operação</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Busca por Nome/CPF */}
+          <div className="relative">
+            <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Buscar por nome ou CPF..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Filtro por Operação */}
+          <Select value={selectedOperation} onValueChange={setSelectedOperation}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrar por operação..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todas as operações</SelectItem>
+              {operations.map((op) => (
+                <SelectItem key={op} value={op}>
+                  {op}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Seleção de Motorista */}
           <Select value={selectedConductor} onValueChange={setSelectedConductor}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Selecione um motorista..." />
             </SelectTrigger>
             <SelectContent>
-              {conductors.map((conductor) => (
+              {filteredConductors.map((conductor) => (
                 <SelectItem key={conductor.id} value={conductor.nome}>
                   {conductor.nome} - {conductor.operacao}
                 </SelectItem>
@@ -130,22 +194,50 @@ export default function WarningSignOff() {
         </CardContent>
       </Card>
 
+      {/* Filtros de Data */}
+      {selectedConductor && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Filtrar por Data</CardTitle>
+            <CardDescription>Selecione o período para filtrar as advertências</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Data Inicial</label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Data Final</label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Advertências Não Assinadas */}
       {selectedConductor && (
         <Card>
           <CardHeader>
             <CardTitle>Advertências Pendentes</CardTitle>
             <CardDescription>
-              {isLoading ? "Carregando..." : `${unsignedWarnings.length} advertência(s) não assinada(s)`}
+              {isLoading ? "Carregando..." : `${filteredWarnings.length} advertência(s) encontrada(s)`}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="text-center py-8 text-gray-500">Carregando advertências...</div>
-            ) : unsignedWarnings.length === 0 ? (
+            ) : filteredWarnings.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <CheckCircle2 className="w-12 h-12 mx-auto mb-2 text-green-600" />
-                <p>Nenhuma advertência pendente para este motorista</p>
+                <p>Nenhuma advertência pendente encontrada</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -160,7 +252,7 @@ export default function WarningSignOff() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {unsignedWarnings.map((warning) => (
+                    {filteredWarnings.map((warning) => (
                       <TableRow key={warning.id}>
                         <TableCell>
                           <Badge variant="outline">{warning.tipo}</Badge>
