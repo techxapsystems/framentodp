@@ -113,7 +113,7 @@ export default function WarningsTracking() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as operações</SelectItem>
-                  {operations?.map((op: any) => (
+                  {operations?.filter((op: any) => op.id && op.id.trim() !== '').map((op: any) => (
                     <SelectItem key={op.id} value={op.id}>
                       {op.nome}
                     </SelectItem>

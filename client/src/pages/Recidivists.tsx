@@ -145,7 +145,7 @@ export default function Recidivists() {
                     <SelectValue placeholder="Selecione um motorista" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Array.isArray(idleDriversData) && idleDriversData.map((driver: any) => (
+                    {Array.isArray(idleDriversData) && idleDriversData.filter((driver: any) => driver.conductorName && driver.conductorName.trim() !== '').map((driver: any) => (
                       <SelectItem key={driver.conductorName} value={driver.conductorName}>
                         {driver.conductorName}
                       </SelectItem>

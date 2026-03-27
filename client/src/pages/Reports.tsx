@@ -189,7 +189,7 @@ export default function Reports() {
                   <SelectValue placeholder="Todas as operações" />
                 </SelectTrigger>
                 <SelectContent>
-                  {operations.map((op) => (
+                  {operations.filter((op) => op && op.trim() !== '').map((op) => (
                     <SelectItem key={op} value={op}>
                       {op}
                     </SelectItem>
