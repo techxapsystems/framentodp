@@ -225,7 +225,6 @@ export default function Audit() {
                   <SelectValue placeholder="Todas as ações" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as ações</SelectItem>
                   {Object.entries(ACTION_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>
                       {label}
@@ -242,7 +241,6 @@ export default function Audit() {
                   <SelectValue placeholder="Todos os recursos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os recursos</SelectItem>
                   {Object.entries(RESOURCE_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>
                       {label}

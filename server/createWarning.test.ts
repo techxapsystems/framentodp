@@ -28,20 +28,21 @@ describe("Fluxo Completo de Cadastro de Advertência", () => {
     };
 
     // Inserir advertência
-    const result = await db.insert(warnings).values(testWarning);
-    const insertId = (result as any)?.insertId || (result as any)?.[0]?.id;
+    await db.insert(warnings).values(testWarning);
 
-    // Validar que retornou um ID
-    expect(insertId).toBeDefined();
-    expect(typeof insertId === "number" || typeof insertId === "string").toBe(true);
-
-    // Buscar a advertência criada
+    // Buscar a advertência criada para validar
     const created = await db
       .select()
       .from(warnings)
       .where(eq(warnings.conductorName, testWarning.conductorName));
 
+    // Validar que foi criada
     expect(created.length).toBeGreaterThan(0);
+    const insertId = created[0].id;
+    expect(insertId).toBeDefined();
+    expect(typeof insertId === "number" || typeof insertId === "string").toBe(true);
+
+    // Validar campos
     expect(created[0].conductorName).toBe(testWarning.conductorName);
     expect(created[0].tipo).toBe("advertencia");
     expect(created[0].categoria).toBe("pouco_rodado");
@@ -69,20 +70,27 @@ describe("Fluxo Completo de Cadastro de Advertência", () => {
     };
 
     // Criar
-    const result = await db.insert(warnings).values(testWarning);
-    const insertId = (result as any)?.insertId || (result as any)?.[0]?.id;
+    await db.insert(warnings).values(testWarning);
+
+    // Buscar o ID da advertência criada
+    const created = await db
+      .select()
+      .from(warnings)
+      .where(eq(warnings.conductorName, testWarning.conductorName));
+
+    const insertId = created[0].id;
 
     // Atualizar status
     await db
       .update(warnings)
       .set({ advertenciaAplicada: true })
-      .where(eq(warnings.id, Number(insertId)));
+      .where(eq(warnings.id, insertId));
 
     // Verificar atualização
     const updated = await db
       .select()
       .from(warnings)
-      .where(eq(warnings.id, Number(insertId)));
+      .where(eq(warnings.id, insertId));
 
     expect(updated[0].advertenciaAplicada).toBe(true);
 

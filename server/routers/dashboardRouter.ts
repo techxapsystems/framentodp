@@ -412,8 +412,8 @@ export const dashboardRouter = router({
   getIdleDriversForWarning: protectedProcedure
     .query(async () => {
       try {
-        const { getAllConductors } = await import("../db");
-        const conductors = await getAllConductors();
+        const db = await import("../db");
+        const conductors = await db.getAllConductors();
         // Mapear para o formato esperado (conductorName, placa, operacao, cargo)
         return conductors.map((c: any) => ({
           conductorName: c.nome,

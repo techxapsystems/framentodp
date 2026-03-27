@@ -28,12 +28,17 @@ export default function WarningsTracking() {
   // Buscar operações disponíveis
   const { data: operations = [] } = trpc.dashboard.getAllOperations.useQuery();
 
-  // Carregar dados via fetch
+  // Carregar dados via fetch com filtros
   useEffect(() => {
     const loadStats = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("/api/auth/warnings-stats");
+        const params = new URLSearchParams();
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        if (selectedOperation && selectedOperation !== 'all') params.append('operacao', selectedOperation);
+        
+        const response = await fetch(`/api/auth/warnings-stats?${params.toString()}`);
         const result = await response.json();
         setStats(result.result?.data?.json || null);
       } catch (error) {
@@ -46,11 +51,16 @@ export default function WarningsTracking() {
     loadStats();
   }, [startDate, endDate, selectedOperation]);
 
-  // Carregar dados por operação
+  // Carregar dados por operação com filtros
   useEffect(() => {
     const loadByOperation = async () => {
       try {
-        const response = await fetch("/api/auth/warnings-stats-by-operation");
+        const params = new URLSearchParams();
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        if (selectedOperation && selectedOperation !== 'all') params.append('operacao', selectedOperation);
+        
+        const response = await fetch(`/api/auth/warnings-stats-by-operation?${params.toString()}`);
         const result = await response.json();
         setByOperation(result.result?.data?.json || []);
       } catch (error) {
@@ -58,7 +68,7 @@ export default function WarningsTracking() {
       }
     };
     loadByOperation();
-  }, []);
+  }, [startDate, endDate, selectedOperation]);
 
   const warningStats = stats || { total: 0, assinadas: 0, naoAssinadas: 0, taxaDevolucao: 0, warnings: [] };
 

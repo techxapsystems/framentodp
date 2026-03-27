@@ -281,7 +281,7 @@ export async function createJourney(
   }
 }
 
-export async function getRecurrences(userId: number) {
+export async function getRecurrences(conductorName: string) {
   const db = await getDb();
   if (!db) return [];
 
@@ -289,7 +289,7 @@ export async function getRecurrences(userId: number) {
     return await db
       .select()
       .from(recurrences)
-      .where(eq(recurrences.userId, userId));
+      .where(eq(recurrences.conductorName, conductorName));
   } catch (error) {
     console.error("[Database] Error getting recurrences:", error);
     return [];
@@ -297,12 +297,12 @@ export async function getRecurrences(userId: number) {
 }
 
 export async function createRecurrence(
-  userId: number,
+  conductorName: string,
   data: {
-    type: string;
-    frequency: string;
-    startDate: Date;
-    endDate?: Date;
+    ocorPoucoJanela?: number;
+    ocorPouco30d?: number;
+    ocorHeJanela?: number;
+    ocorHe30d?: number;
   }
 ) {
   const db = await getDb();
@@ -310,11 +310,12 @@ export async function createRecurrence(
 
   try {
     await db.insert(recurrences).values({
-      userId,
-      type: data.type,
-      frequency: data.frequency,
-      startDate: data.startDate,
-      endDate: data.endDate,
+      conductorName,
+      data: new Date(),
+      ocorPoucoJanela: data.ocorPoucoJanela || 0,
+      ocorPouco30d: data.ocorPouco30d || 0,
+      ocorHeJanela: data.ocorHeJanela || 0,
+      ocorHe30d: data.ocorHe30d || 0,
     });
   } catch (error) {
     console.error("[Database] Error creating recurrence:", error);
@@ -807,14 +808,24 @@ export async function getWarningsStatsByDriver() {
 
   try {
     const allWarnings = await db.select().from(warnings);
+    
+    // Buscar dados dos motoristas para obter operacao
+    const conductorsData = await db.select().from(conductors);
+    const conductorMap = new Map();
+    conductorsData.forEach((c: any) => {
+      conductorMap.set(c.nome, c);
+    });
 
     // Agrupar por motorista
     const grouped: Record<string, any> = {};
     allWarnings.forEach((warning: any) => {
       const conductor = warning.conductorName || "Desconhecido";
       if (!grouped[conductor]) {
+        const conductorInfo = conductorMap.get(conductor);
         grouped[conductor] = {
           conductorName: conductor,
+          operacao: conductorInfo?.operacao || "",
+          placa: conductorInfo?.placa || "",
           total: 0,
           assinadas: 0,
           naoAssinadas: 0,

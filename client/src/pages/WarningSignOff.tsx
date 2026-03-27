@@ -1,136 +1,124 @@
-import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { CheckCircle2, AlertCircle, Search, Filter } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertCircle, CheckCircle2, Search } from 'lucide-react';
+
+interface Conductor {
+  id: number;
+  nome: string;
+  cpf: string;
+  operacao: string;
+  cargo: string;
+  placa: string;
+}
+
+interface Warning {
+  id: number;
+  conductorName: string;
+  categoria: string;
+  criadoEm: string;
+  assinada: boolean;
+}
 
 export default function WarningSignOff() {
-  const [conductors, setConductors] = useState<any[]>([]);
-  const [selectedConductor, setSelectedConductor] = useState<string>("");
-  const [searchText, setSearchText] = useState<string>("");
-  const [selectedOperation, setSelectedOperation] = useState<string>("");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [unsignedWarnings, setUnsignedWarnings] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSigningOff, setIsSigningOff] = useState(false);
+  const [conductors, setConductors] = useState<Conductor[]>([]);
+  const [filteredConductors, setFilteredConductors] = useState<Conductor[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedConductor, setSelectedConductor] = useState<Conductor | null>(null);
+  const [warnings, setWarnings] = useState<Warning[]>([]);
+  const [selectedWarning, setSelectedWarning] = useState<Warning | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [selectedWarning, setSelectedWarning] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  // Carregar motoristas
   useEffect(() => {
-    const loadConductors = async () => {
+    const fetchConductors = async () => {
       try {
-        const response = await fetch("/api/auth/conductors");
+        const response = await fetch('/api/auth/list-conductors');
         const result = await response.json();
-        const list = result.result?.data?.json || [];
-        setConductors(list);
+        const data = result.result?.data?.json || [];
+        setConductors(data);
+        setFilteredConductors(data);
       } catch (error) {
-        console.error("Erro ao carregar motoristas:", error);
-        toast.error("Erro ao carregar motoristas");
+        console.error('Erro:', error);
+        toast.error('Erro ao carregar motoristas');
       }
     };
-    loadConductors();
+    fetchConductors();
   }, []);
 
-  // Carregar advertências não assinadas quando motorista é selecionado
   useEffect(() => {
-    if (!selectedConductor) {
-      setUnsignedWarnings([]);
-      return;
+    if (searchTerm.trim() === '') {
+      setFilteredConductors(conductors);
+    } else {
+      const term = searchTerm.toLowerCase();
+      setFilteredConductors(
+        conductors.filter(c =>
+          c.nome.toLowerCase().includes(term) ||
+          c.cpf.includes(term) ||
+          c.operacao.toLowerCase().includes(term)
+        )
+      );
     }
+  }, [searchTerm, conductors]);
 
-    const loadUnsignedWarnings = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/auth/unsigned-warnings/${encodeURIComponent(selectedConductor)}`);
-        const result = await response.json();
-        const warnings = result.result?.data?.json || [];
-        setUnsignedWarnings(warnings);
-      } catch (error) {
-        console.error("Erro ao carregar advertências:", error);
-        toast.error("Erro ao carregar advertências");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadUnsignedWarnings();
-  }, [selectedConductor]);
-
-  // Filtrar motoristas por busca
-  const filteredConductors = useMemo(() => {
-    return conductors.filter((conductor) => {
-      const matchesSearch = searchText === "" || 
-        conductor.nome.toLowerCase().includes(searchText.toLowerCase()) ||
-        conductor.cpf.includes(searchText);
-      const matchesOperation = selectedOperation === "" || conductor.operacao === selectedOperation;
-      return matchesSearch && matchesOperation;
-    });
-  }, [conductors, searchText, selectedOperation]);
-
-  // Filtrar advertências por data
-  const filteredWarnings = useMemo(() => {
-    return unsignedWarnings.filter((warning) => {
-      const warningDate = new Date(warning.criadoEm);
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-
-      if (start && warningDate < start) return false;
-      if (end && warningDate > end) return false;
-      return true;
-    });
-  }, [unsignedWarnings, startDate, endDate]);
-
-  // Obter lista de operações únicas
-  const operations = useMemo(() => {
-    const ops = new Set(conductors.map((c) => c.operacao));
-    return Array.from(ops).sort();
-  }, [conductors]);
-
-  const handleSignOff = async (warning: any) => {
-    setSelectedWarning(warning);
-    setShowConfirmDialog(true);
-  };
-
-  const confirmSignOff = async () => {
-    if (!selectedWarning) return;
+  const handleSelectConductor = async (conductor: Conductor) => {
+    setSelectedConductor(conductor);
+    setSearchTerm('');
+    setFilteredConductors(conductors);
 
     try {
-      setIsSigningOff(true);
-      const response = await fetch("/api/auth/mark-warning-signed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ warningId: selectedWarning.id }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao marcar advertência como assinada");
-      }
-
-      toast.success("Advertência marcada como assinada!");
-      setShowConfirmDialog(false);
-      setSelectedWarning(null);
-
-      // Recarregar advertências
-      if (selectedConductor) {
-        const response = await fetch(`/api/auth/unsigned-warnings/${encodeURIComponent(selectedConductor)}`);
-        const result = await response.json();
-        const warnings = result.result?.data?.json || [];
-        setUnsignedWarnings(warnings);
-      }
+      const response = await fetch(`/api/auth/conductor-warnings/${conductor.id}`);
+      const result = await response.json();
+      setWarnings(result.result?.data?.json || []);
     } catch (error) {
-      console.error("Erro ao dar baixa:", error);
-      toast.error("Erro ao dar baixa na advertência");
-    } finally {
-      setIsSigningOff(false);
+      console.error('Erro:', error);
+      toast.error('Erro ao carregar advertências');
+      setWarnings([]);
     }
   };
+
+  const handleSignOff = async () => {
+    if (!selectedWarning || !selectedConductor) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/sign-off-warning', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          warningId: selectedWarning.id,
+          conductorId: selectedConductor.id,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Advertência marcada como assinada!');
+        setShowConfirmDialog(false);
+        setSelectedWarning(null);
+        // Recarregar advertências
+        const updatedResponse = await fetch(`/api/auth/conductor-warnings/${selectedConductor.id}`);
+        const updatedResult = await updatedResponse.json();
+        setWarnings(updatedResult.result?.data?.json || []);
+      } else {
+        toast.error(result.error || 'Erro ao dar baixa');
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      toast.error('Erro ao dar baixa');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pendingWarnings = warnings.filter(w => !w.assinada);
+  const signedWarnings = warnings.filter(w => w.assinada);
 
   return (
     <div className="space-y-6">
@@ -138,194 +126,234 @@ export default function WarningSignOff() {
       <div>
         <h1 className="text-3xl font-bold">Baixa de Advertências</h1>
         <p className="text-muted-foreground mt-2">
-          Registre o retorno de advertências assinadas pelos motoristas
+          Registre o recebimento de advertências assinadas pelos motoristas
         </p>
       </div>
 
-      {/* Filtros */}
+      {/* Busca de Motorista */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filtros de Busca
+            <Search className="w-5 h-5" />
+            Buscar Motorista
           </CardTitle>
-          <CardDescription>Busque motoristas por nome, CPF ou operação</CardDescription>
+          <CardDescription>Pesquise por nome, CPF ou operação</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Busca por Nome/CPF */}
-          <div className="relative">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+          <div>
+            <Label htmlFor="search">Nome, CPF ou Operação</Label>
             <Input
-              placeholder="Buscar por nome ou CPF..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="pl-10"
+              id="search"
+              placeholder="Digite para buscar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mt-2"
             />
           </div>
 
-          {/* Filtro por Operação */}
-          <Select value={selectedOperation} onValueChange={setSelectedOperation}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar por operação..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todas as operações</SelectItem>
-              {operations.map((op) => (
-                <SelectItem key={op} value={op}>
-                  {op}
-                </SelectItem>
+          {/* Lista de Motoristas Filtrados */}
+          {searchTerm && filteredConductors.length > 0 && (
+            <div className="border rounded-lg max-h-96 overflow-y-auto">
+              {filteredConductors.slice(0, 20).map((conductor) => (
+                <button
+                  key={conductor.id}
+                  onClick={() => handleSelectConductor(conductor)}
+                  className="w-full text-left px-4 py-3 hover:bg-gray-100 border-b last:border-b-0 transition-colors"
+                >
+                  <div className="font-semibold">{conductor.nome}</div>
+                  <div className="text-sm text-gray-600">
+                    CPF: {conductor.cpf} • {conductor.operacao}
+                  </div>
+                </button>
               ))}
-            </SelectContent>
-          </Select>
-
-          {/* Seleção de Motorista */}
-          <Select value={selectedConductor} onValueChange={setSelectedConductor}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecione um motorista..." />
-            </SelectTrigger>
-            <SelectContent>
-              {filteredConductors.map((conductor) => (
-                <SelectItem key={conductor.id} value={conductor.nome}>
-                  {conductor.nome} - {conductor.operacao}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
-
-      {/* Filtros de Data */}
-      {selectedConductor && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Filtrar por Data</CardTitle>
-            <CardDescription>Selecione o período para filtrar as advertências</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium">Data Inicial</label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Data Final</label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Advertências Não Assinadas */}
-      {selectedConductor && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Advertências Pendentes</CardTitle>
-            <CardDescription>
-              {isLoading ? "Carregando..." : `${filteredWarnings.length} advertência(s) encontrada(s)`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8 text-gray-500">Carregando advertências...</div>
-            ) : filteredWarnings.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <CheckCircle2 className="w-12 h-12 mx-auto mb-2 text-green-600" />
-                <p>Nenhuma advertência pendente encontrada</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead>Data de Criação</TableHead>
-                      <TableHead>Motivo</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredWarnings.map((warning) => (
-                      <TableRow key={warning.id}>
-                        <TableCell>
-                          <Badge variant="outline">{warning.tipo}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{warning.categoria || "Outro"}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(warning.criadoEm).toLocaleDateString("pt-BR")}
-                        </TableCell>
-                        <TableCell className="max-w-xs truncate">{warning.motivo}</TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            onClick={() => handleSignOff(warning)}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                            Dar Baixa
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Dialog de Confirmação */}
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-yellow-600" />
-              Confirmar Baixa de Advertência
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-sm font-medium text-yellow-900">
-                Tem certeza que deseja marcar esta advertência como assinada?
-              </p>
-              {selectedWarning && (
-                <div className="mt-3 space-y-2 text-sm text-yellow-800">
-                  <p><strong>Motorista:</strong> {selectedConductor}</p>
-                  <p><strong>Tipo:</strong> {selectedWarning.tipo}</p>
-                  <p><strong>Motivo:</strong> {selectedWarning.motivo}</p>
-                  <p><strong>Data:</strong> {new Date(selectedWarning.criadoEm).toLocaleDateString("pt-BR")}</p>
+              {filteredConductors.length > 20 && (
+                <div className="px-4 py-3 text-sm text-gray-600 bg-gray-50">
+                  Mostrando 20 de {filteredConductors.length} resultados
                 </div>
               )}
             </div>
-            <div className="flex gap-3 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setShowConfirmDialog(false)}
-                disabled={isSigningOff}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={confirmSignOff}
-                disabled={isSigningOff}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {isSigningOff ? "Processando..." : "Confirmar Baixa"}
-              </Button>
+          )}
+
+          {searchTerm && filteredConductors.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              Nenhum motorista encontrado
+            </div>
+          )}
+
+          {/* Motorista Selecionado */}
+          {selectedConductor && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-semibold text-lg">{selectedConductor.nome}</div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    CPF: {selectedConductor.cpf}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Operação: {selectedConductor.operacao}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Placa: {selectedConductor.placa}
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedConductor(null);
+                    setWarnings([]);
+                    setSearchTerm('');
+                  }}
+                >
+                  Alterar
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Advertências */}
+      {selectedConductor && (
+        <div className="space-y-4">
+          {/* Advertências Pendentes */}
+          {pendingWarnings.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  Advertências Pendentes ({pendingWarnings.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Ação</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingWarnings.map((warning) => (
+                        <TableRow key={warning.id}>
+                          <TableCell>
+                            {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
+                          </TableCell>
+                          <TableCell>{warning.categoria}</TableCell>
+                          <TableCell>
+                            <Badge variant="destructive">Pendente</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => {
+                                setSelectedWarning(warning);
+                                setShowConfirmDialog(true);
+                              }}
+                            >
+                              Dar Baixa
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Advertências Assinadas */}
+          {signedWarnings.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  Advertências Assinadas ({signedWarnings.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {signedWarnings.map((warning) => (
+                        <TableRow key={warning.id}>
+                          <TableCell>
+                            {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
+                          </TableCell>
+                          <TableCell>{warning.categoria}</TableCell>
+                          <TableCell>
+                            <Badge variant="default">Assinada</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {warnings.length === 0 && (
+            <Card>
+              <CardContent className="py-8">
+                <div className="text-center text-gray-500">
+                  Nenhuma advertência encontrada para este motorista
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Dialog de Confirmação */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Baixa de Advertência</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está marcando esta advertência como assinada pelo motorista
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 my-4">
+            <div>
+              <p className="text-sm text-gray-600">Motorista:</p>
+              <p className="font-semibold">{selectedConductor?.nome}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Data:</p>
+              <p className="font-semibold">
+                {selectedWarning && new Date(selectedWarning.criadoEm).toLocaleDateString('pt-BR')}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Tipo:</p>
+              <p className="font-semibold">{selectedWarning?.categoria}</p>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+          <div className="flex justify-end gap-2">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleSignOff} 
+              disabled={loading} 
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {loading ? 'Processando...' : 'Confirmar Baixa'}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -28,19 +28,20 @@ describe("Fluxo Completo de Advertência", () => {
     };
 
     // Inserir
-    const result = await db.insert(warnings).values(testData);
-    const insertId = (result as any)?.insertId || (result as any)?.[0]?.id;
+    await db.insert(warnings).values(testData);
 
-    expect(insertId).toBeDefined();
-    expect(typeof insertId).toBe("number");
-
-    // Verificar se foi inserida
+    // Buscar a advertência criada
     const inserted = await db
       .select()
       .from(warnings)
-      .where(eq(warnings.id, Number(insertId)));
+      .where(eq(warnings.conductorName, testData.conductorName));
 
     expect(inserted).toHaveLength(1);
+    const insertId = inserted[0].id;
+    expect(insertId).toBeDefined();
+    expect(typeof insertId).toBe("number");
+
+    // Verificar campos
     expect(inserted[0].conductorName).toBe(testData.conductorName);
     expect(inserted[0].tipo).toBe("advertencia");
     expect(inserted[0].categoria).toBe("pouco_rodado");
@@ -54,7 +55,7 @@ describe("Fluxo Completo de Advertência", () => {
     const motorista = "TEST_MOTORISTA_002";
 
     // Criar 2 advertências com categorias diferentes
-    const adv1 = await db.insert(warnings).values({
+    await db.insert(warnings).values({
       conductorName: motorista,
       tipo: "advertencia",
       categoria: "pouco_rodado",
@@ -66,7 +67,7 @@ describe("Fluxo Completo de Advertência", () => {
       criadoEm: new Date(),
     });
 
-    const adv2 = await db.insert(warnings).values({
+    await db.insert(warnings).values({
       conductorName: motorista,
       tipo: "advertencia",
       categoria: "horas_extras",

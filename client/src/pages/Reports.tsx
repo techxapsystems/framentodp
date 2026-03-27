@@ -41,12 +41,14 @@ export default function Reports() {
         const result = await response.json();
         const data = result.result?.data?.json || [];
         
-        // Extrair operações únicas
+        // Extrair operações únicas (filtrar vazias)
         const uniqueOps = new Set<string>();
         data.forEach((item: any) => {
-          if (item.operacao) uniqueOps.add(item.operacao);
+          if (item.operacao && item.operacao.trim() !== '') uniqueOps.add(item.operacao);
         });
-        setOperations(Array.from(uniqueOps).sort());
+        const opsArray = Array.from(uniqueOps).sort();
+        console.log('Operations loaded:', opsArray);
+        setOperations(opsArray);
         
         setWarnings(data);
       } catch (error) {
@@ -187,7 +189,6 @@ export default function Reports() {
                   <SelectValue placeholder="Todas as operações" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as operações</SelectItem>
                   {operations.map((op) => (
                     <SelectItem key={op} value={op}>
                       {op}
