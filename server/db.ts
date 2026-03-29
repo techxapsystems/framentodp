@@ -816,30 +816,22 @@ export async function getWarningsStatsByDriver() {
       conductorMap.set(c.nome, c);
     });
 
-    // Agrupar por motorista
-    const grouped: Record<string, any> = {};
-    allWarnings.forEach((warning: any) => {
+    // Retornar todas as advertências com dados completos
+    const result = allWarnings.map((warning: any) => {
       const conductor = warning.conductorName || "Desconhecido";
-      if (!grouped[conductor]) {
-        const conductorInfo = conductorMap.get(conductor);
-        grouped[conductor] = {
-          conductorName: conductor,
-          operacao: conductorInfo?.operacao || "",
-          placa: conductorInfo?.placa || "",
-          total: 0,
-          assinadas: 0,
-          naoAssinadas: 0,
-        };
-      }
-      grouped[conductor].total++;
-      if (warning.advertenciaAplicada) {
-        grouped[conductor].assinadas++;
-      } else {
-        grouped[conductor].naoAssinadas++;
-      }
+      const conductorInfo = conductorMap.get(conductor);
+      return {
+        id: warning.id,
+        nome: conductor,
+        operacao: conductorInfo?.operacao || "",
+        placa: conductorInfo?.placa || warning.placa || "",
+        data: warning.criadoEm || warning.dataAplicacao,
+        tipo: warning.tipo || "Advertência",
+        assinada: warning.advertenciaAplicada || false,
+      };
     });
 
-    return Object.values(grouped);
+    return result;
   } catch (error) {
     console.error("[DB] Error getting warnings stats by driver:", error);
     return [];

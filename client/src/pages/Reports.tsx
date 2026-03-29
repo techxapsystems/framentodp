@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,26 +17,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, FileText, Filter } from "lucide-react";
+import { Download, FileText, Filter, Search } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { Input } from "@/components/ui/input";
 
 export default function Reports() {
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  const startDateRef = useRef<HTMLInputElement>(null);
+  const endDateRef = useRef<HTMLInputElement>(null);
   const [selectedOperation, setSelectedOperation] = useState<string>("");
   const [searchText, setSearchText] = useState<string>("");
   const [warnings, setWarnings] = useState<any[]>([]);
   const [operations, setOperations] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Carregar dados de advertências
+  // Carregar operações ao montar o componente
   useEffect(() => {
-    const loadWarnings = async () => {
+    const loadOperations = async () => {
       try {
-        setIsLoading(true);
         const response = await fetch("/api/auth/warnings-stats-by-driver");
         const result = await response.json();
         const data = result.result?.data?.json || [];
@@ -47,41 +46,62 @@ export default function Reports() {
           if (item.operacao && item.operacao.trim() !== '') uniqueOps.add(item.operacao);
         });
         const opsArray = Array.from(uniqueOps).sort();
-        console.log('Operations loaded:', opsArray);
         setOperations(opsArray);
-        
         setWarnings(data);
       } catch (error) {
-        console.error("Erro ao carregar advertências:", error);
-        toast.error("Erro ao carregar advertências");
-      } finally {
-        setIsLoading(false);
+        console.error("Erro ao carregar operações:", error);
       }
     };
-    loadWarnings();
+    loadOperations();
   }, []);
 
-  // Filtrar advertências por critérios
+  // Função para buscar com filtros
+  const handleSearch = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Pegar valores diretamente dos refs
+      const startDate = startDateRef.current?.value || "";
+      const endDate = endDateRef.current?.value || "";
+      
+      console.log('Search triggered with:', { startDate, endDate, selectedOperation });
+      
+      // Construir URL com parâmetros de filtro
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (selectedOperation) params.append('operation', selectedOperation);
+      
+      const url = `/api/auth/warnings-stats-by-driver${params.toString() ? '?' + params.toString() : ''}`;
+      console.log('Fetching URL:', url);
+      const response = await fetch(url);
+      const result = await response.json();
+      const data = result.result?.data?.json || [];
+      
+      console.log('Loaded', data.length, 'warnings');
+      setWarnings(data);
+      
+      if (data.length === 0) {
+        toast.info("Nenhuma advertência encontrada com os filtros aplicados");
+      }
+    } catch (error) {
+      console.error("Erro ao carregar advertências:", error);
+      toast.error("Erro ao carregar advertências");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Filtrar advertências por critérios (apenas busca, data já é filtrada no backend)
   const filteredWarnings = useMemo(() => {
     return warnings.filter((warning) => {
       const matchesSearch = searchText === "" || 
         warning.nome?.toLowerCase().includes(searchText.toLowerCase());
       const matchesOperation = selectedOperation === "" || warning.operacao === selectedOperation;
       
-      // Filtro por data (se aplicável)
-      let matchesDate = true;
-      if (startDate || endDate) {
-        const warningDate = warning.data ? new Date(warning.data) : null;
-        const start = startDate ? new Date(startDate) : null;
-        const end = endDate ? new Date(endDate) : null;
-        
-        if (start && warningDate && warningDate < start) matchesDate = false;
-        if (end && warningDate && warningDate > end) matchesDate = false;
-      }
-      
-      return matchesSearch && matchesOperation && matchesDate;
+      return matchesSearch && matchesOperation;
     });
-  }, [warnings, searchText, selectedOperation, startDate, endDate]);
+  }, [warnings, searchText, selectedOperation]);
 
   const generatePDF = async () => {
     if (filteredWarnings.length === 0) {
@@ -93,12 +113,6 @@ export default function Reports() {
       const doc = new jsPDF();
       doc.setFontSize(16);
       doc.text("Relatório de Advertências", 10, 10);
-      doc.setFontSize(10);
-      doc.text(
-        `Período: ${startDate || "Início"} a ${endDate || "Fim"}`,
-        10,
-        20
-      );
 
       const tableData = filteredWarnings.map((w: any) => [
         w.nome || "",
@@ -202,9 +216,8 @@ export default function Reports() {
             <div>
               <label className="text-sm font-medium mb-2 block">Data Inicial</label>
               <Input
+                ref={startDateRef}
                 type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
 
@@ -212,20 +225,19 @@ export default function Reports() {
             <div>
               <label className="text-sm font-medium mb-2 block">Data Final</label>
               <Input
+                ref={endDateRef}
                 type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
           </div>
 
-          {/* Botão Gerar PDF */}
-          <div className="flex gap-2 justify-end">
-            <Button
-              onClick={generatePDF}
-              disabled={filteredWarnings.length === 0}
-              className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-            >
+          {/* Botões de Ação */}
+          <div className="flex gap-2 pt-4">
+            <Button onClick={handleSearch} disabled={isLoading} className="gap-2">
+              <Search className="w-4 h-4" />
+              Buscar
+            </Button>
+            <Button onClick={generatePDF} variant="outline" disabled={filteredWarnings.length === 0} className="gap-2">
               <Download className="w-4 h-4" />
               Gerar PDF
             </Button>
@@ -233,59 +245,56 @@ export default function Reports() {
         </CardContent>
       </Card>
 
-      {/* Tabela de Resultados */}
+      {/* Resultados */}
       <Card>
         <CardHeader>
-          <CardTitle>Resultados ({filteredWarnings.length})</CardTitle>
-          <CardDescription>
-            {filteredWarnings.length === 0 
-              ? "Nenhuma advertência encontrada com os filtros aplicados" 
-              : `Mostrando ${filteredWarnings.length} advertência(s)`}
-          </CardDescription>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Resultados ({filteredWarnings.length})
+            </span>
+          </CardTitle>
+          <CardDescription>Mostrando {filteredWarnings.length} advertência(s)</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Motorista</TableHead>
-                  <TableHead>Operação</TableHead>
-                  <TableHead>Placa</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredWarnings.length > 0 ? (
-                  filteredWarnings.map((warning: any, idx: number) => (
+          {filteredWarnings.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Nenhuma advertência encontrada. Clique em "Buscar" para carregar os dados.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Motorista</TableHead>
+                    <TableHead>Operação</TableHead>
+                    <TableHead>Placa</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredWarnings.map((warning, idx) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-medium">{warning.nome}</TableCell>
-                      <TableCell>{warning.operacao}</TableCell>
+                      <TableCell className="font-medium">{warning.nome || "-"}</TableCell>
+                      <TableCell>{warning.operacao || "-"}</TableCell>
                       <TableCell>{warning.placa || "-"}</TableCell>
                       <TableCell>
                         {warning.data ? new Date(warning.data).toLocaleDateString("pt-BR") : "-"}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">Advertência</Badge>
-                      </TableCell>
+                      <TableCell>{warning.tipo || "Advertência"}</TableCell>
                       <TableCell>
                         <Badge variant={warning.assinada ? "default" : "secondary"}>
                           {warning.assinada ? "Assinada" : "Pendente"}
                         </Badge>
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-slate-500 py-8">
-                      Nenhum resultado encontrado
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

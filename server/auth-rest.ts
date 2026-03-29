@@ -124,7 +124,49 @@ authRestRouter.get("/warnings-stats-by-operation", async (req, res) => {
 
 authRestRouter.get("/warnings-stats-by-driver", async (req, res) => {
   try {
-    const stats = await db.getWarningsStatsByDriver();
+    let stats = await db.getWarningsStatsByDriver();
+    
+    // Aplicar filtros se fornecidos
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+    
+    if (req.query.startDate) {
+      const dateStr = req.query.startDate as string;
+      startDate = new Date(dateStr);
+      // Se for uma data no formato YYYY-MM-DD, comecar do inicio do dia
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        startDate.setUTCHours(0, 0, 0, 0);
+      }
+    }
+    
+    if (req.query.endDate) {
+      const dateStr = req.query.endDate as string;
+      endDate = new Date(dateStr);
+      // Se for uma data no formato YYYY-MM-DD, ir ate o final do dia
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        endDate.setUTCHours(23, 59, 59, 999);
+      }
+    }
+    
+    const operation = req.query.operation as string || null;
+    
+    if (startDate || endDate || operation) {
+      stats = stats.filter((item: any) => {
+        // Filtro de data
+        if (startDate || endDate) {
+          const itemDate = item.data ? new Date(item.data) : null;
+          if (!itemDate) return false;
+          if (startDate && itemDate < startDate) return false;
+          if (endDate && itemDate > endDate) return false;
+        }
+        
+        // Filtro de operacao
+        if (operation && item.operacao !== operation) return false;
+        
+        return true;
+      });
+    }
+    
     return res.json({
       result: {
         data: {
@@ -134,7 +176,7 @@ authRestRouter.get("/warnings-stats-by-driver", async (req, res) => {
     });
   } catch (error) {
     console.error("[API] Error getting warnings stats by driver:", error);
-    return res.status(500).json({ error: "Erro ao buscar estatísticas por motorista" });
+    return res.status(500).json({ error: "Erro ao buscar estatisticas por motorista" });
   }
 });
 
