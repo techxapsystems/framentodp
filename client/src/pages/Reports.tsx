@@ -19,8 +19,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Download, FileText, Filter, Search } from "lucide-react";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 import { Input } from "@/components/ui/input";
 
 export default function Reports() {
@@ -110,46 +108,40 @@ export default function Reports() {
     }
 
     try {
-      const doc = new jsPDF();
-      doc.setFontSize(16);
-      doc.text("Relatório de Advertências", 10, 10);
-
-      const tableData = filteredWarnings.map((w: any) => [
-        w.nome || "",
-        w.operacao || "",
-        w.placa || "",
-        w.data ? new Date(w.data).toLocaleDateString("pt-BR") : "",
-        w.tipo || "Advertência",
-        w.assinada ? "Sim" : "Não",
-      ]);
-
-      (doc as any).autoTable({
-        head: [["Motorista", "Operação", "Placa", "Data", "Tipo", "Assinada"]],
-        body: tableData,
-        startY: 30,
-        margin: { top: 30 },
+      toast.loading("Gerando PDF...");
+      
+      const response = await fetch("/api/auth/generate-report-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          warnings: filteredWarnings,
+        }),
       });
 
-      // Rodapé
-      const finalY = (doc as any).lastAutoTable.finalY || 35;
-      doc.setFontSize(8);
-      doc.text(
-        `Total de advertências: ${filteredWarnings.length}`,
-        10,
-        finalY + 10
-      );
-      doc.text(
-        `Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
-        10,
-        finalY + 15
-      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao gerar PDF");
+      }
 
-      // Salvar PDF
-      doc.save(`relatorio-advertencias-${new Date().getTime()}.pdf`);
+      // Obter o blob do PDF
+      const blob = await response.blob();
+      
+      // Criar URL e fazer download
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `relatorio-advertencias-${new Date().getTime()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
       toast.success("Relatório gerado com sucesso!");
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
-      toast.error("Erro ao gerar PDF. Verifique o console.");
+      toast.error("Erro ao gerar PDF. Tente novamente.");
     }
   };
 

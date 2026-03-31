@@ -4,6 +4,7 @@ import { verifyPassword } from "./auth";
 import { sdk } from "./_core/sdk";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
+import PDFDocument from "pdfkit";
 
 export const authRestRouter = express.Router();
 
@@ -119,12 +120,10 @@ authRestRouter.get("/warnings-stats-by-operation", async (req, res) => {
   try {
     const startDateStr = req.query.startDate as string;
     const endDateStr = req.query.endDate as string;
-    const operacao = req.query.operacao as string;
 
     const filters: any = {};
     if (startDateStr) filters.startDate = new Date(startDateStr);
     if (endDateStr) filters.endDate = new Date(endDateStr);
-    if (operacao) filters.operacao = operacao;
 
     const stats = await db.getWarningsStatsByOperation(filters);
     return res.json({
@@ -142,49 +141,16 @@ authRestRouter.get("/warnings-stats-by-operation", async (req, res) => {
 
 authRestRouter.get("/warnings-stats-by-driver", async (req, res) => {
   try {
-    let stats = await db.getWarningsStatsByDriver();
-    
-    // Aplicar filtros se fornecidos
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
-    
-    if (req.query.startDate) {
-      const dateStr = req.query.startDate as string;
-      startDate = new Date(dateStr);
-      // Se for uma data no formato YYYY-MM-DD, comecar do inicio do dia
-      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        startDate.setUTCHours(0, 0, 0, 0);
-      }
-    }
-    
-    if (req.query.endDate) {
-      const dateStr = req.query.endDate as string;
-      endDate = new Date(dateStr);
-      // Se for uma data no formato YYYY-MM-DD, ir ate o final do dia
-      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        endDate.setUTCHours(23, 59, 59, 999);
-      }
-    }
-    
-    const operation = req.query.operation as string || null;
-    
-    if (startDate || endDate || operation) {
-      stats = stats.filter((item: any) => {
-        // Filtro de data
-        if (startDate || endDate) {
-          const itemDate = item.data ? new Date(item.data) : null;
-          if (!itemDate) return false;
-          if (startDate && itemDate < startDate) return false;
-          if (endDate && itemDate > endDate) return false;
-        }
-        
-        // Filtro de operacao
-        if (operation && item.operacao !== operation) return false;
-        
-        return true;
-      });
-    }
-    
+    const startDateStr = req.query.startDate as string;
+    const endDateStr = req.query.endDate as string;
+    const operation = req.query.operation as string;
+
+    const filters: any = {};
+    if (startDateStr) filters.startDate = new Date(startDateStr);
+    if (endDateStr) filters.endDate = new Date(endDateStr);
+    if (operation) filters.operacao = operation;
+
+    const stats = await db.getWarningsStatsByDriver(filters);
     return res.json({
       result: {
         data: {
@@ -194,96 +160,68 @@ authRestRouter.get("/warnings-stats-by-driver", async (req, res) => {
     });
   } catch (error) {
     console.error("[API] Error getting warnings stats by driver:", error);
-    return res.status(500).json({ error: "Erro ao buscar estatisticas por motorista" });
+    return res.status(500).json({ error: "Erro ao buscar estatísticas por motorista" });
   }
 });
 
-
-/**
- * Importar motoristas em lote
- */
 authRestRouter.post("/import-conductors", express.json(), async (req, res) => {
   try {
-    const { conductors: conductorsList } = req.body;
-    
-    if (!Array.isArray(conductorsList) || conductorsList.length === 0) {
-      return res.status(400).json({ error: "Lista de motoristas é obrigatória" });
+    const { conductors } = req.body;
+    if (!Array.isArray(conductors)) {
+      return res.status(400).json({ error: "Condutores devem ser um array" });
     }
-    
-    const result = await db.importConductors(conductorsList);
-    
-    return res.json({
-      result: {
-        data: {
-          json: result,
-        },
-      },
-    });
+
+    await db.importConductors(conductors);
+    return res.json({ success: true, message: "Condutores importados com sucesso" });
   } catch (error) {
     console.error("[API] Error importing conductors:", error);
-    return res.status(500).json({ error: "Erro ao importar motoristas" });
+    return res.status(500).json({ error: "Erro ao importar condutores" });
   }
 });
 
-/**
- * Obter todos os motoristas
- */
 authRestRouter.get("/conductors", async (req, res) => {
   try {
-    const conductorsList = await db.getAllConductors();
-    
+    const conductors = await db.getConductors();
     return res.json({
       result: {
         data: {
-          json: conductorsList,
+          json: conductors,
         },
       },
     });
   } catch (error) {
     console.error("[API] Error getting conductors:", error);
-    return res.status(500).json({ error: "Erro ao buscar motoristas" });
+    return res.status(500).json({ error: "Erro ao buscar condutores" });
   }
 });
 
-/**
- * Dar baixa em advertência (marcar como assinada)
- */
 authRestRouter.post("/mark-warning-signed", express.json(), async (req, res) => {
   try {
     const { warningId } = req.body;
-    
     if (!warningId) {
       return res.status(400).json({ error: "ID da advertência é obrigatório" });
     }
-    
-    const result = await db.markWarningAsSigned(warningId);
-    
-    return res.json({
-      result: {
-        data: {
-          json: { success: true, message: "Advertência marcada como assinada" },
-        },
-      },
-    });
+
+    const success = await db.markWarningAsSigned(warningId);
+    if (success) {
+      return res.json({ success: true });
+    } else {
+      return res.status(500).json({ error: "Erro ao marcar advertência como assinada" });
+    }
   } catch (error) {
     console.error("[API] Error marking warning as signed:", error);
     return res.status(500).json({ error: "Erro ao marcar advertência como assinada" });
   }
 });
 
-/**
- * Obter advertências não assinadas de um motorista
- */
 authRestRouter.get("/unsigned-warnings/:conductorName", async (req, res) => {
   try {
     const { conductorName } = req.params;
-    
     if (!conductorName) {
-      return res.status(400).json({ error: "Nome do motorista é obrigatório" });
+      return res.status(400).json({ error: "Nome do condutor é obrigatório" });
     }
-    
-    const warnings = await db.getUnsignedWarningsByDriver(decodeURIComponent(conductorName));
-    
+
+    const warnings = await db.getUnsignedWarnings(conductorName);
     return res.json({
       result: {
         data: {
@@ -297,12 +235,9 @@ authRestRouter.get("/unsigned-warnings/:conductorName", async (req, res) => {
   }
 });
 
-
-// GET /api/auth/list-conductors - List all conductors for the sign-off page
 authRestRouter.get("/list-conductors", async (req, res) => {
   try {
-    const conductors = await db.getAllConductors();
-    
+    const conductors = await db.listConductors();
     return res.json({
       result: {
         data: {
@@ -312,21 +247,18 @@ authRestRouter.get("/list-conductors", async (req, res) => {
     });
   } catch (error) {
     console.error("[API] Error listing conductors:", error);
-    return res.status(500).json({ error: "Erro ao listar motoristas" });
+    return res.status(500).json({ error: "Erro ao listar condutores" });
   }
 });
 
-// GET /api/auth/conductor-warnings/:conductorId - Get warnings for a specific conductor
 authRestRouter.get("/conductor-warnings/:conductorId", async (req, res) => {
   try {
     const { conductorId } = req.params;
-    
     if (!conductorId) {
-      return res.status(400).json({ error: "ID do motorista é obrigatório" });
+      return res.status(400).json({ error: "ID do condutor é obrigatório" });
     }
-    
-    const warnings = await db.getWarningsByConductorId(parseInt(conductorId));
-    
+
+    const warnings = await db.getConductorWarnings(conductorId);
     return res.json({
       result: {
         data: {
@@ -336,7 +268,7 @@ authRestRouter.get("/conductor-warnings/:conductorId", async (req, res) => {
     });
   } catch (error) {
     console.error("[API] Error getting conductor warnings:", error);
-    return res.status(500).json({ error: "Erro ao buscar advertências do motorista" });
+    return res.status(500).json({ error: "Erro ao buscar advertências do condutor" });
   }
 });
 
@@ -359,5 +291,96 @@ authRestRouter.post("/sign-off-warning", express.json(), async (req, res) => {
   } catch (error) {
     console.error("[API] Error signing off warning:", error);
     return res.status(500).json({ error: "Erro ao dar baixa na advertência" });
+  }
+});
+
+// POST /api/auth/generate-report-pdf - Generate PDF report of warnings
+authRestRouter.post("/generate-report-pdf", express.json(), async (req, res) => {
+  try {
+    const { warnings } = req.body;
+    
+    if (!warnings || !Array.isArray(warnings) || warnings.length === 0) {
+      return res.status(400).json({ error: "Nenhuma advertência para gerar relatório" });
+    }
+
+    // Criar documento PDF
+    const doc = new PDFDocument({
+      size: "A4",
+      margin: 40,
+    });
+    
+    // Configurar headers para download
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="relatorio-advertencias-${Date.now()}.pdf"`);
+    
+    // Pipe do PDF para a resposta
+    doc.pipe(res);
+    
+    // Título
+    doc.fontSize(18).font("Helvetica-Bold").text("Relatório de Advertências", { align: "center" });
+    doc.moveDown(0.3);
+    
+    // Data de geração
+    doc.fontSize(9).font("Helvetica").text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, { align: "center" });
+    doc.moveDown(0.8);
+    
+    // Tabela simples
+    const tableData = [
+      ["Motorista", "Operação", "Placa", "Data", "Tipo", "Status"],
+      ...warnings.map((w: any) => [
+        w.nome || "-",
+        w.operacao || "-",
+        w.placa || "-",
+        w.data ? new Date(w.data).toLocaleDateString("pt-BR") : "-",
+        w.tipo || "Advertência",
+        w.assinada ? "Assinada" : "Pendente",
+      ]),
+    ];
+    
+    // Desenhar tabela manualmente
+    doc.fontSize(9).font("Helvetica");
+    const colWidths = [80, 80, 60, 60, 80, 60];
+    const rowHeight = 18;
+    let y = doc.y;
+    
+    // Cabeçalho
+    doc.font("Helvetica-Bold");
+    tableData[0].forEach((cell, i) => {
+      const x = 40 + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+      doc.text(cell, x, y, { width: colWidths[i], height: rowHeight, align: "left" });
+    });
+    
+    y += rowHeight;
+    doc.moveTo(40, y).lineTo(540, y).stroke();
+    y += 5;
+    
+    // Dados
+    doc.font("Helvetica");
+    for (let i = 1; i < tableData.length; i++) {
+      if (y > 750) {
+        doc.addPage();
+        y = 40;
+      }
+      
+      tableData[i].forEach((cell, j) => {
+        const x = 40 + colWidths.slice(0, j).reduce((a, b) => a + b, 0);
+        doc.text(cell, x, y, { width: colWidths[j], height: rowHeight, align: "left" });
+      });
+      
+      y += rowHeight;
+    }
+    
+    // Rodapé
+    doc.moveTo(40, y).lineTo(540, y).stroke();
+    doc.moveDown(1);
+    doc.fontSize(10).font("Helvetica-Bold").text(`Total de advertências: ${warnings.length}`);
+    
+    // Finalizar PDF
+    doc.end();
+  } catch (error) {
+    console.error("[API] Error generating PDF report:", error);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Erro ao gerar PDF do relatório: " + (error instanceof Error ? error.message : String(error)) });
+    }
   }
 });

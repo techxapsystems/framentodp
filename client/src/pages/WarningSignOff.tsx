@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertCircle, CheckCircle2, Search, Grid3x3, List } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Search, Grid3x3, List, Download } from 'lucide-react';
 
 interface Conductor {
   id: number;
@@ -369,6 +369,7 @@ export default function WarningSignOff() {
                         <TableHead>Data</TableHead>
                         <TableHead>Tipo</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Ação</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -380,6 +381,46 @@ export default function WarningSignOff() {
                           <TableCell>{getWarningTypeLabel(warning.categoria)}</TableCell>
                           <TableCell>
                             <Badge variant="default">Assinada</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-2"
+                              onClick={() => {
+                                // Gerar PDF da advertência individual
+                                const warningData = [{
+                                  nome: selectedConductor?.nome || '',
+                                  operacao: selectedConductor?.operacao || '',
+                                  placa: selectedConductor?.placa || '',
+                                  data: warning.criadoEm,
+                                  tipo: getWarningTypeLabel(warning.categoria),
+                                  assinada: true,
+                                }];
+                                
+                                fetch('/api/auth/generate-report-pdf', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ warnings: warningData }),
+                                })
+                                  .then(res => res.blob())
+                                  .then(blob => {
+                                    const url = window.URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `advertencia-${new Date(warning.criadoEm).toLocaleDateString('pt-BR')}.pdf`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    window.URL.revokeObjectURL(url);
+                                    document.body.removeChild(a);
+                                    toast.success('PDF baixado com sucesso!');
+                                  })
+                                  .catch(() => toast.error('Erro ao gerar PDF'));
+                              }}
+                            >
+                              <Download className="w-4 h-4" />
+                              Imprimir
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
