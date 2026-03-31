@@ -12,7 +12,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Search } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Copy, Check, Search, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 export default function TemplateLibrary() {
@@ -20,6 +22,14 @@ export default function TemplateLibrary() {
   const [selectedType, setSelectedType] = useState<"advertencia" | "suspensao">("advertencia");
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newModel, setNewModel] = useState({
+    title: "",
+    summary: "",
+    content: "",
+    type: "advertencia" as "advertencia" | "suspensao",
+    categoryId: 1,
+  });
 
   // Buscar categorias
   const { data: categories, isLoading: loadingCategories } = trpc.templates.getCategories.useQuery({
@@ -47,6 +57,26 @@ export default function TemplateLibrary() {
   // Registrar uso de modelo
   const recordUsage = trpc.templates.recordUsage.useMutation();
 
+  // Criar novo modelo
+  const createModel = trpc.templates.createTemplate.useMutation({
+    onSuccess: () => {
+      toast.success("Modelo criado com sucesso!");
+      setShowAddDialog(false);
+      setNewModel({
+        title: "",
+        summary: "",
+        content: "",
+        type: "advertencia",
+        categoryId: 1,
+      });
+      // Recarregar dados
+      window.location.reload();
+    },
+    onError: (error) => {
+      toast.error("Erro ao criar modelo");
+    },
+  });
+
   const handleCopyTemplate = async (template: any) => {
     try {
       await navigator.clipboard.writeText(template.content);
@@ -63,6 +93,14 @@ export default function TemplateLibrary() {
     }
   };
 
+  const handleCreateModel = () => {
+    if (!newModel.title || !newModel.summary || !newModel.content) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+    createModel.mutate(newModel);
+  };
+
   const getTypeLabel = (type: string) => (
     <Badge variant={type === "advertencia" ? "default" : "destructive"}>
       {type === "advertencia" ? "Advertência" : "Suspensão"}
@@ -73,12 +111,86 @@ export default function TemplateLibrary() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Biblioteca de Modelos</h1>
-        <p className="text-gray-600">
-          Acesse modelos pré-configurados de advertências e suspensões. Copie o texto e cole no campo de advertência.
-        </p>
+      {/* Header com botão de adicionar */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">Biblioteca de Modelos</h1>
+          <p className="text-gray-600">
+            Acesse modelos pré-configurados de advertências e suspensões. Copie o texto e cole no campo de advertência.
+          </p>
+        </div>
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Adicionar Modelo
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Criar Novo Modelo</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Título</label>
+                <Input
+                  placeholder="Ex: Excesso de Velocidade"
+                  value={newModel.title}
+                  onChange={(e) => setNewModel({ ...newModel, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Resumo</label>
+                <Input
+                  placeholder="Ex: Advertência por excesso de velocidade"
+                  value={newModel.summary}
+                  onChange={(e) => setNewModel({ ...newModel, summary: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Conteúdo</label>
+                <Textarea
+                  placeholder="Digite o conteúdo completo do modelo..."
+                  value={newModel.content}
+                  onChange={(e) => setNewModel({ ...newModel, content: e.target.value })}
+                  rows={6}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Tipo</label>
+                  <Select value={newModel.type} onValueChange={(value: any) => setNewModel({ ...newModel, type: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="advertencia">Advertência</SelectItem>
+                      <SelectItem value="suspensao">Suspensão</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Categoria</label>
+                  <Select value={newModel.categoryId.toString()} onValueChange={(value) => setNewModel({ ...newModel, categoryId: parseInt(value) })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories?.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id.toString()}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button onClick={handleCreateModel} className="w-full" disabled={createModel.isPending}>
+                {createModel.isPending ? "Criando..." : "Criar Modelo"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Filtros */}
@@ -251,6 +363,12 @@ export default function TemplateLibrary() {
                 <h3 className="font-semibold mb-2">4. Cole no Cadastro</h3>
                 <p className="text-gray-600">
                   Vá para "Cadastro de Advertências" e cole o texto no campo de descrição.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">5. Criar Novo Modelo</h3>
+                <p className="text-gray-600">
+                  Clique no botão "Adicionar Modelo" para criar um novo modelo personalizado.
                 </p>
               </div>
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">

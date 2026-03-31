@@ -92,7 +92,16 @@ authRestRouter.get("/reincidents", async (req, res) => {
 
 authRestRouter.get("/warnings-stats", async (req, res) => {
   try {
-    const stats = await db.getWarningsStats({});
+    const startDateStr = req.query.startDate as string;
+    const endDateStr = req.query.endDate as string;
+    const operacao = req.query.operacao as string;
+
+    const filters: any = {};
+    if (startDateStr) filters.startDate = new Date(startDateStr);
+    if (endDateStr) filters.endDate = new Date(endDateStr);
+    if (operacao) filters.operacao = operacao;
+
+    const stats = await db.getWarningsStats(filters);
     return res.json({
       result: {
         data: {
@@ -108,7 +117,16 @@ authRestRouter.get("/warnings-stats", async (req, res) => {
 
 authRestRouter.get("/warnings-stats-by-operation", async (req, res) => {
   try {
-    const stats = await db.getWarningsStatsByOperation();
+    const startDateStr = req.query.startDate as string;
+    const endDateStr = req.query.endDate as string;
+    const operacao = req.query.operacao as string;
+
+    const filters: any = {};
+    if (startDateStr) filters.startDate = new Date(startDateStr);
+    if (endDateStr) filters.endDate = new Date(endDateStr);
+    if (operacao) filters.operacao = operacao;
+
+    const stats = await db.getWarningsStatsByOperation(filters);
     return res.json({
       result: {
         data: {

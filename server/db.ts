@@ -704,12 +704,33 @@ export async function getWarningsByOperation(params: {
 /**
  * Obter estatísticas de advertências por operação (agrupado por tipo)
  */
-export async function getWarningsStatsByOperation() {
+export async function getWarningsStatsByOperation(params?: {
+  startDate?: Date;
+  endDate?: Date;
+  operacao?: string;
+}) {
   const db = await getDb();
   if (!db) return [];
 
   try {
-    const allWarnings = await db.select().from(warnings);
+    let conditions: any[] = [];
+
+    // Filtrar por data se fornecido
+    if (params?.startDate) {
+      conditions.push(gte(warnings.criadoEm, params.startDate));
+    }
+    if (params?.endDate) {
+      const endOfDay = new Date(params.endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      conditions.push(lte(warnings.criadoEm, endOfDay));
+    }
+
+    let query = db.select().from(warnings);
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    const allWarnings = await query;
 
     // Agrupar por tipo de advertência (já que não há campo operacao)
     const grouped: Record<string, any> = {};

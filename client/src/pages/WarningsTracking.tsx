@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,12 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 export default function WarningsTracking() {
-  const [startDate, setStartDate] = useState<string>(
-    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-  );
-  const [endDate, setEndDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
+  const startDateRef = useRef<HTMLInputElement>(null);
+  const endDateRef = useRef<HTMLInputElement>(null);
+  
   const [selectedOperation, setSelectedOperation] = useState<string>("all");
   const [groupBy, setGroupBy] = useState<"day" | "week" | "month">("week");
   const [showPendingDialog, setShowPendingDialog] = useState(false);
@@ -28,47 +25,44 @@ export default function WarningsTracking() {
   // Buscar operações disponíveis
   const { data: operations = [] } = trpc.dashboard.getAllOperations.useQuery();
 
-  // Carregar dados via fetch com filtros
+  // Inicializar datas
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        setIsLoading(true);
-        const params = new URLSearchParams();
-        if (startDate) params.append('startDate', startDate);
-        if (endDate) params.append('endDate', endDate);
-        if (selectedOperation && selectedOperation !== 'all') params.append('operacao', selectedOperation);
-        
-        const response = await fetch(`/api/auth/warnings-stats?${params.toString()}`);
-        const result = await response.json();
-        setStats(result.result?.data?.json || null);
-      } catch (error) {
-        console.error("Erro ao carregar estatísticas:", error);
-        toast.error("Erro ao carregar dados");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadStats();
-  }, [startDate, endDate, selectedOperation]);
+    if (startDateRef.current && endDateRef.current) {
+      const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const endDate = new Date().toISOString().split("T")[0];
+      startDateRef.current.value = startDate;
+      endDateRef.current.value = endDate;
+      loadData();
+    }
+  }, []);
 
-  // Carregar dados por operação com filtros
-  useEffect(() => {
-    const loadByOperation = async () => {
-      try {
-        const params = new URLSearchParams();
-        if (startDate) params.append('startDate', startDate);
-        if (endDate) params.append('endDate', endDate);
-        if (selectedOperation && selectedOperation !== 'all') params.append('operacao', selectedOperation);
-        
-        const response = await fetch(`/api/auth/warnings-stats-by-operation?${params.toString()}`);
-        const result = await response.json();
-        setByOperation(result.result?.data?.json || []);
-      } catch (error) {
-        console.error("Erro ao carregar dados por operação:", error);
-      }
-    };
-    loadByOperation();
-  }, [startDate, endDate, selectedOperation]);
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const startDate = startDateRef.current?.value;
+      const endDate = endDateRef.current?.value;
+
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (selectedOperation && selectedOperation !== 'all') params.append('operacao', selectedOperation);
+      
+      // Carregar estatísticas gerais
+      const response1 = await fetch(`/api/auth/warnings-stats?${params.toString()}`);
+      const result1 = await response1.json();
+      setStats(result1.result?.data?.json || null);
+
+      // Carregar dados por operação
+      const response2 = await fetch(`/api/auth/warnings-stats-by-operation?${params.toString()}`);
+      const result2 = await response2.json();
+      setByOperation(result2.result?.data?.json || []);
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+      toast.error("Erro ao carregar dados");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const warningStats = stats || { total: 0, assinadas: 0, naoAssinadas: 0, taxaDevolucao: 0, warnings: [] };
 
@@ -93,16 +87,14 @@ export default function WarningsTracking() {
               <label className="text-sm font-medium">Data Inicial</label>
               <Input
                 type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                ref={startDateRef}
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Data Final</label>
               <Input
                 type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                ref={endDateRef}
               />
             </div>
             <div className="space-y-2">
@@ -135,6 +127,9 @@ export default function WarningsTracking() {
               </Select>
             </div>
           </div>
+          <Button onClick={loadData} className="w-full">
+            Aplicar Filtros
+          </Button>
         </CardContent>
       </Card>
 

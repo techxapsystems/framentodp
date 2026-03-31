@@ -89,6 +89,11 @@ function Router() {
             <Reports />
           </ProtectedRoute>
         )} />
+        <Route path="/baixa-advertencias" component={() => (
+          <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
+            <WarningsTracking />
+          </ProtectedRoute>
+        )} />
         <Route path="/importacao" component={() => (
           <ProtectedRoute requiredModules={["operacional_jornada"]}>
             <Import />
