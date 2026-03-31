@@ -15,6 +15,7 @@ import Settings from "./pages/Settings";
 import Recidivists from "./pages/Recidivists";
 
 import WarningsTracking from "./pages/WarningsTracking";
+import WarningSignOff from "./pages/WarningSignOff";
 import Reports from "./pages/Reports";
 import Audit from "./pages/Audit";
 import DataRetention from "./pages/DataRetention";
@@ -91,7 +92,7 @@ function Router() {
         )} />
         <Route path="/baixa-advertencias" component={() => (
           <ProtectedRoute requiredModules={["controle_de_advertencias"]}>
-            <WarningsTracking />
+            <WarningSignOff />
           </ProtectedRoute>
         )} />
         <Route path="/importacao" component={() => (

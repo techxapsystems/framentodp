@@ -296,3 +296,68 @@ authRestRouter.get("/unsigned-warnings/:conductorName", async (req, res) => {
     return res.status(500).json({ error: "Erro ao buscar advertências não assinadas" });
   }
 });
+
+
+// GET /api/auth/list-conductors - List all conductors for the sign-off page
+authRestRouter.get("/list-conductors", async (req, res) => {
+  try {
+    const conductors = await db.getAllConductors();
+    
+    return res.json({
+      result: {
+        data: {
+          json: conductors,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[API] Error listing conductors:", error);
+    return res.status(500).json({ error: "Erro ao listar motoristas" });
+  }
+});
+
+// GET /api/auth/conductor-warnings/:conductorId - Get warnings for a specific conductor
+authRestRouter.get("/conductor-warnings/:conductorId", async (req, res) => {
+  try {
+    const { conductorId } = req.params;
+    
+    if (!conductorId) {
+      return res.status(400).json({ error: "ID do motorista é obrigatório" });
+    }
+    
+    const warnings = await db.getWarningsByConductorId(parseInt(conductorId));
+    
+    return res.json({
+      result: {
+        data: {
+          json: warnings,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[API] Error getting conductor warnings:", error);
+    return res.status(500).json({ error: "Erro ao buscar advertências do motorista" });
+  }
+});
+
+// POST /api/auth/sign-off-warning - Mark a warning as signed off
+authRestRouter.post("/sign-off-warning", express.json(), async (req, res) => {
+  try {
+    const { warningId, conductorId } = req.body;
+    
+    if (!warningId || !conductorId) {
+      return res.status(400).json({ error: "ID da advertência e do motorista são obrigatórios" });
+    }
+    
+    const success = await db.markWarningAsSigned(warningId);
+    
+    if (success) {
+      return res.json({ success: true });
+    } else {
+      return res.status(500).json({ error: "Erro ao marcar advertência como assinada" });
+    }
+  } catch (error) {
+    console.error("[API] Error signing off warning:", error);
+    return res.status(500).json({ error: "Erro ao dar baixa na advertência" });
+  }
+});

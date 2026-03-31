@@ -1008,3 +1008,37 @@ export async function getUnsignedWarningsByDriver(conductorName: string) {
     return [];
   }
 }
+
+
+/**
+ * Obter todas as advertências de um motorista por ID
+ */
+export async function getWarningsByConductorId(conductorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    // First, get the conductor to find their name
+    const conductor = await db
+      .select()
+      .from(conductors)
+      .where(eq(conductors.id, conductorId))
+      .limit(1);
+    
+    if (!conductor || conductor.length === 0) {
+      return [];
+    }
+
+    const conductorName = conductor[0].nome;
+
+    // Then get all warnings for this conductor
+    return await db
+      .select()
+      .from(warnings)
+      .where(eq(warnings.conductorName, conductorName))
+      .orderBy(desc(warnings.criadoEm));
+  } catch (error) {
+    console.error("[DB] Error getting warnings by conductor ID:", error);
+    return [];
+  }
+}
