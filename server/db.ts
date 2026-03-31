@@ -1032,11 +1032,17 @@ export async function getWarningsByConductorId(conductorId: number) {
     const conductorName = conductor[0].nome;
 
     // Then get all warnings for this conductor
-    return await db
+    const warningsList = await db
       .select()
       .from(warnings)
       .where(eq(warnings.conductorName, conductorName))
       .orderBy(desc(warnings.criadoEm));
+    
+    // Map advertenciaAplicada to assinada for frontend compatibility
+    return warningsList.map(w => ({
+      ...w,
+      assinada: w.advertenciaAplicada
+    }));
   } catch (error) {
     console.error("[DB] Error getting warnings by conductor ID:", error);
     return [];

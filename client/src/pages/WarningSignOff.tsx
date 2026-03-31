@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertCircle, CheckCircle2, Search } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Search, Grid3x3, List } from 'lucide-react';
 
 interface Conductor {
   id: number;
@@ -35,6 +35,7 @@ export default function WarningSignOff() {
   const [selectedWarning, setSelectedWarning] = useState<Warning | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   useEffect(() => {
     const fetchConductors = async () => {
@@ -119,6 +120,26 @@ export default function WarningSignOff() {
 
   const pendingWarnings = warnings.filter(w => !w.assinada);
   const signedWarnings = warnings.filter(w => w.assinada);
+
+  const getWarningTypeLabel = (categoria: string): string => {
+    const labels: Record<string, string> = {
+      'pouco_rodado': 'Pouco Rodado',
+      'horas_extras': 'Horas Extras',
+      'ultimo_aviso': 'Último Aviso',
+      'observacao': 'Observação',
+    };
+    return labels[categoria] || categoria;
+  };
+
+  const getWarningTypeColor = (categoria: string): string => {
+    const colors: Record<string, string> = {
+      'pouco_rodado': 'bg-blue-100 text-blue-800',
+      'horas_extras': 'bg-yellow-100 text-yellow-800',
+      'ultimo_aviso': 'bg-red-100 text-red-800',
+      'observacao': 'bg-gray-100 text-gray-800',
+    };
+    return colors[categoria] || 'bg-gray-100 text-gray-800';
+  };
 
   return (
     <div className="space-y-6">
@@ -220,49 +241,113 @@ export default function WarningSignOff() {
           {pendingWarnings.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
-                  Advertências Pendentes ({pendingWarnings.length})
-                </CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-600" />
+                    Advertências Pendentes ({pendingWarnings.length})
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('grid')}
+                      className="gap-2"
+                    >
+                      <Grid3x3 className="w-4 h-4" />
+                      Grade
+                    </Button>
+                    <Button
+                      variant={viewMode === 'table' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('table')}
+                      className="gap-2"
+                    >
+                      <List className="w-4 h-4" />
+                      Tabela
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Ação</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pendingWarnings.map((warning) => (
-                        <TableRow key={warning.id}>
-                          <TableCell>
-                            {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
-                          </TableCell>
-                          <TableCell>{warning.categoria}</TableCell>
-                          <TableCell>
-                            <Badge variant="destructive">Pendente</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              className="bg-green-600 hover:bg-green-700"
-                              onClick={() => {
-                                setSelectedWarning(warning);
-                                setShowConfirmDialog(true);
-                              }}
-                            >
-                              Dar Baixa
-                            </Button>
-                          </TableCell>
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {pendingWarnings.map((warning) => (
+                      <div
+                        key={warning.id}
+                        className="border rounded-lg p-4 hover:shadow-lg transition-shadow bg-white"
+                      >
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">Data</p>
+                            <p className="text-sm font-semibold">
+                              {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">Tipo</p>
+                            <Badge className={`${getWarningTypeColor(warning.categoria)} mt-1`}>
+                              {getWarningTypeLabel(warning.categoria)}
+                            </Badge>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
+                            <Badge variant="destructive" className="mt-1">
+                              Pendente
+                            </Badge>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="w-full bg-green-600 hover:bg-green-700 mt-2"
+                            onClick={() => {
+                              setSelectedWarning(warning);
+                              setShowConfirmDialog(true);
+                            }}
+                          >
+                            Dar Baixa
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Ação</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingWarnings.map((warning) => (
+                          <TableRow key={warning.id}>
+                            <TableCell>
+                              {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
+                            </TableCell>
+                            <TableCell>{getWarningTypeLabel(warning.categoria)}</TableCell>
+                            <TableCell>
+                              <Badge variant="destructive">Pendente</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={() => {
+                                  setSelectedWarning(warning);
+                                  setShowConfirmDialog(true);
+                                }}
+                              >
+                                Dar Baixa
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -292,7 +377,7 @@ export default function WarningSignOff() {
                           <TableCell>
                             {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
                           </TableCell>
-                          <TableCell>{warning.categoria}</TableCell>
+                          <TableCell>{getWarningTypeLabel(warning.categoria)}</TableCell>
                           <TableCell>
                             <Badge variant="default">Assinada</Badge>
                           </TableCell>
@@ -339,7 +424,7 @@ export default function WarningSignOff() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Tipo:</p>
-              <p className="font-semibold">{selectedWarning?.categoria}</p>
+              <p className="font-semibold">{selectedWarning && getWarningTypeLabel(selectedWarning.categoria)}</p>
             </div>
           </div>
           <div className="flex justify-end gap-2">

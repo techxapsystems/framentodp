@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO warnings (conductorName, tipo, categoria, nivelAdvertencia, motivo, aplicadoPor, advertenciaGerada, advertenciaAplicada, dataAplicacao, criadoEm) VALUES ('JOSE GONCALVES GUEDES', 'advertencia', 'pouco_rodado', 1, 'Teste de baixa', 'admin', 1, 0, NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3dGJWfvPW4PQcvR.root --database niJQc4ibt4VMW3Ni9Ahpj8 --execute INSERT INTO warnings (conductorName, tipo, categoria, nivelAdvertencia, motivo, aplicadoPor, advertenciaGerada, advertenciaAplicada, dataAplicacao, criadoEm) VALUES ('JOSE GONCALVES GUEDES', 'advertencia', 'pouco_rodado', 1, 'Teste de baixa', 'admin', 1, 0, NOW(), NOW());",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 361
+}
