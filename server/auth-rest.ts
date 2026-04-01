@@ -120,12 +120,10 @@ authRestRouter.get("/warnings-stats-by-operation", async (req, res) => {
   try {
     const startDateStr = req.query.startDate as string;
     const endDateStr = req.query.endDate as string;
-    const operacao = req.query.operacao as string;
 
     const filters: any = {};
     if (startDateStr) filters.startDate = new Date(startDateStr);
     if (endDateStr) filters.endDate = new Date(endDateStr);
-    if (operacao && operacao !== 'all') filters.operacao = operacao;
 
     const stats = await db.getWarningsStatsByOperation(filters);
     return res.json({
@@ -384,108 +382,5 @@ authRestRouter.post("/generate-report-pdf", express.json(), async (req, res) => 
     if (!res.headersSent) {
       return res.status(500).json({ error: "Erro ao gerar PDF do relatório: " + (error instanceof Error ? error.message : String(error)) });
     }
-  }
-});
-
-
-// POST /api/auth/generate-warning-pdf - Generate PDF for a single warning
-authRestRouter.post("/generate-warning-pdf", express.json(), async (req, res) => {
-  try {
-    const { warningId, conductorId } = req.body;
-    
-    if (!warningId || !conductorId) {
-      return res.status(400).json({ error: "warningId e conductorId são obrigatórios" });
-    }
-
-    // Buscar dados da advertência e do motorista
-    const warning = await db.getWarningById(warningId);
-    const conductor = await db.getConductorById(conductorId);
-    
-    if (!warning || !conductor) {
-      return res.status(404).json({ error: "Advertência ou motorista não encontrado" });
-    }
-
-    // Criar documento PDF
-    const doc = new PDFDocument({
-      size: "A4",
-      margin: 50,
-    });
-
-    // Configurar headers para download
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="advertencia-${new Date(warning.criadoEm).toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf"`);
-
-    // Pipe do PDF para a resposta
-    doc.pipe(res);
-
-    // Título
-    doc.fontSize(24).font("Helvetica-Bold").text("ADVERTÊNCIA", { align: "center" });
-    doc.moveDown(0.5);
-    doc.fontSize(10).font("Helvetica").text("Documento de Aviso Formal", { align: "center" });
-    doc.moveDown(1);
-
-    // Informações do motorista
-    doc.fontSize(11).font("Helvetica-Bold").text("INFORMAÇÕES DO MOTORISTA");
-    doc.fontSize(10).font("Helvetica");
-    doc.text(`Nome: ${conductor.nome}`);
-    doc.text(`CPF: ${conductor.cpf}`);
-    doc.text(`Operação: ${conductor.operacao}`);
-    doc.text(`Placa: ${conductor.placa}`);
-    doc.text(`Cargo: ${conductor.cargo}`);
-    doc.moveDown(0.8);
-
-    // Informações da advertência
-    doc.fontSize(11).font("Helvetica-Bold").text("INFORMAÇÕES DA ADVERTÊNCIA");
-    doc.fontSize(10).font("Helvetica");
-    doc.text(`Data: ${new Date(warning.criadoEm).toLocaleDateString('pt-BR')}`);
-    doc.text(`Tipo: ${warning.categoria}`);
-    doc.text(`Status: ${warning.assinada ? "Assinada" : "Pendente"}`);
-    doc.moveDown(0.8);
-
-    // Descrição
-    if (warning.descricao) {
-      doc.fontSize(11).font("Helvetica-Bold").text("DESCRIÇÃO");
-      doc.fontSize(10).font("Helvetica").text(warning.descricao, { align: "left" });
-      doc.moveDown(0.8);
-    }
-
-    // Espaço para assinatura
-    doc.moveDown(2);
-    doc.fontSize(10).font("Helvetica").text("_____________________________", { align: "left" });
-    doc.fontSize(9).text("Assinatura do Motorista", { align: "left" });
-    doc.moveDown(1);
-    doc.text("_____________________________", { align: "left" });
-    doc.fontSize(9).text("Data", { align: "left" });
-
-    // Rodapé
-    doc.moveDown(2);
-    doc.fontSize(8).font("Helvetica").text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, { align: "center" });
-
-    // Finalizar PDF
-    doc.end();
-  } catch (error) {
-    console.error("[API] Error generating warning PDF:", error);
-    if (!res.headersSent) {
-      return res.status(500).json({ error: "Erro ao gerar PDF da advertência: " + (error instanceof Error ? error.message : String(error)) });
-    }
-  }
-});
-
-
-// GET /api/auth/all-pending-warnings - Get all pending warnings
-authRestRouter.get("/all-pending-warnings", async (req, res) => {
-  try {
-    const allWarnings = await db.getAllPendingWarnings();
-    return res.json({
-      success: true,
-      result: {
-        data: {
-          json: allWarnings,
-        },
-      },
-    });
-  } catch (error) {
-    console.error("[API] Error getting all pending warnings:", error);
-    return res.status(500).json({ error: "Erro ao carregar advertências pendentes" });
   }
 });
