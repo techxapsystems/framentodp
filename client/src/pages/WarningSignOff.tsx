@@ -36,8 +36,32 @@ export default function WarningSignOff() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [allPendingWarnings, setAllPendingWarnings] = useState<Record<number, Warning[]>>({});
 
+  // Load all pending warnings on page entry
   useEffect(() => {
+    const fetchAllPendingWarnings = async () => {
+      try {
+        const response = await fetch('/api/auth/all-pending-warnings');
+        const result = await response.json();
+        const allWarnings = result.result?.data?.json || [];
+        
+        // Group warnings by conductor
+        const grouped: Record<number, Warning[]> = {};
+        allWarnings.forEach((w: any) => {
+          if (!grouped[w.conductorId]) {
+            grouped[w.conductorId] = [];
+          }
+          grouped[w.conductorId].push(w);
+        });
+        
+        // Store for display
+        setAllPendingWarnings(grouped);
+      } catch (error) {
+        console.error('Erro ao carregar advertências pendentes:', error);
+      }
+    };
+    
     const fetchConductors = async () => {
       try {
         const response = await fetch('/api/auth/list-conductors');
@@ -50,7 +74,9 @@ export default function WarningSignOff() {
         toast.error('Erro ao carregar motoristas');
       }
     };
+    
     fetchConductors();
+    fetchAllPendingWarnings();
   }, []);
 
   useEffect(() => {
@@ -394,26 +420,22 @@ export default function WarningSignOff() {
                               className="gap-2"
                               onClick={() => {
                                 // Gerar PDF da advertência individual
-                                const warningData = [{
-                                  nome: selectedConductor?.nome || '',
-                                  operacao: selectedConductor?.operacao || '',
-                                  placa: selectedConductor?.placa || '',
-                                  data: warning.criadoEm,
-                                  tipo: getWarningTypeLabel(warning.categoria),
-                                  assinada: true,
-                                }];
+                                if (!selectedConductor) return;
                                 
-                                fetch('/api/auth/generate-report-pdf', {
+                                fetch('/api/auth/generate-warning-pdf', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ warnings: warningData }),
+                                  body: JSON.stringify({
+                                    warningId: warning.id,
+                                    conductorId: selectedConductor.id,
+                                  }),
                                 })
                                   .then(res => res.blob())
                                   .then(blob => {
                                     const url = window.URL.createObjectURL(blob);
                                     const a = document.createElement('a');
                                     a.href = url;
-                                    a.download = `advertencia-${new Date(warning.criadoEm).toLocaleDateString('pt-BR')}.pdf`;
+                                    a.download = `advertencia-${new Date(warning.criadoEm).toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
                                     document.body.appendChild(a);
                                     a.click();
                                     window.URL.revokeObjectURL(url);

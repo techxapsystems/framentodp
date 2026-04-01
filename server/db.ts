@@ -1,7 +1,7 @@
-import { eq, and, gte, lte, desc, inArray, or, isNotNull, count, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations, warningPdfHistory, conductors, InsertConductor } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { eq, gte, lte, and, desc, inArray, like, or } from "drizzle-orm";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -30,52 +30,16 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   try {
-    // Primeiro, verificar se o usuário já existe
-    const existing = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.openId, user.openId));
-
-    const updateSet: Record<string, unknown> = {};
-
-    const textFields = ["name", "email", "loginMethod"] as const;
-    type TextField = (typeof textFields)[number];
-
-    const assignNullable = (field: TextField) => {
-      const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      updateSet[field] = normalized;
-    };
-
-    textFields.forEach(assignNullable);
-
-    if (user.role) updateSet.role = user.role;
-    if (user.departamento) updateSet.departamento = user.departamento;
-    if (user.setor) updateSet.setor = user.setor;
-    if (user.modulos) updateSet.modulos = user.modulos;
-    if (user.status) updateSet.status = user.status;
-    if (user.lastSignedIn) updateSet.lastSignedIn = user.lastSignedIn;
-
-    if (existing.length > 0) {
-      // Usuário já existe: fazer UPDATE simples
-      if (Object.keys(updateSet).length === 0) {
-        updateSet.updatedAt = new Date();
-      }
-      await db
-        .update(users)
-        .set(updateSet)
-        .where(eq(users.openId, user.openId));
-    } else {
-      // Usuário novo: fazer INSERT com todos os campos necessários
-      const values: InsertUser = {
-        openId: user.openId,
-        name: user.name || "Usuário",
-        email: user.email || `${user.openId}@local`,
-        ...updateSet,
-      };
-      await db.insert(users).values(values);
-    }
+    await db
+      .insert(users)
+      .values(user)
+      .onDuplicateKeyUpdate({
+        set: {
+          name: user.name,
+          email: user.email,
+          lastSignedIn: new Date(),
+        },
+      });
   } catch (error) {
     console.error("[Database] Error upserting user:", error);
     throw error;
@@ -90,7 +54,8 @@ export async function getUser(openId: string) {
     const result = await db
       .select()
       .from(users)
-      .where(eq(users.openId, openId));
+      .where(eq(users.openId, openId))
+      .limit(1);
     return result[0] || null;
   } catch (error) {
     console.error("[Database] Error getting user:", error);
@@ -98,242 +63,54 @@ export async function getUser(openId: string) {
   }
 }
 
-export async function getOrCreateUser(openId: string, name?: string, email?: string) {
-  const existing = await getUser(openId);
-  if (existing) return existing;
-
-  await upsertUser({
-    openId,
-    name,
-    email,
-  });
-
-  return getUser(openId);
-}
-
-export async function getAllUsers() {
+export async function getConductors() {
   const db = await getDb();
   if (!db) return [];
 
   try {
-    return await db.select().from(users);
+    return await db.select().from(conductors);
   } catch (error) {
-    console.error("[Database] Error getting all users:", error);
+    console.error("[Database] Error getting conductors:", error);
     return [];
   }
 }
 
-export async function updateUser(openId: string, updates: Partial<InsertUser>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    await db.update(users).set(updates).where(eq(users.openId, openId));
-  } catch (error) {
-    console.error("[Database] Error updating user:", error);
-    throw error;
-  }
-}
-
-export async function deleteUser(openId: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    await db.delete(users).where(eq(users.openId, openId));
-  } catch (error) {
-    console.error("[Database] Error deleting user:", error);
-    throw error;
-  }
-}
-
-export async function getUserByOpenId(openId: string) {
+export async function getConductorByName(name: string) {
   const db = await getDb();
   if (!db) return null;
 
   try {
     const result = await db
       .select()
-      .from(users)
-      .where(eq(users.openId, openId));
+      .from(conductors)
+      .where(eq(conductors.nome, name))
+      .limit(1);
     return result[0] || null;
   } catch (error) {
-    console.error("[Database] Error getting user by openId:", error);
+    console.error("[Database] Error getting conductor:", error);
     return null;
   }
 }
 
-export async function getUserByEmail(email: string) {
+export async function createConductor(data: InsertConductor) {
   const db = await getDb();
   if (!db) return null;
 
   try {
-    const result = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email));
-    return result[0] || null;
+    const result = await db.insert(conductors).values(data);
+    return result;
   } catch (error) {
-    console.error("[Database] Error getting user by email:", error);
+    console.error("[Database] Error creating conductor:", error);
     return null;
   }
 }
 
-export async function getUserById(id: number) {
-  const db = await getDb();
-  if (!db) return null;
-
-  try {
-    const result = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, id));
-    return result[0] || null;
-  } catch (error) {
-    console.error("[Database] Error getting user by id:", error);
-    return null;
-  }
-}
-
-export async function createUser(data: any) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    const result = await db.insert(users).values({
-      email: data.email,
-      name: data.name,
-      password: data.password,
-      role: data.role || "user",
-      modulos: data.modulos || JSON.stringify([]),
-      status: data.status || "ativo",
-      loginMethod: data.loginMethod || "email",
-      openId: null,
-    });
-
-    return (result as any).insertId || result[0]?.id;
-  } catch (error) {
-    console.error("[Database] Error creating user:", error);
-    throw error;
-  }
-}
-
-export async function updateUserById(id: number, updates: any) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    await db.update(users).set(updates).where(eq(users.id, id));
-  } catch (error) {
-    console.error("[Database] Error updating user:", error);
-    throw error;
-  }
-}
-
-export async function deleteUserById(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    await db.delete(users).where(eq(users.id, id));
-  } catch (error) {
-    console.error("[Database] Error deleting user:", error);
-    throw error;
-  }
-}
-
-export async function getJourneys() {
+export async function getWarnings() {
   const db = await getDb();
   if (!db) return [];
 
   try {
-    return await db.select().from(journeys);
-  } catch (error) {
-    console.error("[Database] Error getting journeys:", error);
-    return [];
-  }
-}
-
-export async function createJourney(
-  data: {
-    conductorName: string;
-    importId: number;
-    data: Date;
-    dirigidoMin?: number;
-    heMin?: number;
-    [key: string]: any;
-  }
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    await db.insert(journeys).values({
-      conductorName: data.conductorName,
-      importId: data.importId,
-      data: data.data,
-      dirigidoMin: data.dirigidoMin || 0,
-      heMin: data.heMin || 0,
-    });
-  } catch (error) {
-    console.error("[Database] Error creating journey:", error);
-    throw error;
-  }
-}
-
-export async function getRecurrences(conductorName: string) {
-  const db = await getDb();
-  if (!db) return [];
-
-  try {
-    return await db
-      .select()
-      .from(recurrences)
-      .where(eq(recurrences.conductorName, conductorName));
-  } catch (error) {
-    console.error("[Database] Error getting recurrences:", error);
-    return [];
-  }
-}
-
-export async function createRecurrence(
-  conductorName: string,
-  data: {
-    ocorPoucoJanela?: number;
-    ocorPouco30d?: number;
-    ocorHeJanela?: number;
-    ocorHe30d?: number;
-  }
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    await db.insert(recurrences).values({
-      conductorName,
-      data: new Date(),
-      ocorPoucoJanela: data.ocorPoucoJanela || 0,
-      ocorPouco30d: data.ocorPouco30d || 0,
-      ocorHeJanela: data.ocorHeJanela || 0,
-      ocorHe30d: data.ocorHe30d || 0,
-    });
-  } catch (error) {
-    console.error("[Database] Error creating recurrence:", error);
-    throw error;
-  }
-}
-
-export async function getWarnings(limit = 100, offset = 0) {
-  const db = await getDb();
-  if (!db) return [];
-
-  try {
-    return await db
-      .select()
-      .from(warnings)
-      .limit(limit)
-      .offset(offset)
-      .orderBy(desc(warnings.criadoEm));
+    return await db.select().from(warnings);
   } catch (error) {
     console.error("[Database] Error getting warnings:", error);
     return [];
@@ -345,11 +122,89 @@ export async function getWarningById(id: number) {
   if (!db) return null;
 
   try {
-    const result = await db.select().from(warnings).where(eq(warnings.id, id));
+    const result = await db
+      .select()
+      .from(warnings)
+      .where(eq(warnings.id, id))
+      .limit(1);
     return result[0] || null;
   } catch (error) {
     console.error("[Database] Error getting warning:", error);
     return null;
+  }
+}
+
+export async function createWarning(data: any) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db.insert(warnings).values(data);
+    return result;
+  } catch (error) {
+    console.error("[Database] Error creating warning:", error);
+    return null;
+  }
+}
+
+export async function updateWarning(id: number, data: any) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .update(warnings)
+      .set(data)
+      .where(eq(warnings.id, id));
+    return result;
+  } catch (error) {
+    console.error("[Database] Error updating warning:", error);
+    return null;
+  }
+}
+
+export async function deleteWarning(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .delete(warnings)
+      .where(eq(warnings.id, id));
+    return result;
+  } catch (error) {
+    console.error("[Database] Error deleting warning:", error);
+    return null;
+  }
+}
+
+export async function getWarningsByType(type: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    return await db
+      .select()
+      .from(warnings)
+      .where(eq(warnings.tipo, type as any));
+  } catch (error) {
+    console.error("[Database] Error getting warnings by type:", error);
+    return [];
+  }
+}
+
+export async function getWarningsByCategory(category: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    return await db
+      .select()
+      .from(warnings)
+      .where(eq(warnings.categoria, category as any));
+  } catch (error) {
+    console.error("[Database] Error getting warnings by category:", error);
+    return [];
   }
 }
 
@@ -361,160 +216,182 @@ export async function getWarningsByConductor(conductorName: string) {
     return await db
       .select()
       .from(warnings)
-      .where(eq(warnings.conductorName, conductorName))
-      .orderBy(desc(warnings.criadoEm));
+      .where(eq(warnings.conductorName, conductorName));
   } catch (error) {
     console.error("[Database] Error getting warnings by conductor:", error);
     return [];
   }
 }
 
-export async function getReincidentsWithWarnings() {
+export async function getWarningsByDateRange(startDate: Date, endDate: Date) {
   const db = await getDb();
   if (!db) return [];
+
+  try {
+    const endOfDay = new Date(endDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return await db
+      .select()
+      .from(warnings)
+      .where(
+        and(
+          gte(warnings.criadoEm, startDate),
+          lte(warnings.criadoEm, endOfDay)
+        )
+      );
+  } catch (error) {
+    console.error("[Database] Error getting warnings by date range:", error);
+    return [];
+  }
+}
+
+export async function getSignedWarnings() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    return await db
+      .select()
+      .from(warnings)
+      .where(eq(warnings.advertenciaAplicada, true));
+  } catch (error) {
+    console.error("[Database] Error getting signed warnings:", error);
+    return [];
+  }
+}
+
+export async function getPendingWarnings() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    return await db
+      .select()
+      .from(warnings)
+      .where(eq(warnings.advertenciaAplicada, false));
+  } catch (error) {
+    console.error("[Database] Error getting pending warnings:", error);
+    return [];
+  }
+}
+
+export async function signOffWarning(id: number, signedAt: Date = new Date()) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .update(warnings)
+      .set({
+        advertenciaAplicada: true,
+        dataAplicacao: signedAt,
+      })
+      .where(eq(warnings.id, id));
+    return result;
+  } catch (error) {
+    console.error("[Database] Error signing off warning:", error);
+    return null;
+  }
+}
+
+export async function getConductorWarnings(conductorIdOrName: string | number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    let allWarnings: any[] = [];
+    
+    // If it's a number, search by ID; if it's a string, search by name
+    if (typeof conductorIdOrName === 'number') {
+      // Get conductor name by ID first
+      const conductor = await db
+        .select()
+        .from(conductors)
+        .where(eq(conductors.id, conductorIdOrName))
+        .limit(1);
+      
+      if (conductor.length === 0) return [];
+      
+      allWarnings = await db
+        .select()
+        .from(warnings)
+        .where(eq(warnings.conductorName, conductor[0].nome));
+    } else {
+      allWarnings = await db
+        .select()
+        .from(warnings)
+        .where(eq(warnings.conductorName, conductorIdOrName));
+    }
+
+    // Map the warnings to match the expected interface
+    return allWarnings.map((w: any) => ({
+      id: w.id,
+      conductorName: w.conductorName,
+      categoria: w.categoria,
+      criadoEm: w.criadoEm,
+      assinada: w.advertenciaAplicada,
+      descricao: w.descricao,
+    }));
+  } catch (error) {
+    console.error("[Database] Error getting conductor warnings:", error);
+    return [];
+  }
+}
+
+export async function listConductors(search?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    let query = db.select().from(conductors);
+    
+    if (search) {
+      // Search by name, CPF, or operation
+      const searchTerm = `%${search}%`;
+      query = query.where(
+        or(
+          like(conductors.nome, searchTerm),
+          like(conductors.cpf, searchTerm),
+          like(conductors.operacao, searchTerm)
+        )
+      ) as any;
+    }
+    
+    return await query;
+  } catch (error) {
+    console.error("[Database] Error listing conductors:", error);
+    return [];
+  }
+}
+
+export async function getImportById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
 
   try {
     const result = await db
       .select()
-      .from(warnings)
-      .where(isNotNull(warnings.conductorName))
-      .orderBy(desc(warnings.criadoEm));
-
-    const grouped: Record<string, any> = {};
-    result.forEach((warning: any) => {
-      if (!grouped[warning.conductorName]) {
-        grouped[warning.conductorName] = {
-          conductorName: warning.conductorName,
-          warnings: [],
-          maxLevel: 0,
-          avisosPoucoRodado: 0,
-          avisosHorasExtras: 0,
-          avisoOutro: 0,
-          ultimoAviso: null,
-          observacao: "",
-        };
-      }
-      grouped[warning.conductorName].warnings.push(warning);
-      grouped[warning.conductorName].maxLevel = Math.max(
-        grouped[warning.conductorName].maxLevel,
-        warning.nivelAdvertencia || 0
-      );
-      grouped[warning.conductorName].ultimoAviso = warning.criadoEm;
-      grouped[warning.conductorName].observacao = warning.observacao || "";
-
-      // Contar por categoria
-      if (warning.categoria === "pouco_rodado") {
-        grouped[warning.conductorName].avisosPoucoRodado++;
-      } else if (warning.categoria === "horas_extras") {
-        grouped[warning.conductorName].avisosHorasExtras++;
-      } else {
-        grouped[warning.conductorName].avisoOutro++;
-      }
-    });
-
-    // Filtrar apenas reincidentes (motoristas com 2+ advertências)
-    const reincidents = Object.values(grouped).filter(
-      (group: any) => group.warnings.length >= 2
-    );
-    return reincidents;
-  } catch (error) {
-    console.error("[Database] Error getting reincidents:", error);
-    return [];
-  }
-}
-
-export async function createWarning(data: any) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    await db.insert(warnings).values({
-      conductorName: data.conductorName,
-      tipo: data.tipo,
-      categoria: data.categoria || "pouco_rodado",
-      nivelAdvertencia: data.nivelAdvertencia,
-      motivo: data.motivo,
-      observacao: data.observacao || "",
-      aplicadoPor: data.aplicadoPor || "Sistema",
-      advertenciaGerada: true,
-      advertenciaAplicada: false,
-      criadoEm: new Date(),
-    });
-
-    // Buscar a advertência criada para obter o ID
-    const created = await db
-      .select()
-      .from(warnings)
-      .where(eq(warnings.conductorName, data.conductorName))
-      .orderBy(desc(warnings.id))
+      .from(imports)
+      .where(eq(imports.id, id))
       .limit(1);
-
-    if (!created || created.length === 0) {
-      throw new Error("Falha ao criar advertência");
-    }
-
-    return { success: true, id: created[0].id, message: "Advertência criada com sucesso" };
+    return result[0] || null;
   } catch (error) {
-    console.error("[Database] Error creating warning:", error);
-    throw error;
+    console.error("[Database] Error getting import:", error);
+    return null;
   }
 }
 
-export async function updateWarning(id: number, updates: any) {
+export async function createImport(data: any) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) return null;
 
   try {
-    await db.update(warnings).set(updates).where(eq(warnings.id, id));
-  } catch (error) {
-    console.error("[Database] Error updating warning:", error);
-    throw error;
-  }
-}
-
-export async function deleteWarning(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    await db.delete(warnings).where(eq(warnings.id, id));
-  } catch (error) {
-    console.error("[Database] Error deleting warning:", error);
-    throw error;
-  }
-}
-
-export async function getWarningTemplates() {
-  const db = await getDb();
-  if (!db) return [];
-
-  try {
-    const result = await db.select().from(warningPdfHistory);
+    const result = await db.insert(imports).values(data);
     return result;
   } catch (error) {
-    console.error("[Database] Error getting warning templates:", error);
-    return [];
-  }
-}
-
-export async function createWarningPdfHistory(data: any) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    await db.insert(warningPdfHistory).values({
-      warningId: data.warningId || 0,
-      conductorName: data.conductorName || "",
-      licensePlate: data.licensePlate || "",
-      operacao: data.operacao || "",
-      pdfUrl: data.pdfUrl || "",
-      pdfKey: data.pdfKey || "",
-      fileSize: data.fileSize || 0,
-      geradoPor: data.geradoPor || "",
-    });
-  } catch (error) {
-    console.error("[Database] Error creating warning pdf history:", error);
-    throw error;
+    console.error("[Database] Error creating import:", error);
+    return null;
   }
 }
 
@@ -530,86 +407,76 @@ export async function getConfigurations() {
   }
 }
 
-export async function updateConfiguration(key: string, value: string) {
+export async function getConfigurationByKey(key: string) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) return null;
 
   try {
-    // configurations table has a single row with all settings
-    // Just return success - configurations are managed via schema
-    return { success: true };
+    const result = await db
+      .select()
+      .from(configurations)
+      .where(eq(configurations.chave, key))
+      .limit(1);
+    return result[0] || null;
+  } catch (error) {
+    console.error("[Database] Error getting configuration:", error);
+    return null;
+  }
+}
+
+export async function createConfiguration(data: any) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db.insert(configurations).values(data);
+    return result;
+  } catch (error) {
+    console.error("[Database] Error creating configuration:", error);
+    return null;
+  }
+}
+
+export async function updateConfiguration(key: string, data: any) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .update(configurations)
+      .set(data)
+      .where(eq(configurations.chave, key));
+    return result;
   } catch (error) {
     console.error("[Database] Error updating configuration:", error);
-    throw error;
+    return null;
   }
 }
 
-export async function getOrientations(conductorName: string) {
+export async function getWarningPdfHistories() {
   const db = await getDb();
   if (!db) return [];
 
   try {
-    return await db
-      .select()
-      .from(orientations)
-      .where(eq(orientations.conductorName, conductorName))
-      .orderBy(desc(orientations.criadoEm));
+    return await db.select().from(warningPdfHistory);
   } catch (error) {
-    console.error("[Database] Error getting orientations:", error);
+    console.error("[Database] Error getting warning PDF histories:", error);
     return [];
   }
 }
 
-export async function createOrientation(data: any) {
+export async function createWarningPdfHistory(data: any) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) return null;
 
   try {
-    await db.insert(orientations).values({
-      conductorName: data.conductorName,
-      licensePlate: data.licensePlate || "",
-      operacao: data.operacao || "",
-      observacao: data.observacao || "",
-      usuarioId: data.usuarioId || 0,
-      usuarioNome: data.usuarioNome || "",
-      usuarioEmail: data.usuarioEmail || "",
-    });
+    const result = await db.insert(warningPdfHistory).values(data);
+    return result;
   } catch (error) {
-    console.error("[Database] Error creating orientation:", error);
-    throw error;
+    console.error("[Database] Error creating warning PDF history:", error);
+    return null;
   }
 }
-
-export async function getImports() {
-  const db = await getDb();
-  if (!db) return [];
-
-  try {
-    return await db.select().from(imports).orderBy(desc(imports.createdAt));
-  } catch (error) {
-    console.error("[Database] Error getting imports:", error);
-    return [];
-  }
-}
-
-export async function createImport(data: any) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    await db.insert(imports).values({
-      fileName: data.fileName || "unknown",
-      fileHash: data.fileHash || "",
-      rowCount: data.rowCount || 0,
-      newRowsCount: data.newRowsCount || 0,
-      importedBy: data.importedBy || "sistema",
-    });
-  } catch (error) {
-    console.error("[Database] Error creating import:", error);
-    throw error;
-  }
-}
-
 
 /**
  * Obter estatísticas de advertências
@@ -642,17 +509,26 @@ export async function getWarningsStats(params: {
 
     const allWarnings = await query;
 
+    // Se filtrar por operação, buscar dados dos motoristas
+    let filteredWarnings = allWarnings;
+    if (params.operacao && params.operacao !== 'all') {
+      const conductorsData = await db.select().from(conductors);
+      const conductorsByOp = conductorsData.filter((c: any) => c.operacao === params.operacao);
+      const conductorNames = conductorsByOp.map((c: any) => c.nome);
+      filteredWarnings = allWarnings.filter((w: any) => conductorNames.includes(w.conductorName));
+    }
+
     // Contar assinadas vs não assinadas
-    const assinadas = allWarnings.filter((w: any) => w.advertenciaAplicada).length;
-    const naoAssinadas = allWarnings.length - assinadas;
-    const taxaDevolucao = allWarnings.length > 0 ? (naoAssinadas / allWarnings.length) * 100 : 0;
+    const assinadas = filteredWarnings.filter((w: any) => w.advertenciaAplicada).length;
+    const naoAssinadas = filteredWarnings.length - assinadas;
+    const taxaDevolucao = filteredWarnings.length > 0 ? (naoAssinadas / filteredWarnings.length) * 100 : 0;
 
     return {
-      total: allWarnings.length,
+      total: filteredWarnings.length,
       assinadas,
       naoAssinadas,
       taxaDevolucao: parseFloat(taxaDevolucao.toFixed(1)),
-      warnings: allWarnings,
+      warnings: filteredWarnings,
     };
   } catch (error) {
     console.error("[DB] Error getting warnings stats:", error);
@@ -713,9 +589,9 @@ export async function getWarningsStatsByOperation(params?: {
   if (!db) return [];
 
   try {
+    // Buscar todas as advertências com as datas filtradas
     let conditions: any[] = [];
 
-    // Filtrar por data se fornecido
     if (params?.startDate) {
       conditions.push(gte(warnings.criadoEm, params.startDate));
     }
@@ -732,23 +608,33 @@ export async function getWarningsStatsByOperation(params?: {
 
     const allWarnings = await query;
 
-    // Agrupar por tipo de advertência (já que não há campo operacao)
+    // Buscar informação de operação dos motoristas
+    const conductorsData = await db.select().from(conductors);
+    const conductorMap = new Map(conductorsData.map((c: any) => [c.nome, c.operacao]));
+
+    // Agrupar por operação
     const grouped: Record<string, any> = {};
     allWarnings.forEach((warning: any) => {
-      const tipo = warning.tipo || "Desconhecido";
-      if (!grouped[tipo]) {
-        grouped[tipo] = {
-          operacao: tipo,
+      const operacao = conductorMap.get(warning.conductorName) || "Desconhecido";
+      
+      // Filtrar por operação se fornecido
+      if (params?.operacao && params.operacao !== 'all' && operacao !== params.operacao) {
+        return;
+      }
+
+      if (!grouped[operacao]) {
+        grouped[operacao] = {
+          operacao: operacao,
           total: 0,
           assinadas: 0,
           naoAssinadas: 0,
         };
       }
-      grouped[tipo].total++;
+      grouped[operacao].total++;
       if (warning.advertenciaAplicada) {
-        grouped[tipo].assinadas++;
+        grouped[operacao].assinadas++;
       } else {
-        grouped[tipo].naoAssinadas++;
+        grouped[operacao].naoAssinadas++;
       }
     });
 
@@ -797,7 +683,9 @@ export async function getAllOperations() {
   if (!db) return [];
 
   try {
-    return [];
+    const conductorsData = await db.select().from(conductors);
+    const operations = new Set(conductorsData.map((c: any) => c.operacao));
+    return Array.from(operations).map((op: string) => ({ id: op, nome: op }));
   } catch (error) {
     console.error("[DB] Error getting all operations:", error);
     return [];
@@ -830,29 +718,22 @@ export async function getWarningsStatsByDriver() {
   try {
     const allWarnings = await db.select().from(warnings);
     
-    // Buscar dados dos motoristas para obter operacao
-    const conductorsData = await db.select().from(conductors);
-    const conductorMap = new Map();
-    conductorsData.forEach((c: any) => {
-      conductorMap.set(c.nome, c);
+    const grouped: Record<string, any> = {};
+    allWarnings.forEach((warning: any) => {
+      const motorista = warning.conductorName || "Desconhecido";
+      if (!grouped[motorista]) {
+        grouped[motorista] = {
+          motorista: motorista,
+          aviso1: 0,
+          aviso2: 0,
+          aviso3: 0,
+          total: 0,
+        };
+      }
+      grouped[motorista].total++;
     });
 
-    // Retornar todas as advertências com dados completos
-    const result = allWarnings.map((warning: any) => {
-      const conductor = warning.conductorName || "Desconhecido";
-      const conductorInfo = conductorMap.get(conductor);
-      return {
-        id: warning.id,
-        nome: conductor,
-        operacao: conductorInfo?.operacao || "",
-        placa: conductorInfo?.placa || warning.placa || "",
-        data: warning.criadoEm || warning.dataAplicacao,
-        tipo: warning.tipo || "Advertência",
-        assinada: warning.advertenciaAplicada || false,
-      };
-    });
-
-    return result;
+    return Object.values(grouped);
   } catch (error) {
     console.error("[DB] Error getting warnings stats by driver:", error);
     return [];
@@ -860,256 +741,35 @@ export async function getWarningsStatsByDriver() {
 }
 
 
-/**
- * Obter todos os motoristas ociosos (para seleção em novo cadastro de advertência)
- */
-export async function getAllIdleDrivers() {
-  const db = await getDb();
-  if (!db) return [];
-
-  try {
-    // Buscar todos os motoristas únicos das jornadas
-    const result = await db
-      .selectDistinct({
-        conductorName: journeys.conductorName,
-        cargo: journeys.cargo,
-        operacao: journeys.operacao,
-        placa: journeys.placa,
-      })
-      .from(journeys)
-      .orderBy(journeys.conductorName);
-
-    return result || [];
-  } catch (error) {
-    console.error("[Database] Error getting idle drivers:", error);
-    return [];
-  }
-}
-
-
-/**
- * Importar motoristas em lote
- */
-export async function importConductors(conductorsList: InsertConductor[]) {
-  const db = await getDb();
-  if (!db) {
-    console.error("[DB] Database not available");
-    return { success: false, message: "Database not available", inserted: 0 };
-  }
-
-  try {
-    let inserted = 0;
-    let skipped = 0;
-    
-    // Inserir um por um para melhor controle de erros
-    for (let i = 0; i < conductorsList.length; i++) {
-      const conductor = conductorsList[i];
-      
-      try {
-        await db.insert(conductors).values(conductor);
-        inserted++;
-      } catch (error: any) {
-        // Se houver erro de duplicação de CPF, pular este motorista
-        if (error.message && error.message.includes('Duplicate entry')) {
-          skipped++;
-          continue;
-        }
-        throw error;
-      }
-    }
-    
-    console.log(`[DB] Import complete: ${inserted} inserted, ${skipped} skipped`);
-    return { success: true, message: `Imported ${inserted} conductors (${skipped} skipped)`, inserted };
-  } catch (error) {
-    console.error("[DB] Error importing conductors:", error);
-    return { success: false, message: `Error importing conductors: ${error}`, inserted: 0 };
-  }
-}
-
-/**
- * Obter todos os motoristas
- */
-export async function getAllConductors() {
-  const db = await getDb();
-  if (!db) return [];
-
-  try {
-    return await db.select().from(conductors);
-  } catch (error) {
-    console.error("[DB] Error getting all conductors:", error);
-    return [];
-  }
-}
-
-/**
- * Obter motorista por nome
- */
-export async function getConductorByName(name: string) {
+export async function getConductorById(id: number) {
   const db = await getDb();
   if (!db) return null;
-
   try {
     const result = await db
-      .select()
-      .from(conductors)
-      .where(eq(conductors.nome, name))
-      .limit(1);
-    
-    return result.length > 0 ? result[0] : null;
-  } catch (error) {
-    console.error("[DB] Error getting conductor by name:", error);
-    return null;
-  }
-}
-
-/**
- * Dar baixa em advertência (marcar como assinada)
- */
-export async function markWarningAsSigned(warningId: number) {
-  const db = await getDb();
-  if (!db) return null;
-
-  try {
-    const result = await db
-      .update(warnings)
-      .set({ 
-        advertenciaAplicada: true,
-        dataAplicacao: new Date()
-      })
-      .where(eq(warnings.id, warningId));
-    
-    return result;
-  } catch (error) {
-    console.error("[DB] Error marking warning as signed:", error);
-    return null;
-  }
-}
-
-/**
- * Obter advertências não assinadas de um motorista
- */
-export async function getUnsignedWarningsByDriver(conductorName: string) {
-  const db = await getDb();
-  if (!db) return [];
-
-  try {
-    return await db
-      .select()
-      .from(warnings)
-      .where(
-        and(
-          eq(warnings.conductorName, conductorName),
-          eq(warnings.advertenciaAplicada, false)
-        )
-      )
-      .orderBy(desc(warnings.criadoEm));
-  } catch (error) {
-    console.error("[DB] Error getting unsigned warnings by driver:", error);
-    return [];
-  }
-}
-
-
-/**
- * Obter todas as advertências de um motorista por ID
- */
-export async function getWarningsByConductorId(conductorId: number) {
-  const db = await getDb();
-  if (!db) return [];
-
-  try {
-    // First, get the conductor to find their name
-    const conductor = await db
-      .select()
-      .from(conductors)
-      .where(eq(conductors.id, conductorId))
-      .limit(1);
-    
-    if (!conductor || conductor.length === 0) {
-      return [];
-    }
-
-    const conductorName = conductor[0].nome;
-
-    // Then get all warnings for this conductor
-    const warningsList = await db
-      .select()
-      .from(warnings)
-      .where(eq(warnings.conductorName, conductorName))
-      .orderBy(desc(warnings.criadoEm));
-    
-    // Map advertenciaAplicada to assinada for frontend compatibility
-    return warningsList.map(w => ({
-      ...w,
-      assinada: w.advertenciaAplicada
-    }));
-  } catch (error) {
-    console.error("[DB] Error getting warnings by conductor ID:", error);
-    return [];
-  }
-}
-
-/**
- * Get all warnings for a conductor (both pending and signed)
- */
-export async function getConductorWarnings(conductorId: string | number) {
-  const db = await getDb();
-  if (!db) return [];
-
-  try {
-    const id = typeof conductorId === 'string' ? parseInt(conductorId, 10) : conductorId;
-    
-    // First, get the conductor to find their name
-    const conductor = await db
       .select()
       .from(conductors)
       .where(eq(conductors.id, id))
       .limit(1);
-    
-    if (!conductor || conductor.length === 0) {
-      return [];
-    }
-
-    const conductorName = conductor[0].nome;
-
-    // Then get all warnings for this conductor
-    const warningsList = await db
-      .select()
-      .from(warnings)
-      .where(eq(warnings.conductorName, conductorName))
-      .orderBy(desc(warnings.criadoEm));
-    
-    // Map advertenciaAplicada to assinada for frontend compatibility
-    // advertenciaAplicada = true means the warning was signed/applied
-    // advertenciaAplicada = false means the warning is still pending
-    return warningsList.map(w => ({
-      ...w,
-      assinada: w.advertenciaAplicada === true
-    }));
+    return result[0] || null;
   } catch (error) {
-    console.error("[DB] Error getting conductor warnings:", error);
-    return [];
+    console.error("[DB] Error getting conductor by ID:", error);
+    return null;
   }
 }
 
 
-/**
- * List all active conductors
- */
-export async function listConductors() {
+export async function getAllPendingWarnings() {
   const db = await getDb();
   if (!db) return [];
-
   try {
-    const conductorsList = await db
+    const result = await db
       .select()
-      .from(conductors)
-      .where(eq(conductors.status, 'ativo'))
-      .orderBy(asc(conductors.nome));
-    
-    return conductorsList;
+      .from(warnings)
+      .where(eq(warnings.advertenciaAplicada, false))
+      .orderBy(desc(warnings.criadoEm));
+    return result;
   } catch (error) {
-    console.error("[DB] Error listing conductors:", error);
+    console.error("[DB] Error getting all pending warnings:", error);
     return [];
   }
 }
