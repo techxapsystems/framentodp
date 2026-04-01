@@ -120,6 +120,11 @@ export default function WarningSignOff() {
 
   const pendingWarnings = warnings.filter(w => !w.assinada);
   const signedWarnings = warnings.filter(w => w.assinada);
+  
+  console.log('[WarningSignOff] Total warnings:', warnings.length);
+  console.log('[WarningSignOff] Pending warnings:', pendingWarnings.length);
+  console.log('[WarningSignOff] Signed warnings:', signedWarnings.length);
+  console.log('[WarningSignOff] Warnings data:', warnings);
 
   const getWarningTypeLabel = (categoria: string): string => {
     const labels: Record<string, string> = {

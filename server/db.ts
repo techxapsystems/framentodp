@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, inArray, or, isNotNull, count } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray, or, isNotNull, count, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations, warningPdfHistory, conductors, InsertConductor } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -1045,6 +1045,71 @@ export async function getWarningsByConductorId(conductorId: number) {
     }));
   } catch (error) {
     console.error("[DB] Error getting warnings by conductor ID:", error);
+    return [];
+  }
+}
+
+/**
+ * Get all warnings for a conductor (both pending and signed)
+ */
+export async function getConductorWarnings(conductorId: string | number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const id = typeof conductorId === 'string' ? parseInt(conductorId, 10) : conductorId;
+    
+    // First, get the conductor to find their name
+    const conductor = await db
+      .select()
+      .from(conductors)
+      .where(eq(conductors.id, id))
+      .limit(1);
+    
+    if (!conductor || conductor.length === 0) {
+      return [];
+    }
+
+    const conductorName = conductor[0].nome;
+
+    // Then get all warnings for this conductor
+    const warningsList = await db
+      .select()
+      .from(warnings)
+      .where(eq(warnings.conductorName, conductorName))
+      .orderBy(desc(warnings.criadoEm));
+    
+    // Map advertenciaAplicada to assinada for frontend compatibility
+    // advertenciaAplicada = true means the warning was signed/applied
+    // advertenciaAplicada = false means the warning is still pending
+    return warningsList.map(w => ({
+      ...w,
+      assinada: w.advertenciaAplicada === true
+    }));
+  } catch (error) {
+    console.error("[DB] Error getting conductor warnings:", error);
+    return [];
+  }
+}
+
+
+/**
+ * List all active conductors
+ */
+export async function listConductors() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const conductorsList = await db
+      .select()
+      .from(conductors)
+      .where(eq(conductors.status, 'ativo'))
+      .orderBy(asc(conductors.nome));
+    
+    return conductorsList;
+  } catch (error) {
+    console.error("[DB] Error listing conductors:", error);
     return [];
   }
 }
