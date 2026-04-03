@@ -238,7 +238,7 @@ export default function WarningsTracking() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Motorista</TableHead>
-                    <TableHead>Data</TableHead>
+                    <TableHead>Data de Cadastro</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
@@ -246,8 +246,8 @@ export default function WarningsTracking() {
                 <TableBody>
                   {pendingWarnings.map((warning: any) => (
                     <TableRow key={warning.id}>
-                      <TableCell>{warning.conductorName}</TableCell>
-                      <TableCell>{new Date(warning.criadoEm).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="font-medium">{warning.conductorName}</TableCell>
+                      <TableCell>{new Date(warning.criadoEm).toLocaleDateString("pt-BR", { year: "numeric", month: "2-digit", day: "2-digit" })}</TableCell>
                       <TableCell>{warning.categoria}</TableCell>
                       <TableCell>
                         <Badge variant="destructive">Pendente</Badge>

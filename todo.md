@@ -916,3 +916,47 @@
 - [ ] Testes de performance
 - [ ] Testes cross-browser
 - [ ] Deploy e verificação em produção
+
+
+## Correções no Dashboard de Acompanhamento (NOVA FASE)
+- [ ] Corrigir filtro de data para usar data de cadastro (não data da advertência)
+- [ ] Renomear coluna para "Data de Cadastro" na tabela do dashboard
+- [ ] Ajustar exibição de advertências não assinadas (mostrar quantidade correta)
+- [ ] Adicionar filtros na tela de baixa de advertências (grid com filtros)
+- [ ] Implementar gráfico de temperatura para análise BRF
+- [ ] Testar cada recurso passo a passo
+
+## Fase 1 - Correção de Data no Dashboard (CONCLUÍDO)
+- [x] Corrigir filtro de data para usar data de cadastro (criadoEm) - JÁ ESTAVA CORRETO NO BACKEND
+- [x] Renomear coluna para "Data de Cadastro" em WarningsTracking.tsx
+- [x] Renomear coluna para "Data de Cadastro" em WarningSignOff.tsx (tabelas de pendentes e assinadas)
+- [x] Validar que o filtro está funcionando corretamente
+
+
+## Fase 1 - Correção de Data no Dashboard (CONCLUÍDO)
+- [x] Corrigir filtro de data para usar data de cadastro (criadoEm) - JÁ ESTAVA CORRETO NO BACKEND
+- [x] Renomear coluna para "Data de Cadastro" em WarningsTracking.tsx
+- [x] Renomear coluna para "Data de Cadastro" em WarningSignOff.tsx (tabelas de pendentes e assinadas)
+- [x] Validar que o filtro está funcionando corretamente
+
+## Fase 2 - Refatoração da Tela de Baixa de Advertências (CONCLUÍDO)
+- [x] Adicionar filtros de data (DE / ATÉ) no topo
+- [x] Exibir advertências pendentes em grid logo ao entrar
+- [x] Implementar visualização dual (Grade/Tabela)
+- [x] Aplicar filtros corretamente
+- [x] Manter advertências assinadas em tabela separada
+
+## Fase 3 - Gráfico de Temperatura para Análise BRF (CONCLUÍDO)
+- [x] Adicionar coluna "Análise" com botão "Gráfico" em cada viagem
+- [x] Implementar modal com gráfico de temperatura
+- [x] Gerar dados fictícios realistas de temperatura
+- [x] Adicionar gráfico de linha com temperatura e umidade
+- [x] Mostrar resumo com Temp. Média, Mín, Máx e Duração
+- [x] Adicionar detalhes da viagem no modal
+
+## Fase 4 - Testes Unitários (CONCLUÍDO)
+- [x] Criar testes para filtragem por data de cadastro
+- [x] Criar testes para separação de advertências assinadas/não assinadas
+- [x] Criar testes para geração de dados fictícios de temperatura
+- [x] Criar testes para validação de intervalos de temperatura
+- [x] Validar que todos os testes passam

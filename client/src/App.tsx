@@ -22,7 +22,7 @@ import DataRetention from "./pages/DataRetention";
 import TemplateLibrary from "./pages/TemplateLibrary";
 import UserManagement from "./pages/UserManagement";
 import Login from "./pages/Login";
-import { AnaliseGifBrf } from "./pages/AnaliseGifBrf";
+import AnaliseGifBrf from "./pages/AnaliseGifBrf";
 
 
 function Router() {
