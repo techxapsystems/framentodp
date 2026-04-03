@@ -41,7 +41,7 @@ export default function DataRetention() {
   }
 
   const { data: policies, isLoading: policiesLoading, refetch: refetchPolicies } = trpc.retention.getPolicies.useQuery();
-  const { data: stats } = trpc.retention.getStats.useQuery({});
+  const { data: stats } = trpc.retention.getStats.useQuery(undefined);
   const { data: cleanupHistory } = trpc.retention.getCleanupHistory.useQuery({ limit: 10 });
 
   const executeCleanupMutation = trpc.retention.executeCleanup.useMutation({
@@ -49,7 +49,7 @@ export default function DataRetention() {
       toast.success(`Limpeza concluída! ${data.totalRecordsDeleted} registros deletados.`);
       refetchPolicies();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(`Erro ao executar limpeza: ${error.message}`);
     },
   });

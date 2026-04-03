@@ -18,6 +18,15 @@ interface WarningPDFProps {
 }
 
 export function generateWarningPDFBlob(data: WarningPDFProps): Blob {
+  // Ensure all required fields have values
+  const safeData = {
+    ...data,
+    warningReason: data.warningReason || "",
+    warningNote: data.warningNote || "",
+    infrationDays: data.infrationDays || "",
+    createdDate: data.createdDate || new Date(),
+  };
+
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -51,16 +60,16 @@ export function generateWarningPDFBlob(data: WarningPDFProps): Blob {
   // Informações do motorista
   doc.setFontSize(11);
   doc.setTextColor(0, 0, 0);
-  doc.setFont(undefined, "bold");
+  doc.setFont(undefined as any, "bold");
   doc.text("DADOS DO MOTORISTA", margin, yPosition);
 
   yPosition += 7;
-  doc.setFont(undefined, "normal");
+  doc.setFont(undefined as any, "normal");
   doc.setFontSize(10);
 
   const motoristInfo = [
     [`Nome: ${data.conductorName}`, `Placa: ${data.licensePlate}`],
-    [`Operação: ${data.operacao}`, `Data: ${new Date(data.createdDate || Date.now()).toLocaleDateString("pt-BR")}`],
+    [`Operação: ${data.operacao}`, `Data: ${new Date(safeData.createdDate || Date.now()).toLocaleDateString("pt-BR")}`],
   ];
 
   motoristInfo.forEach((row) => {
@@ -71,13 +80,11 @@ export function generateWarningPDFBlob(data: WarningPDFProps): Blob {
 
   yPosition += 5;
 
-  // Informações da advertência
-  doc.setFont(undefined, "bold");
-  doc.setFontSize(11);
+  // Informações da advertência    doc.setFont(undefined as any, "normal");doc.setFontSize(11);
   doc.text("DETALHES DA ADVERTÊNCIA", margin, yPosition);
 
   yPosition += 7;
-  doc.setFont(undefined, "normal");
+  doc.setFont(undefined as any, "normal");
   doc.setFontSize(10);
 
   const warningInfo = [
@@ -90,37 +97,34 @@ export function generateWarningPDFBlob(data: WarningPDFProps): Blob {
     yPosition += 6;
   });
 
-  if (data.infrationDays) {
-    doc.text(`Dias de Infração: ${data.infrationDays}`, margin, yPosition);
+  if (safeData.infrationDays) {
+    doc.text(`Dias de Infração: ${safeData.infrationDays}`, margin, yPosition);
     yPosition += 6;
   }
 
   yPosition += 5;
 
   // Motivo
-  doc.setFont(undefined, "bold");
+  doc.setFont(undefined as any, "bold");
   doc.setFontSize(11);
   doc.text("MOTIVO", margin, yPosition);
 
   yPosition += 7;
-  doc.setFont(undefined, "normal");
+  doc.setFont(undefined as any, "normal");
   doc.setFontSize(10);
 
-  const splitReason = doc.splitTextToSize(data.warningReason, contentWidth);
+  const splitReason = doc.splitTextToSize(safeData.warningReason, contentWidth);
   doc.text(splitReason, margin, yPosition);
-  yPosition += splitReason.length * 5 + 5;
-
+   yPosition += splitReason.length * 5 + 5;
   // Observação
-  if (data.warningNote) {
-    doc.setFont(undefined, "bold");
+  if (safeData.warningNote) {
+    doc.setFont(undefined as any, "bold");
     doc.setFontSize(11);
     doc.text("OBSERVAÇÃO", margin, yPosition);
-
     yPosition += 7;
-    doc.setFont(undefined, "normal");
+    doc.setFont(undefined as any, "normal");
     doc.setFontSize(10);
-
-    const splitNote = doc.splitTextToSize(data.warningNote, contentWidth);
+    const splitNote = doc.splitTextToSize(safeData.warningNote, contentWidth);
     doc.text(splitNote, margin, yPosition);
     yPosition += splitNote.length * 5 + 5;
   }
@@ -146,7 +150,7 @@ export function WarningPDFWithHistoryButton(props: WarningPDFWithHistoryButtonPr
       toast.success("PDF salvo no histórico com sucesso!");
       props.onSaved?.();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(`Erro ao salvar PDF: ${error.message}`);
     },
   });
@@ -163,15 +167,8 @@ export function WarningPDFWithHistoryButton(props: WarningPDFWithHistoryButtonPr
         
         savePdfMutation.mutate({
           warningId: props.warningId || 0,
-          conductorName: props.conductorName,
-          licensePlate: props.licensePlate,
-          operacao: props.operacao,
           pdfBase64: base64,
-          warningLevel: props.warningLevel,
-          warningType: props.warningType,
-          warningReason: props.warningReason,
-          warningNote: props.warningNote,
-          infrationDays: props.infrationDays,
+          fileName: `warning-${props.warningId}-${new Date().getTime()}.pdf`,
         });
       };
       reader.readAsDataURL(pdfBlob);

@@ -22,9 +22,9 @@ interface AnalysisResult {
 }
 
 export function AnaliseGifBrf() {
-  const [masterFile, setMasterFile] = useState<File | null>(null);
-  const [reportsZip, setReportsZip] = useState<File | null>(null);
-  const [clientFile, setClientFile] = useState<File | null>(null);
+  const [masterFile, setMasterFile] = useState<File | undefined>(undefined);
+  const [reportsZip, setReportsZip] = useState<File | undefined>(undefined);
+  const [clientFile, setClientFile] = useState<File | undefined>(undefined);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [kpis, setKpis] = useState<KPI[]>([]);

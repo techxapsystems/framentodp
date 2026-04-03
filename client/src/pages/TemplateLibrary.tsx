@@ -72,7 +72,7 @@ export default function TemplateLibrary() {
       // Recarregar dados
       window.location.reload();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error("Erro ao criar modelo");
     },
   });

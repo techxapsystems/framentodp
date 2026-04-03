@@ -181,7 +181,7 @@ authRestRouter.post("/import-conductors", express.json(), async (req, res) => {
 
 authRestRouter.get("/conductors", async (req, res) => {
   try {
-    const conductors = await db.getConductors();
+    const conductors = await db.getAllConductors();
     return res.json({
       result: {
         data: {
@@ -221,7 +221,8 @@ authRestRouter.get("/unsigned-warnings/:conductorName", async (req, res) => {
       return res.status(400).json({ error: "Nome do condutor é obrigatório" });
     }
 
-    const warnings = await db.getUnsignedWarnings(conductorName);
+    const warnings = await db.getConductorWarnings(conductorName.replace(/%20/g, ' '));
+    const unsignedWarnings = warnings.filter((w: any) => !w.advertenciaAplicada);
     return res.json({
       result: {
         data: {

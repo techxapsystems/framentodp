@@ -883,3 +883,36 @@
 - [ ] Auditar Configurações
 - [ ] Corrigir erros TypeScript (106 errors)
 - [ ] Corrigir bug: motoristas não listam no cadastro de advertência
+
+
+## PHASE ATUAL - Correções Críticas (Em Progresso)
+
+### Task 1: Fix Dashboard Count Discrepancy
+- [ ] Investigar por que "Não Assinadas" mostra 1 mas detalhes mostram várias
+- [ ] Revisar getWarningsStats em db.ts
+- [ ] Corrigir a query para retornar contagem correta
+- [ ] Testar com múltiplos motoristas
+- [ ] Verificar dashboard exibe números corretos
+
+### Task 2: Add Grid View to Warning Sign-Off Screen
+- [ ] Adicionar grid view como padrão ao entrar na página
+- [ ] Mostrar advertências pendentes em grid automaticamente
+- [ ] Adicionar opção de filtrar por motorista
+- [ ] Manter ambas opções disponíveis (grid + filtro)
+- [ ] Testar grid view mostra todas as advertências pendentes
+- [ ] Testar funcionalidade de filtro
+
+### Task 3: Add Temperature Graph to BRF Analysis
+- [ ] Criar componente de gráfico de temperatura
+- [ ] Adicionar handler de clique para abrir modal
+- [ ] Buscar dados de temperatura para viagem selecionada
+- [ ] Exibir gráfico com detalhes de temperatura
+- [ ] Adicionar recursos interativos (zoom, hover info)
+- [ ] Testar gráfico exibe corretamente para múltiplas viagens
+
+### Task 4: Final Testing & Delivery
+- [ ] Testar todas as três features juntas
+- [ ] Verificar que nenhuma outra feature foi quebrada
+- [ ] Testes de performance
+- [ ] Testes cross-browser
+- [ ] Deploy e verificação em produção

@@ -12,7 +12,7 @@ export default function Settings() {
     onSuccess: () => {
       toast.success("Configurações atualizadas com sucesso");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(`Erro: ${error.message}`);
     },
   });
@@ -30,17 +30,18 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    if (config?.data) {
+    if (config?.data && config.data.length > 0) {
+      const data = config.data[0];
       setFormData({
-        limitePoucoRodadoMin: config.data.limitePoucoRodadoMin,
-        limiteHeAlertaMin: config.data.limiteHeAlertaMin,
-        janelaReincidenciaDias: config.data.janelaReincidenciaDias,
-        janelaCronicoDias: config.data.janelaCronicoDias,
-        thresholdPoucoRodado1: config.data.thresholdPoucoRodado1,
-        thresholdPoucoRodado2: config.data.thresholdPoucoRodado2,
-        thresholdPoucoRodado3: config.data.thresholdPoucoRodado3,
-        thresholdPouco30d: config.data.thresholdPouco30d,
-        thresholdHe30d: config.data.thresholdHe30d,
+        limitePoucoRodadoMin: data.limitePoucoRodadoMin,
+        limiteHeAlertaMin: data.limiteHeAlertaMin,
+        janelaReincidenciaDias: data.janelaReincidenciaDias,
+        janelaCronicoDias: data.janelaCronicoDias,
+        thresholdPoucoRodado1: data.thresholdPoucoRodado1,
+        thresholdPoucoRodado2: data.thresholdPoucoRodado2,
+        thresholdPoucoRodado3: data.thresholdPoucoRodado1 || 3,
+        thresholdPouco30d: data.thresholdPoucoRodado1 || 5,
+        thresholdHe30d: data.thresholdPoucoRodado1 || 5,
       });
     }
   }, [config]);

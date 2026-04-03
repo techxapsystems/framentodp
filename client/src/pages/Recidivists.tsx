@@ -35,7 +35,7 @@ export default function Recidivists() {
 
   // Query para buscar todos os motoristas ociosos no dialog
   const { data: queryResult } = trpc.dashboard.getIdleDriversForWarning.useQuery(
-    {},
+    undefined,
     {
       enabled: true,
       staleTime: 0,

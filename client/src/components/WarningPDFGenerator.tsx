@@ -20,6 +20,15 @@ interface WarningPDFProps {
 }
 
 export function generateWarningPDF(data: WarningPDFProps) {
+  // Ensure all required fields have values
+  const safeData = {
+    ...data,
+    warningReason: data.warningReason || "",
+    warningNote: data.warningNote || "",
+    infrationDays: data.infrationDays || "",
+    createdDate: data.createdDate || new Date(),
+  };
+
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -40,12 +49,12 @@ export function generateWarningPDF(data: WarningPDFProps) {
   // Logo/Título em branco sobre fundo azul
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(24);
-  doc.setFont(undefined, "bold");
+  doc.setFont(undefined as any, "bold");
   doc.text("FRAMENTO TRANSPORTES", margin, 12);
 
   // Subtítulo
   doc.setFontSize(12);
-  doc.setFont(undefined, "normal");
+  doc.setFont(undefined as any, "normal");
   const docType = data.warningType === "pouco_rodado" ? "ADVERTÊNCIA" : "SUSPENSÃO";
   doc.text(docType, margin, 22);
 
@@ -61,7 +70,7 @@ export function generateWarningPDF(data: WarningPDFProps) {
 
   // Informações do motorista
   doc.setFontSize(11);
-  doc.setFont(undefined, "bold");
+  doc.setFont(undefined as any, "bold");
   doc.setTextColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
   doc.text("DADOS DO MOTORISTA", margin, yPosition);
 
@@ -71,7 +80,7 @@ export function generateWarningPDF(data: WarningPDFProps) {
   doc.line(margin, yPosition + 1, pageWidth - margin, yPosition + 1);
 
   yPosition += 7;
-  doc.setFont(undefined, "normal");
+  doc.setFont(undefined as any, "normal");
   doc.setFontSize(10);
   doc.setTextColor(FRAMENTO_DARK[0], FRAMENTO_DARK[1], FRAMENTO_DARK[2]);
 
@@ -89,7 +98,7 @@ export function generateWarningPDF(data: WarningPDFProps) {
   yPosition += 5;
 
   // Informações da advertência
-  doc.setFont(undefined, "bold");
+  doc.setFont(undefined as any, "bold");
   doc.setFontSize(11);
   doc.setTextColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
   doc.text("DETALHES DA ADVERTÊNCIA", margin, yPosition);
@@ -100,7 +109,7 @@ export function generateWarningPDF(data: WarningPDFProps) {
   doc.line(margin, yPosition + 1, pageWidth - margin, yPosition + 1);
 
   yPosition += 7;
-  doc.setFont(undefined, "normal");
+  doc.setFont(undefined as any, "normal");
   doc.setFontSize(10);
   doc.setTextColor(FRAMENTO_DARK[0], FRAMENTO_DARK[1], FRAMENTO_DARK[2]);
 
@@ -122,7 +131,7 @@ export function generateWarningPDF(data: WarningPDFProps) {
   yPosition += 5;
 
   // Motivo
-  doc.setFont(undefined, "bold");
+  doc.setFont(undefined as any, "bold");
   doc.setFontSize(11);
   doc.setTextColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
   doc.text("MOTIVO", margin, yPosition);
@@ -133,7 +142,7 @@ export function generateWarningPDF(data: WarningPDFProps) {
   doc.line(margin, yPosition + 1, pageWidth - margin, yPosition + 1);
 
   yPosition += 7;
-  doc.setFont(undefined, "normal");
+  doc.setFont(undefined as any, "normal");
   doc.setFontSize(10);
   doc.setTextColor(FRAMENTO_DARK[0], FRAMENTO_DARK[1], FRAMENTO_DARK[2]);
 
@@ -143,7 +152,7 @@ export function generateWarningPDF(data: WarningPDFProps) {
 
   // Observação
   if (data.warningNote) {
-    doc.setFont(undefined, "bold");
+    doc.setFont(undefined as any, "bold");
     doc.setFontSize(11);
     doc.setTextColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
     doc.text("OBSERVAÇÃO", margin, yPosition);
@@ -154,7 +163,7 @@ export function generateWarningPDF(data: WarningPDFProps) {
     doc.line(margin, yPosition + 1, pageWidth - margin, yPosition + 1);
 
     yPosition += 7;
-    doc.setFont(undefined, "normal");
+    doc.setFont(undefined as any, "normal");
     doc.setFontSize(10);
     doc.setTextColor(FRAMENTO_DARK[0], FRAMENTO_DARK[1], FRAMENTO_DARK[2]);
 

@@ -216,6 +216,42 @@ export const templateRouter = router({
     }),
 
   /**
+   * Criar novo modelo
+   */
+  createTemplate: protectedProcedure
+    .input(
+      z.object({
+        title: z.string().min(1),
+        content: z.string().min(1),
+        type: z.enum(["advertencia", "suspensao"]),
+        categoryId: z.number(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const result = await db.insert(warningTemplates).values({
+          title: input.title,
+          content: input.content,
+          type: input.type,
+          categoryId: input.categoryId,
+          isActive: true,
+          usageCount: 0,
+        });
+
+        return { success: true, id: result[0] };
+      } catch (error) {
+        console.error("Erro ao criar template:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erro ao criar modelo",
+        });
+      }
+    }),
+
+  /**
    * Obter estatísticas de modelos
    */
   getStats: protectedProcedure.query(async () => {

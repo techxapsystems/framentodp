@@ -20,7 +20,7 @@ export function OrientationDialog({ open, onOpenChange, motorista, onSuccess }: 
   const [motivo, setMotivo] = useState("");
 
   const countOrientationsQuery = trpc.dashboard.countOrientations.useQuery(
-    motorista ? { conductorName: motorista.name, tipo } : null,
+    motorista ? { conductorName: motorista.name } : ({} as any),
     { enabled: !!motorista }
   );
 

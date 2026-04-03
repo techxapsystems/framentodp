@@ -17,25 +17,28 @@ export default function Import() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
 
-  const importMutation = trpc.import.importFile.useMutation({
-    onSuccess: (result) => {
-      setImportResult(result);
-      if (result.success) {
-        toast.success(result.message);
-        refetchHistory();
-      } else {
-        toast.error(result.message);
-      }
-      setIsProcessing(false);
-    },
-    onError: (error) => {
-      toast.error(`Erro: ${error.message}`);
-      setIsProcessing(false);
-    },
-  });
+  // TODO: Implementar router de importação
+  // const importMutation = trpc.import.importFile.useMutation({
+  //   onSuccess: (result: any) => {
+  //     setImportResult(result);
+  //     if (result.success) {
+  //       toast.success(result.message);
+  //       refetchHistory();
+  //     } else {
+  //       toast.error(result.message);
+  //     }
+  //     setIsProcessing(false);
+  //   },
+  //   onError: (error: any) => {
+  //     toast.error(`Erro: ${error.message}`);
+  //     setIsProcessing(false);
+  //   },
+  // });
 
-  const { data: history, refetch: refetchHistory } =
-    trpc.import.getHistory.useQuery({ limit: 20 });
+  // const { data: history, refetch: refetchHistory } =
+  //   trpc.import.getHistory.useQuery({ limit: 20 });
+  
+  const refetchHistory = () => {};
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,11 +59,13 @@ export default function Import() {
       }
       const base64String = btoa(base64);
 
-      // Enviar
-      importMutation.mutate({
-        fileName: file.name,
-        fileBuffer: base64String,
-      });
+      // TODO: Implementar router de importação
+      // importMutation.mutate({
+      //   fileName: file.name,
+      //   fileBuffer: base64String,
+      // });
+      toast.info("Funcionalidade de importação ainda não implementada");
+      setIsProcessing(false);
     } catch (error) {
       toast.error(`Erro ao ler arquivo: ${String(error)}`);
       setIsProcessing(false);
@@ -76,6 +81,8 @@ export default function Import() {
       minute: "2-digit",
     });
   };
+  
+  const history = { data: [] }; // TODO: Implementar router de importação
 
   return (
     <div className="p-8 space-y-8">

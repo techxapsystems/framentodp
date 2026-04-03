@@ -178,7 +178,7 @@ export default function WarningsDashboard() {
                       outerRadius={100}
                       label
                     >
-                      {operationStats.map((_, index) => (
+                      {operationStats.map((_: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>

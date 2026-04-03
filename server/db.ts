@@ -51,9 +51,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     textFields.forEach(assignNullable);
 
     if (user.role) updateSet.role = user.role;
-    if (user.departamento) updateSet.departamento = user.departamento;
-    if (user.setor) updateSet.setor = user.setor;
-    if (user.modulos) updateSet.modulos = user.modulos;
+    if (user.department) updateSet.department = user.department;
+    if (user.modules) updateSet.modules = user.modules;
     if (user.status) updateSet.status = user.status;
     if (user.lastSignedIn) updateSet.lastSignedIn = user.lastSignedIn;
 
@@ -104,8 +103,8 @@ export async function getOrCreateUser(openId: string, name?: string, email?: str
 
   await upsertUser({
     openId,
-    name,
-    email,
+    name: name || "Usuário",
+    email: email || `${openId}@local`,
   });
 
   return getUser(openId);
@@ -205,13 +204,13 @@ export async function createUser(data: any) {
       name: data.name,
       password: data.password,
       role: data.role || "user",
-      modulos: data.modulos || JSON.stringify([]),
+      modules: data.modules || JSON.stringify([]),
       status: data.status || "ativo",
       loginMethod: data.loginMethod || "email",
       openId: null,
-    });
+    } as any);
 
-    return (result as any).insertId || result[0]?.id;
+    return (result as any).insertId;
   } catch (error) {
     console.error("[Database] Error creating user:", error);
     throw error;
@@ -823,12 +822,13 @@ export async function getWarningsReport() {
 /**
  * Obter estatísticas de advertências por motorista
  */
-export async function getWarningsStatsByDriver() {
+export async function getWarningsStatsByDriver(filters?: any) {
   const db = await getDb();
   if (!db) return [];
 
   try {
-    const allWarnings = await db.select().from(warnings);
+    let query = db.select().from(warnings);
+    const allWarnings = await query;
     
     // Buscar dados dos motoristas para obter operacao
     const conductorsData = await db.select().from(conductors);

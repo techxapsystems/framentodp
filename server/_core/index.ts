@@ -61,8 +61,8 @@ async function startServer() {
         // Copiar para req.body para que o tRPC reconheça
         req.body = parsed;
         console.log(`[PARSED INPUT] ${req.path}`, parsed);
-      } catch (e) {
-        console.error(`[PARSE ERROR] ${req.path}`, e.message);
+      } catch (e: unknown) {
+        console.error(`[PARSE ERROR] ${req.path}`, (e as Error).message);
       }
     }
     next();
