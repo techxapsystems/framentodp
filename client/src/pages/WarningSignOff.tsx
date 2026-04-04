@@ -303,37 +303,38 @@ export default function WarningSignOff() {
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="text-sm">
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Motorista</TableHead>
-                        <TableHead>Data de Cadastro</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Nível</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Ação</TableHead>
+                      <TableRow className="bg-gray-100">
+                        <TableHead className="py-2 px-2">Motorista</TableHead>
+                        <TableHead className="py-2 px-2">Data</TableHead>
+                        <TableHead className="py-2 px-2">Tipo</TableHead>
+                        <TableHead className="py-2 px-2">Nível</TableHead>
+                        <TableHead className="py-2 px-2">Status</TableHead>
+                        <TableHead className="py-2 px-2">Ação</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {signedWarnings.map((warning) => (
-                        <TableRow key={warning.id}>
-                          <TableCell className="font-medium">{warning.conductorName}</TableCell>
-                          <TableCell>
+                        <TableRow key={warning.id} className="hover:bg-gray-50">
+                          <TableCell className="font-medium py-2 px-2 whitespace-nowrap">{warning.conductorName}</TableCell>
+                          <TableCell className="py-2 px-2 whitespace-nowrap">
                             {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
                           </TableCell>
-                          <TableCell>{getWarningTypeLabel(warning.categoria)}</TableCell>
-                          <TableCell>
+                          <TableCell className="py-2 px-2 whitespace-nowrap">{getWarningTypeLabel(warning.categoria)}</TableCell>
+                          <TableCell className="py-2 px-2 whitespace-nowrap">
                             {warning.nivelAdvertencia
                               ? getWarningLevelLabel(warning.nivelAdvertencia)
                               : '-'}
                           </TableCell>
-                          <TableCell>
-                            <Badge variant="default">Assinada</Badge>
+                          <TableCell className="py-2 px-2 whitespace-nowrap">
+                            <Badge variant="default" className="text-xs">Assinada</Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-2 px-2 whitespace-nowrap">
                             <Button
-                              size="sm"
+                              size="xs"
                               variant="outline"
+                              className="text-xs h-7"
                               onClick={async () => {
                                 try {
                                   const response = await fetch('/api/auth/download-warning-pdf', {
