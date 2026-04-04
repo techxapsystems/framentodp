@@ -311,6 +311,7 @@ export default function WarningSignOff() {
                         <TableHead>Tipo</TableHead>
                         <TableHead>Nível</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Ação</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -328,6 +329,46 @@ export default function WarningSignOff() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="default">Assinada</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch('/api/auth/download-warning-pdf', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      warningId: warning.id,
+                                      conductorName: warning.conductorName,
+                                      warningDate: new Date(warning.criadoEm).toLocaleDateString('pt-BR'),
+                                      warningType: warning.categoria,
+                                      warningLevel: warning.nivelAdvertencia,
+                                    }),
+                                  });
+                                  if (response.ok) {
+                                    const blob = await response.blob();
+                                    const url = window.URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `Advertencia_${warning.conductorName.replace(/\s+/g, '_')}.pdf`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    window.URL.revokeObjectURL(url);
+                                    document.body.removeChild(a);
+                                    toast.success('PDF baixado com sucesso!');
+                                  } else {
+                                    toast.error('Erro ao gerar PDF');
+                                  }
+                                } catch (error) {
+                                  console.error('Erro:', error);
+                                  toast.error('Erro ao baixar PDF');
+                                }
+                              }}
+                            >
+                              Baixar PDF
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
