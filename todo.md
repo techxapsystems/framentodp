@@ -960,3 +960,10 @@
 - [x] Criar testes para geração de dados fictícios de temperatura
 - [x] Criar testes para validação de intervalos de temperatura
 - [x] Validar que todos os testes passam
+
+
+## Fase 5 - Correção de Bugs na Tela de Baixa de Advertências (CONCLUÍDO)
+- [x] Corrigir erro ao dar baixa em advertências (faltava conductorId)
+- [x] Reformatar layout dos cartões de grade para linhas compactas
+- [x] Validar que o erro foi resolvido
+- [x] Testar a nova interface compacta

@@ -85,6 +85,7 @@ export default function WarningSignOff() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           warningId: selectedWarning.id,
+          conductorId: selectedWarning.conductorName,
           signOffNote,
         }),
       });
@@ -203,54 +204,40 @@ export default function WarningSignOff() {
               </CardHeader>
               <CardContent>
                 {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2">
                     {pendingWarnings.map((warning) => (
                       <div
                         key={warning.id}
-                        className="border rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
+                        className="border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer flex items-center justify-between gap-4"
                         onClick={() => {
                           setSelectedWarning(warning);
                           setShowDetailDialog(true);
                         }}
                       >
-                        <div className="space-y-3">
-                          <div>
-                            <div className="font-semibold text-sm text-gray-600">Motorista</div>
-                            <div className="font-bold">{warning.conductorName}</div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <div className="text-gray-600">Data de Cadastro</div>
-                              <div className="font-semibold">
-                                {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-gray-600">Tipo</div>
-                              <div className="font-semibold">{getWarningTypeLabel(warning.categoria)}</div>
-                            </div>
-                          </div>
-                          {warning.nivelAdvertencia && (
-                            <div>
-                              <div className="text-sm text-gray-600">Nível</div>
-                              <Badge variant="outline">
+                        <div className="flex-1 grid grid-cols-4 gap-4 items-center text-sm">
+                          <div className="font-semibold">{warning.conductorName}</div>
+                          <div>{new Date(warning.criadoEm).toLocaleDateString('pt-BR')}</div>
+                          <div>{getWarningTypeLabel(warning.categoria)}</div>
+                          <div className="flex items-center gap-2">
+                            {warning.nivelAdvertencia && (
+                              <Badge variant="outline" className="text-xs">
                                 {getWarningLevelLabel(warning.nivelAdvertencia)}
                               </Badge>
-                            </div>
-                          )}
-                          <Badge variant="destructive">Pendente</Badge>
-                          <Button
-                            size="sm"
-                            className="w-full bg-green-600 hover:bg-green-700"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedWarning(warning);
-                              setShowConfirmDialog(true);
-                            }}
-                          >
-                            Dar Baixa
-                          </Button>
+                            )}
+                            <Badge variant="destructive" className="text-xs">Pendente</Badge>
+                          </div>
                         </div>
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedWarning(warning);
+                            setShowConfirmDialog(true);
+                          }}
+                        >
+                          Dar Baixa
+                        </Button>
                       </div>
                     ))}
                   </div>
