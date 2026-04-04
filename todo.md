@@ -967,3 +967,11 @@
 - [x] Reformatar layout dos cartões de grade para linhas compactas
 - [x] Validar que o erro foi resolvido
 - [x] Testar a nova interface compacta
+
+
+## Fase 6 - Geração de PDF de Advertência com Layout Padrão (CONCLUÍDO)
+- [x] Analisar e documentar layout do PDF modelo fornecido
+- [x] Implementar gerador de PDF com layout padrão (generateWarningPDF.ts)
+- [x] Criar endpoint /api/auth/download-warning-pdf
+- [x] Integrar botão "Baixar PDF" no dialog de detalhes
+- [x] Testar geração de PDF

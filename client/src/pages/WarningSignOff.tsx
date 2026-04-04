@@ -397,6 +397,44 @@ export default function WarningSignOff() {
             </div>
           )}
           <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (!selectedWarning) return;
+                try {
+                  const response = await fetch('/api/auth/download-warning-pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      warningId: selectedWarning.id,
+                      conductorName: selectedWarning.conductorName,
+                      warningDate: new Date(selectedWarning.criadoEm).toLocaleDateString('pt-BR'),
+                      warningType: selectedWarning.categoria,
+                      warningLevel: selectedWarning.nivelAdvertencia,
+                    }),
+                  });
+                  if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Advertencia_${selectedWarning.conductorName.replace(/\s+/g, '_')}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    toast.success('PDF baixado com sucesso!');
+                  } else {
+                    toast.error('Erro ao gerar PDF');
+                  }
+                } catch (error) {
+                  console.error('Erro:', error);
+                  toast.error('Erro ao baixar PDF');
+                }
+              }}
+            >
+              Baixar PDF
+            </Button>
             <Button variant="outline" onClick={() => setShowDetailDialog(false)}>
               Fechar
             </Button>

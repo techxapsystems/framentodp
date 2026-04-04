@@ -385,3 +385,46 @@ authRestRouter.post("/generate-report-pdf", express.json(), async (req, res) => 
     }
   }
 });
+
+
+// POST /api/auth/download-warning-pdf - Download individual warning PDF
+authRestRouter.post("/download-warning-pdf", express.json(), async (req, res) => {
+  try {
+    const { warningId, conductorName, conductorCPF, warningDate, warningType, warningLevel } = req.body;
+    
+    if (!warningId || !conductorName) {
+      return res.status(400).json({ error: "ID da advertência e nome do motorista são obrigatórios" });
+    }
+
+    const { generateWarningPDF } = await import("./generateWarningPDF");
+    
+    // Dados da empresa (você pode configurar isso em variáveis de ambiente)
+    const companyData = {
+      companyName: "TRANSPORTESFRAMENTOLTDA",
+      companyAddress: "Contorno da Petrobras, 107",
+      companyCity: "BETIM",
+      companyState: "MG",
+      companyZipCode: "32.669-500",
+      companyCNPJ: "00.766.315/0009-00",
+      employeeName: conductorName,
+      employeeCPF: conductorCPF || "000.000.000-00",
+      employeeCTPS: "001013879",
+      employeeMatricula: "6602",
+      warningDate: warningDate || new Date().toLocaleDateString("pt-BR"),
+      warningLocation: "BETIM",
+      warningReason: warningType || "Descumprimento de responsabilidades",
+      warningDescription: `Advertência disciplinar referente a ${warningType || "irregularidade"} - Nível ${warningLevel || 1}`,
+      warningType: warningType || "Outro",
+      warningLevel: warningLevel || 1,
+    };
+
+    const pdfBuffer = await generateWarningPDF(companyData);
+    
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="Advertencia_${conductorName.replace(/\s+/g, "_")}_${new Date().getTime()}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("[API] Error downloading warning PDF:", error);
+    return res.status(500).json({ error: "Erro ao gerar PDF da advertência: " + (error instanceof Error ? error.message : String(error)) });
+  }
+});
