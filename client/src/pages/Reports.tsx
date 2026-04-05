@@ -28,29 +28,54 @@ export default function Reports() {
   const [searchText, setSearchText] = useState<string>("");
   const [warnings, setWarnings] = useState<any[]>([]);
   const [operations, setOperations] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Carregar operações ao montar o componente
+  // Carregar operações e advertências pendentes de hoje ao montar o componente
   useEffect(() => {
-    const loadOperations = async () => {
+    const loadInitialData = async () => {
       try {
+        setIsLoading(true);
+        
+        // Carregar todas as operações
         const response = await fetch("/api/auth/warnings-stats-by-driver");
         const result = await response.json();
-        const data = result.result?.data?.json || [];
+        const allData = result.result?.data?.json || [];
         
         // Extrair operações únicas (filtrar vazias)
         const uniqueOps = new Set<string>();
-        data.forEach((item: any) => {
+        allData.forEach((item: any) => {
           if (item.operacao && item.operacao.trim() !== '') uniqueOps.add(item.operacao);
         });
         const opsArray = Array.from(uniqueOps).sort();
         setOperations(opsArray);
-        setWarnings(data);
+        
+        // Carregar advertências pendentes de hoje por padrão
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        const params = new URLSearchParams();
+        params.append('startDate', todayStr);
+        params.append('endDate', todayStr);
+        
+        const todayResponse = await fetch(`/api/auth/warnings-stats-by-driver?${params.toString()}`);
+        const todayResult = await todayResponse.json();
+        const todayData = todayResult.result?.data?.json || [];
+        
+        // Filtrar apenas pendentes
+        const pendingWarnings = todayData.filter((w: any) => !w.assinada);
+        setWarnings(pendingWarnings);
+        
+        // Preencher os campos de data com hoje
+        if (startDateRef.current) startDateRef.current.value = todayStr;
+        if (endDateRef.current) endDateRef.current.value = todayStr;
       } catch (error) {
-        console.error("Erro ao carregar operações:", error);
+        console.error("Erro ao carregar dados iniciais:", error);
+        toast.error("Erro ao carregar dados iniciais");
+      } finally {
+        setIsLoading(false);
       }
     };
-    loadOperations();
+    loadInitialData();
   }, []);
 
   // Função para buscar com filtros

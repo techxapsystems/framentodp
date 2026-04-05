@@ -975,3 +975,11 @@
 - [x] Criar endpoint /api/auth/download-warning-pdf
 - [x] Integrar botão "Baixar PDF" no dialog de detalhes
 - [x] Testar geração de PDF
+
+
+## Fase 7 - Correção de Bugs Críticos (ANTES DO CLIENTE USAR - 05/04/2026)
+
+- [x] Corrigir Taxa de Devolução (estava 100% incorretamente) - Mudou de (naoAssinadas/total) para (assinadas/total)
+- [x] Reformatar PDF com layout correto - Novo gerador com posicionamento absoluto
+- [x] Exibir advertências pendentes na grid de Relatórios ao entrar - Carrega pendentes de hoje por padrão
+- [x] Testes unitários para validar as correções - 8 testes passando

@@ -1,5 +1,4 @@
 import PDFDocument from "pdfkit";
-import { Readable } from "stream";
 
 export interface WarningPDFData {
   companyName: string;
@@ -32,57 +31,67 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const margin = 40;
+    const contentWidth = pageWidth - margin * 2;
+
     // Título
-    doc.fontSize(18).font("Helvetica-Bold").text("Advertência Disciplinar", { align: "center" });
-    doc.moveDown(0.5);
+    doc.fontSize(16).font("Helvetica-Bold").text("Advertência Disciplinar", {
+      align: "center",
+    });
+    doc.moveDown(0.3);
 
     // Linha separadora
-    doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
+    doc.moveTo(margin, doc.y).lineTo(pageWidth - margin, doc.y).stroke();
     doc.moveDown(0.8);
 
     // Seção Empresa
-    doc.fontSize(11).font("Helvetica-Bold").text("Empresa:", 40);
-    doc.fontSize(10).font("Helvetica").text(data.companyName, 40);
-    doc.text(data.companyAddress, 40);
-    doc.text(`${data.companyZipCode} - ${data.companyCity}`, 40);
-    
-    // CNPJ na mesma linha que Estado
+    doc.fontSize(10).font("Helvetica-Bold").text("Empresa:", margin);
+    doc.fontSize(9).font("Helvetica").text(data.companyName, margin);
+    doc.fontSize(9).font("Helvetica").text(data.companyAddress, margin);
+    doc.fontSize(9).font("Helvetica").text(`${data.companyZipCode} - ${data.companyCity}`, margin);
+
+    // CNPJ e Estado em linha separada
     const cnpjY = doc.y;
-    doc.text(`${data.companyState}`, 480);
-    doc.fontSize(9).font("Helvetica-Bold").text("CNPJ", 40, cnpjY);
-    doc.fontSize(9).font("Helvetica").text(data.companyCNPJ, 40, cnpjY + 15);
-    doc.fontSize(9).font("Helvetica-Bold").text("00.766.315/0009-00", 480, cnpjY);
-    
-    doc.moveDown(1.5);
+    doc.fontSize(9).font("Helvetica-Bold").text("CNPJ", margin);
+    doc.fontSize(9).font("Helvetica").text(data.companyCNPJ, margin, cnpjY + 12);
+
+    // Estado na direita
+    doc.fontSize(9).font("Helvetica-Bold").text(data.companyState, pageWidth - margin - 100);
+    doc.moveDown(1);
 
     // Seção Empregado
-    doc.fontSize(11).font("Helvetica-Bold").text("Empregado:", 40);
-    doc.fontSize(10).font("Helvetica").text(data.employeeName, 40);
-    doc.moveDown(0.3);
+    doc.fontSize(10).font("Helvetica-Bold").text("Empregado:", margin);
+    doc.fontSize(9).font("Helvetica").text(data.employeeName, margin);
+    doc.moveDown(0.4);
 
     // Tabela de dados do empregado
     const tableY = doc.y;
-    const col1X = 40;
-    const col2X = 200;
-    const col3X = 380;
+    const col1X = margin;
+    const col2X = margin + 150;
+    const col3X = margin + 300;
 
-    doc.fontSize(9).font("Helvetica-Bold").text("CPF", col1X, tableY);
-    doc.fontSize(9).font("Helvetica").text(data.employeeCPF, col1X, tableY + 15);
+    doc.fontSize(8).font("Helvetica-Bold").text("CPF", col1X, tableY);
+    doc.fontSize(8).font("Helvetica").text(data.employeeCPF, col1X, tableY + 12);
 
-    doc.fontSize(9).font("Helvetica-Bold").text("CTPS", col2X, tableY);
-    doc.fontSize(9).font("Helvetica").text(data.employeeCTPS, col2X, tableY + 15);
+    doc.fontSize(8).font("Helvetica-Bold").text("CTPS", col2X, tableY);
+    doc.fontSize(8).font("Helvetica").text(data.employeeCTPS, col2X, tableY + 12);
 
-    doc.fontSize(9).font("Helvetica-Bold").text("Matrícula", col3X, tableY);
-    doc.fontSize(9).font("Helvetica").text(data.employeeMatricula, col3X, tableY + 15);
+    doc.fontSize(8).font("Helvetica-Bold").text("Matrícula", col3X, tableY);
+    doc.fontSize(8).font("Helvetica").text(data.employeeMatricula, col3X, tableY + 12);
 
-    doc.moveDown(2.5);
+    doc.moveDown(2.2);
 
     // Descrição da advertência
-    doc.fontSize(10).font("Helvetica").text(
+    const descriptionStart = doc.y;
+    doc.fontSize(9).font("Helvetica").text(
       "Tem esta a finalidade de aplicar-lhe a pena de advertência disciplinar, em razão da(s) ocorrência(s):",
-      { align: "justify", width: 475 }
+      margin,
+      descriptionStart,
+      { width: contentWidth, align: "justify" }
     );
-    doc.moveDown(0.5);
+    doc.moveDown(0.6);
 
     // Motivo detalhado
     const motivo = `Após análise na data de hoje, Prezado Sr. ${data.employeeName}, vem por meio desta aplicar-lhe ADVERTÊNCIA DISCIPLINAR, em razão dos fatos apurados.
@@ -99,46 +108,55 @@ Solicita-se que Vossa Senhoria assine o presente documento, declarando ciência 
 
 Esclarecemos, ainda, que a repetição de procedimentos como este(s) poderá ser considerada como ato faltoso, passível de dispensa por justa causa. Para que não tenhamos, no futuro, de tomar as medidas que nos facultam a legislação vigente, solidarizamo-lhe que observe as normas reguladoras da relação de emprego.`;
 
-    doc.fontSize(9).font("Helvetica").text(motivo, {
+    doc.fontSize(8).font("Helvetica").text(motivo, margin, doc.y, {
+      width: contentWidth,
       align: "justify",
-      width: 475,
-      lineGap: 3,
+      lineGap: 2,
     });
 
     doc.moveDown(1);
 
     // Fecho
-    doc.fontSize(10).font("Helvetica").text("Favor dar ciente na cópia desta.", { align: "center" });
-    doc.fontSize(10).font("Helvetica").text(`${data.warningLocation}, ${data.warningDate}.`, { align: "center" });
+    doc.fontSize(9).font("Helvetica").text("Favor dar ciente na cópia desta.", {
+      align: "center",
+    });
+    doc.fontSize(9).font("Helvetica").text(`${data.warningLocation}, ${data.warningDate}.`, {
+      align: "center",
+    });
 
     doc.moveDown(2);
 
     // Linhas de assinatura
     const signatureY = doc.y;
-    const lineLength = 120;
-    const line1X = 60;
-    const line2X = 340;
+    const lineLength = 110;
+    const line1X = margin + 20;
+    const line2X = margin + 280;
 
     // Linha 1 (Empresa)
-    doc.moveTo(line1X, signatureY + 40).lineTo(line1X + lineLength, signatureY + 40).stroke();
-    doc.fontSize(9).font("Helvetica").text("TRANSPORTESFRAMENTOLTDA", line1X - 20, signatureY + 45, {
-      width: lineLength + 40,
+    doc.moveTo(line1X, signatureY + 35).lineTo(line1X + lineLength, signatureY + 35).stroke();
+    doc.fontSize(8).font("Helvetica").text("TRANSPORTESFRAMENTOLTDA", line1X - 10, signatureY + 40, {
+      width: lineLength + 20,
       align: "center",
     });
 
     // Linha 2 (Empregado)
-    doc.moveTo(line2X, signatureY + 40).lineTo(line2X + lineLength, signatureY + 40).stroke();
-    doc.fontSize(9).font("Helvetica").text(data.employeeName, line2X - 20, signatureY + 45, {
-      width: lineLength + 40,
+    doc.moveTo(line2X, signatureY + 35).lineTo(line2X + lineLength, signatureY + 35).stroke();
+    doc.fontSize(8).font("Helvetica").text(data.employeeName, line2X - 10, signatureY + 40, {
+      width: lineLength + 20,
       align: "center",
     });
 
-    doc.moveDown(3);
-
     // Rodapé
-    const footerY = doc.page.height - 30;
-    doc.fontSize(8).font("Helvetica").text(`FPD0131.COL - ${new Date().toLocaleDateString('pt-BR')} - ${new Date().toLocaleTimeString('pt-BR')}`, 40, footerY);
-    doc.fontSize(8).font("Helvetica").text(data.companyName, { align: "center" });
+    const footerY = pageHeight - 25;
+    doc.fontSize(7).font("Helvetica").text(
+      `FPD0131.COL - ${new Date().toLocaleDateString("pt-BR")} - ${new Date().toLocaleTimeString("pt-BR")}`,
+      margin,
+      footerY
+    );
+    doc.fontSize(7).font("Helvetica").text(data.companyName, margin, footerY + 12, {
+      width: contentWidth,
+      align: "center",
+    });
 
     doc.end();
   });

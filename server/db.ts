@@ -644,7 +644,8 @@ export async function getWarningsStats(params: {
     // Contar assinadas vs não assinadas
     const assinadas = allWarnings.filter((w: any) => w.advertenciaAplicada).length;
     const naoAssinadas = allWarnings.length - assinadas;
-    const taxaDevolucao = allWarnings.length > 0 ? (naoAssinadas / allWarnings.length) * 100 : 0;
+    // Taxa de Devolução = (Assinadas / Total) * 100
+    const taxaDevolucao = allWarnings.length > 0 ? (assinadas / allWarnings.length) * 100 : 0;
 
     return {
       total: allWarnings.length,
