@@ -30,12 +30,33 @@ export default function AnaliseGifBrf() {
   const [masterFile, setMasterFile] = useState<File | undefined>(undefined);
   const [zipFiles, setZipFiles] = useState<File[]>([]);
   const [clientFile, setClientFile] = useState<File | undefined>(undefined);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [kpis, setKpis] = useState<any>(null);
   const [error, setError] = useState<string>('');
+  const [progress, setProgress] = useState<number>(0);
 
-  const analyzeMutation = trpc.txtemp.analyze.useMutation();
+  const { mutate: analyzeData, isPending } = trpc.txtemp.analyze.useMutation({
+    onSuccess: (response) => {
+      if (response.success) {
+        const formattedResults = response.results.map((r: any) => ({
+          ...r,
+          inicioViagem: new Date(r.inicioViagem).toLocaleString('pt-BR'),
+          fimViagem: new Date(r.fimViagem).toLocaleString('pt-BR'),
+        }));
+
+        setResults(formattedResults);
+        setKpis(response.kpis);
+        setProgress(100);
+      } else {
+        setError(response.error || 'Erro ao analisar dados');
+        setProgress(0);
+      }
+    },
+    onError: (err) => {
+      setError(`Erro: ${err.message}`);
+      setProgress(0);
+    },
+  });
 
   const handleAddZip = (file: File | undefined) => {
     if (file) {
@@ -54,7 +75,7 @@ export default function AnaliseGifBrf() {
     }
 
     setError('');
-    setIsAnalyzing(true);
+    setProgress(10);
 
     try {
       // Convert files to base64
@@ -63,6 +84,8 @@ export default function AnaliseGifBrf() {
         reader.onload = () => resolve((reader.result as string).split(',')[1]);
         reader.readAsDataURL(masterFile);
       });
+
+      setProgress(30);
 
       const zipsBase64 = await Promise.all(
         zipFiles.map(
@@ -75,29 +98,16 @@ export default function AnaliseGifBrf() {
         )
       );
 
+      setProgress(50);
+
       // Call backend analysis
-      const response = await analyzeMutation.mutateAsync({
+      analyzeData({
         masterFileBase64: masterBase64,
         zipFilesBase64: zipsBase64,
       });
-
-      if (response.success) {
-        // Convert date strings back to Date objects for display
-        const formattedResults = response.results.map((r: any) => ({
-          ...r,
-          inicioViagem: new Date(r.inicioViagem).toLocaleString('pt-BR'),
-          fimViagem: new Date(r.fimViagem).toLocaleString('pt-BR'),
-        }));
-
-        setResults(formattedResults);
-        setKpis(response.kpis);
-      } else {
-        setError(response.error || 'Erro ao analisar dados');
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
-    } finally {
-      setIsAnalyzing(false);
+      setProgress(0);
     }
   };
 
@@ -150,7 +160,7 @@ export default function AnaliseGifBrf() {
             accept=".xlsx,.xls"
             onFile={setMasterFile}
             file={masterFile}
-            disabled={isAnalyzing}
+            disabled={isPending}
           />
 
           {/* Multiple ZIP files */}
@@ -161,7 +171,6 @@ export default function AnaliseGifBrf() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  // Trigger file input for adding more ZIPs
                   const input = document.createElement('input');
                   input.type = 'file';
                   input.accept = '.zip';
@@ -171,7 +180,7 @@ export default function AnaliseGifBrf() {
                   };
                   input.click();
                 }}
-                disabled={isAnalyzing}
+                disabled={isPending}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Adicionar ZIP
@@ -196,7 +205,7 @@ export default function AnaliseGifBrf() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveZip(idx)}
-                      disabled={isAnalyzing}
+                      disabled={isPending}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -213,13 +222,34 @@ export default function AnaliseGifBrf() {
             accept=".xlsx,.xls"
             onFile={setClientFile}
             file={clientFile}
-            disabled={isAnalyzing}
+            disabled={isPending}
           />
 
           {error && <div className="p-3 bg-red-100 text-red-800 rounded-lg text-sm">{error}</div>}
 
-          <Button onClick={handleAnalyze} disabled={!masterFile || zipFiles.length === 0 || isAnalyzing} className="w-full" size="lg">
-            {isAnalyzing ? 'Analisando...' : 'Analisar Dados'}
+          {/* Progress Bar */}
+          {isPending && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Analisando dados...</span>
+                <span className="text-sm text-muted-foreground">{progress}%</span>
+              </div>
+              <div className="w-full bg-secondary rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          <Button
+            onClick={handleAnalyze}
+            disabled={!masterFile || zipFiles.length === 0 || isPending}
+            className="w-full"
+            size="lg"
+          >
+            {isPending ? 'Analisando...' : 'Analisar Dados'}
           </Button>
         </CardContent>
       </Card>
