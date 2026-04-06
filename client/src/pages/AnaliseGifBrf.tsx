@@ -3,10 +3,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { DropZone } from '@/components/DropZone';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileSpreadsheet, Package, Download, TrendingUp, AlertCircle } from 'lucide-react';
+import { FileSpreadsheet, Package, Download, TrendingUp, AlertCircle, Zap } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+
+// Import TXTEMP utilities
+import {
+  parseFlexDate,
+  parseTemperature,
+  parseTemperatureRange,
+  isValidPlate,
+  extractPlateFromFilename,
+  calculateEfficiency,
+  calculateTemperatureStats,
+  AnalysisResult,
+  PositionRecord,
+} from '@/lib/txtemp-utils';
+
+interface MasterTrip {
+  placa: string;
+  carreta: string;
+  origem: string;
+  destino: string;
+  inicioViagem: Date;
+  fimViagem: Date;
+  faixa: string;
+  rangeMin: number | null;
+  rangeMax: number | null;
+}
 
 interface KPI {
   label: string;
@@ -15,29 +40,399 @@ interface KPI {
   color: string;
 }
 
-interface AnalysisResult {
-  placa: string;
-  carreta: string;
-  origem: string;
-  destino: string;
-  inicio: Date;
-  fim: Date;
-  faixa: string;
-  tempMedia: number;
-  tempMin: number;
-  tempMax: number;
-  eficiencia: number;
-  status: 'within' | 'partial' | 'outside' | 'S/ ARQUIVO' | 'S/ DADOS' | 'S/ FAIXA';
-  tempoWithin: number;
-  tempoTotal: number;
-  registros: number;
-  eficienciaCliente?: number;
+// ============================================================================
+// MASTER FILE PARSER
+// ============================================================================
+
+function findHeaderRowInMaster(sheet: XLSX.WorkSheet, maxRows: number = 20): number {
+  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+  const rows = Math.min(range.e.r + 1, maxRows);
+
+  for (let row = 0; row < rows; row++) {
+    let hasPlaca = false;
+    let hasInicio = false;
+
+    for (let col = 0; col <= range.e.c; col++) {
+      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+      const cell = sheet[cellRef];
+      if (!cell) continue;
+
+      const value = (cell.v || '').toString().toUpperCase();
+      if (value.includes('PLACA') && value.includes('CAVALO')) hasPlaca = true;
+      if (value.includes('INICIO') || value.includes('INÍCIO')) hasInicio = true;
+    }
+
+    if (hasPlaca && hasInicio) {
+      return row;
+    }
+  }
+
+  return 0;
 }
 
-interface TemperatureDataPoint {
-  tempo: string;
-  temperatura: number;
+function findColumnByPatternInMaster(sheet: XLSX.WorkSheet, headerRow: number, patterns: string[]): number {
+  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+
+  for (let col = 0; col <= range.e.c; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: headerRow, c: col });
+    const cell = sheet[cellRef];
+    if (!cell) continue;
+
+    const value = (cell.v || '').toString().toUpperCase();
+    for (const pattern of patterns) {
+      if (value.includes(pattern.toUpperCase())) {
+        return col;
+      }
+    }
+  }
+
+  return -1;
 }
+
+function parseMasterFileInFrontend(fileBuffer: ArrayBuffer): MasterTrip[] {
+  try {
+    const workbook = XLSX.read(fileBuffer);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    if (!sheet) return [];
+
+    const headerRow = findHeaderRowInMaster(sheet);
+
+    const placaCavalosCol = findColumnByPatternInMaster(sheet, headerRow, ['PLACA', 'CAVALO']);
+    const placaCarretaCol = findColumnByPatternInMaster(sheet, headerRow, ['PLACA', 'CARRETA']);
+    const origemCol = findColumnByPatternInMaster(sheet, headerRow, ['ORIGEM']);
+    const destinoCol = findColumnByPatternInMaster(sheet, headerRow, ['DESTINO']);
+    const inicioCol = findColumnByPatternInMaster(sheet, headerRow, ['INICIO', 'INÍCIO', 'VIAGEM']);
+    const fimCol = findColumnByPatternInMaster(sheet, headerRow, ['FIM', 'VIAGEM']);
+    const faixaCol = findColumnByPatternInMaster(sheet, headerRow, ['FAIXA', 'TEMPERATURA']);
+
+    if (placaCavalosCol === -1 || inicioCol === -1 || fimCol === -1) {
+      return [];
+    }
+
+    const trips: MasterTrip[] = [];
+    const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+
+    for (let row = headerRow + 1; row <= range.e.r; row++) {
+      const placaRef = XLSX.utils.encode_cell({ r: row, c: placaCavalosCol });
+      const placaCell = sheet[placaRef];
+      const placa = (placaCell?.v || '').toString().trim().toUpperCase();
+
+      if (!isValidPlate(placa)) {
+        continue;
+      }
+
+      const inicioRef = XLSX.utils.encode_cell({ r: row, c: inicioCol });
+      const fimRef = XLSX.utils.encode_cell({ r: row, c: fimCol });
+
+      const inicioCell = sheet[inicioRef];
+      const fimCell = sheet[fimRef];
+
+      const inicioResult = parseFlexDate(inicioCell?.v);
+      const fimResult = parseFlexDate(fimCell?.v);
+
+      if (!inicioResult.valid || !inicioResult.date || !fimResult.valid || !fimResult.date) {
+        continue;
+      }
+
+      let faixa = '';
+      if (faixaCol !== -1) {
+        const faixaRef = XLSX.utils.encode_cell({ r: row, c: faixaCol });
+        const faixaCell = sheet[faixaRef];
+        faixa = (faixaCell?.v || '').toString().trim();
+      }
+
+      const faixaRange = parseTemperatureRange(faixa);
+
+      const carreta = placaCarretaCol !== -1 ? (sheet[XLSX.utils.encode_cell({ r: row, c: placaCarretaCol })]?.v || '').toString().trim() : '';
+      const origem = origemCol !== -1 ? (sheet[XLSX.utils.encode_cell({ r: row, c: origemCol })]?.v || '').toString().trim() : '';
+      const destino = destinoCol !== -1 ? (sheet[XLSX.utils.encode_cell({ r: row, c: destinoCol })]?.v || '').toString().trim() : '';
+
+      trips.push({
+        placa,
+        carreta,
+        origem,
+        destino,
+        inicioViagem: inicioResult.date,
+        fimViagem: fimResult.date,
+        faixa,
+        rangeMin: faixaRange.min,
+        rangeMax: faixaRange.max,
+      });
+    }
+
+    trips.sort((a, b) => a.placa.localeCompare(b.placa));
+    return trips;
+  } catch (error) {
+    console.error('Error parsing master file:', error);
+    return [];
+  }
+}
+
+// ============================================================================
+// ZIP PROCESSOR
+// ============================================================================
+
+async function processZipFileInFrontend(zipBuffer: ArrayBuffer): Promise<{ [placa: string]: PositionRecord[] }> {
+  const result: { [placa: string]: PositionRecord[] } = {};
+
+  try {
+    const zip = new JSZip();
+    await zip.loadAsync(zipBuffer);
+
+    for (const filename in zip.files) {
+      const file = zip.files[filename];
+
+      if (file.dir) continue;
+      if (filename.includes('__MACOSX') || filename.startsWith('.') || filename.includes('~$')) {
+        continue;
+      }
+
+      const ext = filename.toLowerCase().split('.').pop();
+      if (!['xlsx', 'xls', 'csv'].includes(ext || '')) {
+        continue;
+      }
+
+      const placa = extractPlateFromFilename(filename);
+      if (!placa) {
+        continue;
+      }
+
+      try {
+        const fileBuffer = await file.async('arraybuffer');
+        let records: PositionRecord[] = [];
+
+        if (ext === 'csv') {
+          // Parse CSV
+          const text = new TextDecoder().decode(fileBuffer);
+          const lines = text.split('\n').filter((line) => line.trim());
+
+          if (lines.length >= 2) {
+            const header = lines[0].split(',').map((h) => h.trim().toUpperCase());
+            const dateColIdx = header.findIndex((h) => h.includes('DATA') || h.includes('HORA'));
+            const tempColIdx = header.findIndex((h) => h.includes('TEMP'));
+
+            if (dateColIdx !== -1 && tempColIdx !== -1) {
+              for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map((v) => v.trim());
+                if (values.length <= Math.max(dateColIdx, tempColIdx)) continue;
+
+                const dateVal = values[dateColIdx];
+                const tempVal = values[tempColIdx];
+
+                const parsedDateResult = parseFlexDate(dateVal);
+                const temperature = parseTemperature(tempVal);
+
+                if (parsedDateResult.valid && parsedDateResult.date) {
+                  records.push({
+                    parsedDate: parsedDateResult.date,
+                    temperature,
+                  });
+                }
+              }
+            }
+          }
+        } else {
+          // Parse Excel
+          const workbook = XLSX.read(fileBuffer);
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          if (sheet) {
+            const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+            const rows = Math.min(range.e.r + 1, 20);
+
+            let dateCol = -1;
+            let tempCol = -1;
+
+            for (let row = 0; row < rows; row++) {
+              for (let col = 0; col <= range.e.c; col++) {
+                const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+                const cell = sheet[cellRef];
+                if (!cell) continue;
+
+                const value = (cell.v || '').toString().toUpperCase();
+                if (value.includes('TEMP')) tempCol = col;
+                if (value.includes('DATA') || value.includes('HORA')) dateCol = col;
+              }
+
+              if (dateCol !== -1 && tempCol !== -1) break;
+            }
+
+            if (dateCol !== -1 && tempCol !== -1) {
+              for (let row = 20; row <= range.e.r; row++) {
+                const dateRef = XLSX.utils.encode_cell({ r: row, c: dateCol });
+                const tempRef = XLSX.utils.encode_cell({ r: row, c: tempCol });
+
+                const dateCell = sheet[dateRef];
+                const tempCell = sheet[tempRef];
+
+                if (!dateCell) continue;
+
+                const parsedDateResult = parseFlexDate(dateCell.v);
+                const temperature = parseTemperature(tempCell?.v);
+
+                if (parsedDateResult.valid && parsedDateResult.date) {
+                  records.push({
+                    parsedDate: parsedDateResult.date,
+                    temperature,
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        if (records.length > 0) {
+          if (!result[placa]) {
+            result[placa] = [];
+          }
+          result[placa].push(...records);
+        } else {
+          if (!result[placa]) {
+            result[placa] = [];
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing file ${filename}:`, error);
+        if (!result[placa]) {
+          result[placa] = [];
+        }
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error processing ZIP file:', error);
+    return result;
+  }
+}
+
+// ============================================================================
+// ANALYSIS ENGINE
+// ============================================================================
+
+function filterRecordsByTimeWindow(records: PositionRecord[], startDate: Date, endDate: Date, toleranceMs: number = 60 * 60 * 1000): PositionRecord[] {
+  const windowStart = new Date(startDate.getTime() - toleranceMs);
+  const windowEnd = new Date(endDate.getTime() + toleranceMs);
+
+  return records.filter((r) => {
+    if (!r.parsedDate) return false;
+    return r.parsedDate >= windowStart && r.parsedDate <= windowEnd;
+  });
+}
+
+function mergeAndSortRecords(records: PositionRecord[]): PositionRecord[] {
+  return records
+    .filter((r) => r.parsedDate !== null)
+    .sort((a, b) => (a.parsedDate?.getTime() || 0) - (b.parsedDate?.getTime() || 0));
+}
+
+function analyzeTrip(trip: MasterTrip, positionFileMap: { [placa: string]: PositionRecord[] }): AnalysisResult {
+  const records = positionFileMap[trip.placa];
+
+  if (!records) {
+    return {
+      placa: trip.placa,
+      carreta: trip.carreta,
+      origem: trip.origem,
+      destino: trip.destino,
+      inicioViagem: trip.inicioViagem,
+      fimViagem: trip.fimViagem,
+      faixa: trip.faixa,
+      rangeMin: trip.rangeMin,
+      rangeMax: trip.rangeMax,
+      eficiencia: 0,
+      status: 'S/ ARQUIVO',
+      tempMedia: 0,
+      tempMin: 0,
+      tempMax: 0,
+      tempMediana: 0,
+      totalRegistros: 0,
+      registrosComTemp: 0,
+      timeWithinMs: 0,
+      timeOutsideMs: 0,
+    };
+  }
+
+  if (trip.rangeMin === null || trip.rangeMax === null) {
+    return {
+      placa: trip.placa,
+      carreta: trip.carreta,
+      origem: trip.origem,
+      destino: trip.destino,
+      inicioViagem: trip.inicioViagem,
+      fimViagem: trip.fimViagem,
+      faixa: trip.faixa,
+      rangeMin: trip.rangeMin,
+      rangeMax: trip.rangeMax,
+      eficiencia: 0,
+      status: 'S/ FAIXA',
+      tempMedia: 0,
+      tempMin: 0,
+      tempMax: 0,
+      tempMediana: 0,
+      totalRegistros: 0,
+      registrosComTemp: 0,
+      timeWithinMs: 0,
+      timeOutsideMs: 0,
+    };
+  }
+
+  const windowRecords = filterRecordsByTimeWindow(records, trip.inicioViagem, trip.fimViagem);
+
+  if (windowRecords.length === 0) {
+    return {
+      placa: trip.placa,
+      carreta: trip.carreta,
+      origem: trip.origem,
+      destino: trip.destino,
+      inicioViagem: trip.inicioViagem,
+      fimViagem: trip.fimViagem,
+      faixa: trip.faixa,
+      rangeMin: trip.rangeMin,
+      rangeMax: trip.rangeMax,
+      eficiencia: 0,
+      status: 'S/ DADOS',
+      tempMedia: 0,
+      tempMin: 0,
+      tempMax: 0,
+      tempMediana: 0,
+      totalRegistros: 0,
+      registrosComTemp: 0,
+      timeWithinMs: 0,
+      timeOutsideMs: 0,
+    };
+  }
+
+  const sortedRecords = mergeAndSortRecords(windowRecords);
+  const efficiencyResult = calculateEfficiency(sortedRecords, trip.rangeMin, trip.rangeMax);
+  const tempStats = calculateTemperatureStats(sortedRecords);
+  const recordsWithTemp = sortedRecords.filter((r) => r.temperature !== null).length;
+
+  return {
+    placa: trip.placa,
+    carreta: trip.carreta,
+    origem: trip.origem,
+    destino: trip.destino,
+    inicioViagem: trip.inicioViagem,
+    fimViagem: trip.fimViagem,
+    faixa: trip.faixa,
+    rangeMin: trip.rangeMin,
+    rangeMax: trip.rangeMax,
+    eficiencia: efficiencyResult.eficiencia,
+    status: efficiencyResult.status,
+    tempMedia: tempStats.media,
+    tempMin: tempStats.min,
+    tempMax: tempStats.max,
+    tempMediana: tempStats.mediana,
+    totalRegistros: sortedRecords.length,
+    registrosComTemp: recordsWithTemp,
+    timeWithinMs: efficiencyResult.timeWithinMs,
+    timeOutsideMs: efficiencyResult.timeOutsideMs,
+  };
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 export default function AnaliseGifBrf() {
   const [masterFile, setMasterFile] = useState<File | undefined>(undefined);
@@ -46,281 +441,40 @@ export default function AnaliseGifBrf() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [kpis, setKpis] = useState<KPI[]>([]);
-  const [showTemperatureChart, setShowTemperatureChart] = useState(false);
-  const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
-  const [temperatureData, setTemperatureData] = useState<TemperatureDataPoint[]>([]);
-
-  // Parse flexible date format
-  const parseFlexDate = (dateVal: any): Date | null => {
-    if (dateVal instanceof Date) return dateVal;
-    if (typeof dateVal === 'number') {
-      // Excel serial date
-      return new Date((dateVal - 25569) * 86400 * 1000);
-    }
-    if (typeof dateVal === 'string') {
-      // Try DD/MM/YYYY HH:MM
-      const match = dateVal.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/);
-      if (match) {
-        const [, day, month, year, hour, minute] = match;
-        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
-      }
-      // Try ISO format
-      try {
-        return new Date(dateVal);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  };
-
-  // Extract temperature range from text
-  const extractTemperatureRange = (rangeText: string): { min: number; max: number } | null => {
-    if (!rangeText) return null;
-
-    // Ignore invalid texts
-    const invalidTexts = ['NÃO ACHEI', 'SEM CONTROLE', 'SEM CTRL', 'SEM FAIXA'];
-    if (invalidTexts.some((text) => rangeText.toUpperCase().includes(text))) {
-      return null;
-    }
-
-    // Clean text
-    let cleaned = rangeText.toUpperCase();
-    cleaned = cleaned.replace(/[\*°C°FRAMENTO TIROLEZ RESFRIADO CONGELADO CONTINUO MISTA]/g, '');
-
-    // Extract all numbers
-    const numbers = cleaned.match(/-?\d+(\.\d+)?/g);
-    if (!numbers || numbers.length < 2) return null;
-
-    const temps = numbers.map((n) => parseFloat(n)).sort((a, b) => a - b);
-    return { min: temps[0], max: temps[temps.length - 1] };
-  };
-
-  // Analyze trip efficiency based on temperature
-  const analyzeTrip = (
-    inicio: Date,
-    fim: Date,
-    faixa: string,
-    telemetryData: Array<{ timestamp: Date; temperatura: number }>
-  ): {
-    eficiencia: number;
-    status: 'within' | 'partial' | 'outside' | 'S/ DADOS' | 'S/ FAIXA';
-    tempoWithin: number;
-    tempoTotal: number;
-    tempMedia: number;
-    tempMin: number;
-    tempMax: number;
-  } => {
-    // Check faixa
-    const range = extractTemperatureRange(faixa);
-    if (!range) {
-      return {
-        eficiencia: 0,
-        status: 'S/ FAIXA',
-        tempoWithin: 0,
-        tempoTotal: 0,
-        tempMedia: 0,
-        tempMin: 0,
-        tempMax: 0,
-      };
-    }
-
-    // Apply ±1 hour tolerance
-    const toleranceMs = 60 * 60 * 1000;
-    const windowStart = new Date(inicio.getTime() - toleranceMs);
-    const windowEnd = new Date(fim.getTime() + toleranceMs);
-
-    // Filter records within window with valid temperature
-    const validRecords = telemetryData
-      .filter((r) => r.timestamp >= windowStart && r.timestamp <= windowEnd && typeof r.temperatura === 'number')
-      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-
-    if (validRecords.length === 0) {
-      return {
-        eficiencia: 0,
-        status: 'S/ DADOS',
-        tempoWithin: 0,
-        tempoTotal: 0,
-        tempMedia: 0,
-        tempMin: 0,
-        tempMax: 0,
-      };
-    }
-
-    // Calculate efficiency
-    let tempoWithin = 0;
-    let tempoTotal = 0;
-
-    for (let i = 0; i < validRecords.length - 1; i++) {
-      const current = validRecords[i];
-      const next = validRecords[i + 1];
-
-      const intervalMs = next.timestamp.getTime() - current.timestamp.getTime();
-      if (intervalMs <= 0) continue;
-
-      const intervalMin = intervalMs / (1000 * 60);
-      tempoTotal += intervalMin;
-
-      // Both points must be within range
-      const currentWithin = current.temperatura >= range.min && current.temperatura <= range.max;
-      const nextWithin = next.temperatura >= range.min && next.temperatura <= range.max;
-
-      if (currentWithin && nextWithin) {
-        tempoWithin += intervalMin;
-      }
-    }
-
-    const eficiencia = tempoTotal > 0 ? (tempoWithin / tempoTotal) * 100 : 0;
-    const status = eficiencia >= 100 ? 'within' : eficiencia >= 50 ? 'partial' : 'outside';
-
-    // Calculate temperature statistics
-    const temps = validRecords.map((r) => r.temperatura);
-    const tempMedia = temps.reduce((a, b) => a + b, 0) / temps.length;
-    const tempMin = Math.min(...temps);
-    const tempMax = Math.max(...temps);
-
-    return {
-      eficiencia,
-      status,
-      tempoWithin,
-      tempoTotal,
-      tempMedia,
-      tempMin,
-      tempMax,
-    };
-  };
 
   const handleAnalyze = async () => {
     if (!masterFile || !reportsZip) {
-      alert('Por favor, selecione a Planilha Mestre e o ZIP de Relatórios');
+      alert('Por favor, selecione a Planilha Mestre e o ZIP de Telemetria');
       return;
     }
 
     setIsAnalyzing(true);
     try {
-      // Read master file
-      const masterArrayBuffer = await masterFile.arrayBuffer();
-      const masterWorkbook = XLSX.read(masterArrayBuffer);
-      const masterSheet = masterWorkbook.Sheets[masterWorkbook.SheetNames[0]];
-      const masterData: any[] = XLSX.utils.sheet_to_json(masterSheet);
+      // Parse master file
+      const masterBuffer = await masterFile.arrayBuffer();
+      const trips = parseMasterFileInFrontend(masterBuffer);
 
-      // Read ZIP
-      const zipArrayBuffer = await reportsZip.arrayBuffer();
-      const zip = new JSZip();
-      await zip.loadAsync(zipArrayBuffer);
-
-      // Parse telemetry files from ZIP
-      const telemetryByPlaca: { [key: string]: Array<{ timestamp: Date; temperatura: number }> } = {};
-
-      for (const filename in zip.files) {
-        if (zip.files[filename].dir) continue;
-
-        try {
-          const fileBuffer = await zip.files[filename].async('arraybuffer');
-          const workbook = XLSX.read(fileBuffer);
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const data: any[] = XLSX.utils.sheet_to_json(sheet);
-
-          // Extract placa from filename
-          const placaMatch = filename.match(/([A-Z]{3}[0-9]{4}|[A-Z]{3}[0-9]{1}[A-Z]{1}[0-9]{2})/);
-          if (!placaMatch) continue;
-
-          const placa = placaMatch[0];
-
-          // Parse telemetry
-          const records: Array<{ timestamp: Date; temperatura: number }> = [];
-          for (const row of data) {
-            // Find date column
-            let dateVal = row['Data/Hora'] || row['data'] || row['DATA'] || Object.values(row)[0];
-            const timestamp = parseFlexDate(dateVal);
-            if (!timestamp) continue;
-
-            // Find temperature column
-            let tempVal = row['Temperatura 1'] || row['temperatura'] || row['TEMPERATURA'] || row['temp'];
-            if (typeof tempVal === 'string') {
-              tempVal = parseFloat(tempVal.replace(/[°º]/g, '').replace(',', '.'));
-            }
-            if (typeof tempVal === 'number') {
-              records.push({ timestamp, temperatura: tempVal });
-            }
-          }
-
-          if (records.length > 0) {
-            if (!telemetryByPlaca[placa]) {
-              telemetryByPlaca[placa] = [];
-            }
-            telemetryByPlaca[placa].push(...records);
-          }
-        } catch (e) {
-          console.error(`Erro ao processar ${filename}:`, e);
-        }
+      if (trips.length === 0) {
+        alert('Nenhuma viagem válida encontrada na planilha mestre');
+        setIsAnalyzing(false);
+        return;
       }
 
-      // Analyze each journey
-      const analysisResults: AnalysisResult[] = [];
+      // Process ZIP
+      const zipBuffer = await reportsZip.arrayBuffer();
+      const positionFileMap = await processZipFileInFrontend(zipBuffer);
 
-      for (const journey of masterData) {
-        const placa = journey['PlacaCavalo'] || journey['placa_cavalo'];
-        const carreta = journey['PlacaCarreta'] || journey['placa_carreta'];
-        const origem = journey['Origem'] || journey['origem'];
-        const destino = journey['Destino'] || journey['destino'];
-        const inicioVal = journey['Inicio Viagem'] || journey['inicio_viagem'];
-        const fimVal = journey['Fim Viagem'] || journey['fim_viagem'];
-        const faixa = journey['Faixa de Temperatura cadastrada Autorização embarque'] || journey['faixa'];
-
-        if (!placa || !carreta || !inicioVal || !fimVal) continue;
-
-        const inicio = parseFlexDate(inicioVal);
-        const fim = parseFlexDate(fimVal);
-        if (!inicio || !fim) continue;
-
-        // Get telemetry for this placa
-        const telemetry = telemetryByPlaca[placa] || [];
-
-        let analysis;
-        if (telemetry.length === 0) {
-          analysis = {
-            eficiencia: 0,
-            status: 'S/ ARQUIVO' as const,
-            tempoWithin: 0,
-            tempoTotal: 0,
-            tempMedia: 0,
-            tempMin: 0,
-            tempMax: 0,
-          };
-        } else {
-          analysis = analyzeTrip(inicio, fim, faixa || '', telemetry);
-        }
-
-        analysisResults.push({
-          placa,
-          carreta,
-          origem,
-          destino,
-          inicio,
-          fim,
-          faixa: faixa || 'N/A',
-          tempMedia: analysis.tempMedia,
-          tempMin: analysis.tempMin,
-          tempMax: analysis.tempMax,
-          eficiencia: analysis.eficiencia,
-          status: analysis.status,
-          tempoWithin: analysis.tempoWithin,
-          tempoTotal: analysis.tempoTotal,
-          registros: telemetry.length,
-        });
-      }
+      // Analyze trips
+      const analysisResults = trips.map((trip) => analyzeTrip(trip, positionFileMap));
 
       setResults(analysisResults);
 
       // Calculate KPIs
       if (analysisResults.length > 0) {
+        const validResults = analysisResults.filter((r) => r.status !== 'S/ ARQUIVO' && r.status !== 'S/ DADOS' && r.status !== 'S/ FAIXA');
         const withinCount = analysisResults.filter((r) => r.status === 'within').length;
         const partialCount = analysisResults.filter((r) => r.status === 'partial').length;
-        const outsideCount = analysisResults.filter((r) => r.status === 'outside').length;
-        const avgEfficiency =
-          analysisResults.filter((r) => r.status !== 'S/ ARQUIVO' && r.status !== 'S/ DADOS' && r.status !== 'S/ FAIXA').reduce((sum, r) => sum + r.eficiencia, 0) /
-          analysisResults.filter((r) => r.status !== 'S/ ARQUIVO' && r.status !== 'S/ DADOS' && r.status !== 'S/ FAIXA').length;
+        const avgEfficiency = validResults.length > 0 ? validResults.reduce((sum, r) => sum + r.eficiencia, 0) / validResults.length : 0;
 
         setKpis([
           {
@@ -367,27 +521,27 @@ export default function AnaliseGifBrf() {
       Carreta: r.carreta,
       Origem: r.origem,
       Destino: r.destino,
-      Início: r.inicio.toLocaleString('pt-BR'),
-      Fim: r.fim.toLocaleString('pt-BR'),
+      Início: r.inicioViagem.toLocaleString('pt-BR'),
+      Fim: r.fimViagem.toLocaleString('pt-BR'),
       Faixa: r.faixa,
       'Temp. Média': r.tempMedia.toFixed(1),
       'Temp. Mín': r.tempMin.toFixed(1),
       'Temp. Máx': r.tempMax.toFixed(1),
       Eficiência: r.eficiencia.toFixed(1),
       Status: r.status,
-      Registros: r.registros,
+      Registros: r.totalRegistros,
     }));
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(exportData);
-    XLSX.utils.book_append_sheet(wb, ws, 'Análise GIF BRF');
-    XLSX.writeFile(wb, `analise_gif_brf_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, 'Análise TXTEMP');
+    XLSX.writeFile(wb, `TXTEMP_Analise_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Análise GIF BRF</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Análise TXTEMP</h1>
         <p className="text-muted-foreground mt-2">Análise de eficiência térmica baseada em temperatura e tempo</p>
       </div>
 
@@ -495,20 +649,20 @@ export default function AnaliseGifBrf() {
                       <td className="py-3 px-4">
                         <span
                           className={`px-2 py-1 rounded text-xs font-semibold ${
-                            result.status === 'within'
+                            result.eficiencia >= 90
                               ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : result.status === 'partial'
+                              : result.eficiencia >= 70
                               ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                              : result.status === 'outside'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                              : result.eficiencia >= 50
+                              ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                           }`}
                         >
                           {result.eficiencia.toFixed(1)}%
                         </span>
                       </td>
                       <td className="py-3 px-4 text-xs">{result.status}</td>
-                      <td className="py-3 px-4">{result.registros}</td>
+                      <td className="py-3 px-4">{result.totalRegistros}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -517,27 +671,6 @@ export default function AnaliseGifBrf() {
           </CardContent>
         </Card>
       )}
-
-      {/* Temperature Chart Dialog */}
-      <Dialog open={showTemperatureChart} onOpenChange={setShowTemperatureChart}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Gráfico de Temperatura - {selectedResult?.placa}</DialogTitle>
-          </DialogHeader>
-          {temperatureData.length > 0 && (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={temperatureData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="tempo" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="temperatura" stroke="#ff7300" name="Temperatura (°C)" />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
