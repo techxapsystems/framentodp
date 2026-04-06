@@ -2,509 +2,100 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DropZone } from '@/components/DropZone';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileSpreadsheet, Package, Download, TrendingUp, AlertCircle, Zap } from 'lucide-react';
+import { FileSpreadsheet, Package, Download, Trash2, Plus } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import JSZip from 'jszip';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { trpc } from '@/lib/trpc';
 
-// Import TXTEMP utilities
-import {
-  parseFlexDate,
-  parseTemperature,
-  parseTemperatureRange,
-  isValidPlate,
-  extractPlateFromFilename,
-  calculateEfficiency,
-  calculateTemperatureStats,
-  AnalysisResult,
-  PositionRecord,
-} from '@/lib/txtemp-utils';
-
-interface MasterTrip {
+interface AnalysisResult {
   placa: string;
   carreta: string;
   origem: string;
   destino: string;
-  inicioViagem: Date;
-  fimViagem: Date;
+  inicioViagem: string;
+  fimViagem: string;
   faixa: string;
   rangeMin: number | null;
   rangeMax: number | null;
+  eficiencia: number;
+  status: string;
+  tempMedia: number;
+  tempMin: number;
+  tempMax: number;
+  tempMediana: number;
+  totalRegistros: number;
+  registrosComTemp: number;
 }
-
-interface KPI {
-  label: string;
-  value: string | number;
-  unit?: string;
-  color: string;
-}
-
-// ============================================================================
-// MASTER FILE PARSER
-// ============================================================================
-
-function findHeaderRowInMaster(sheet: XLSX.WorkSheet, maxRows: number = 20): number {
-  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
-  const rows = Math.min(range.e.r + 1, maxRows);
-
-  for (let row = 0; row < rows; row++) {
-    let hasPlaca = false;
-    let hasInicio = false;
-
-    for (let col = 0; col <= range.e.c; col++) {
-      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
-      const cell = sheet[cellRef];
-      if (!cell) continue;
-
-      const value = (cell.v || '').toString().toUpperCase();
-      if (value.includes('PLACA') && value.includes('CAVALO')) hasPlaca = true;
-      if (value.includes('INICIO') || value.includes('INÍCIO')) hasInicio = true;
-    }
-
-    if (hasPlaca && hasInicio) {
-      return row;
-    }
-  }
-
-  return 0;
-}
-
-function findColumnByPatternInMaster(sheet: XLSX.WorkSheet, headerRow: number, patterns: string[]): number {
-  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
-
-  for (let col = 0; col <= range.e.c; col++) {
-    const cellRef = XLSX.utils.encode_cell({ r: headerRow, c: col });
-    const cell = sheet[cellRef];
-    if (!cell) continue;
-
-    const value = (cell.v || '').toString().toUpperCase();
-    for (const pattern of patterns) {
-      if (value.includes(pattern.toUpperCase())) {
-        return col;
-      }
-    }
-  }
-
-  return -1;
-}
-
-function parseMasterFileInFrontend(fileBuffer: ArrayBuffer): MasterTrip[] {
-  try {
-    const workbook = XLSX.read(fileBuffer);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    if (!sheet) return [];
-
-    const headerRow = findHeaderRowInMaster(sheet);
-
-    const placaCavalosCol = findColumnByPatternInMaster(sheet, headerRow, ['PLACA', 'CAVALO']);
-    const placaCarretaCol = findColumnByPatternInMaster(sheet, headerRow, ['PLACA', 'CARRETA']);
-    const origemCol = findColumnByPatternInMaster(sheet, headerRow, ['ORIGEM']);
-    const destinoCol = findColumnByPatternInMaster(sheet, headerRow, ['DESTINO']);
-    const inicioCol = findColumnByPatternInMaster(sheet, headerRow, ['INICIO', 'INÍCIO', 'VIAGEM']);
-    const fimCol = findColumnByPatternInMaster(sheet, headerRow, ['FIM', 'VIAGEM']);
-    const faixaCol = findColumnByPatternInMaster(sheet, headerRow, ['FAIXA', 'TEMPERATURA']);
-
-    if (placaCavalosCol === -1 || inicioCol === -1 || fimCol === -1) {
-      return [];
-    }
-
-    const trips: MasterTrip[] = [];
-    const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
-
-    for (let row = headerRow + 1; row <= range.e.r; row++) {
-      const placaRef = XLSX.utils.encode_cell({ r: row, c: placaCavalosCol });
-      const placaCell = sheet[placaRef];
-      const placa = (placaCell?.v || '').toString().trim().toUpperCase();
-
-      if (!isValidPlate(placa)) {
-        continue;
-      }
-
-      const inicioRef = XLSX.utils.encode_cell({ r: row, c: inicioCol });
-      const fimRef = XLSX.utils.encode_cell({ r: row, c: fimCol });
-
-      const inicioCell = sheet[inicioRef];
-      const fimCell = sheet[fimRef];
-
-      const inicioResult = parseFlexDate(inicioCell?.v);
-      const fimResult = parseFlexDate(fimCell?.v);
-
-      if (!inicioResult.valid || !inicioResult.date || !fimResult.valid || !fimResult.date) {
-        continue;
-      }
-
-      let faixa = '';
-      if (faixaCol !== -1) {
-        const faixaRef = XLSX.utils.encode_cell({ r: row, c: faixaCol });
-        const faixaCell = sheet[faixaRef];
-        faixa = (faixaCell?.v || '').toString().trim();
-      }
-
-      const faixaRange = parseTemperatureRange(faixa);
-
-      const carreta = placaCarretaCol !== -1 ? (sheet[XLSX.utils.encode_cell({ r: row, c: placaCarretaCol })]?.v || '').toString().trim() : '';
-      const origem = origemCol !== -1 ? (sheet[XLSX.utils.encode_cell({ r: row, c: origemCol })]?.v || '').toString().trim() : '';
-      const destino = destinoCol !== -1 ? (sheet[XLSX.utils.encode_cell({ r: row, c: destinoCol })]?.v || '').toString().trim() : '';
-
-      trips.push({
-        placa,
-        carreta,
-        origem,
-        destino,
-        inicioViagem: inicioResult.date,
-        fimViagem: fimResult.date,
-        faixa,
-        rangeMin: faixaRange.min,
-        rangeMax: faixaRange.max,
-      });
-    }
-
-    trips.sort((a, b) => a.placa.localeCompare(b.placa));
-    return trips;
-  } catch (error) {
-    console.error('Error parsing master file:', error);
-    return [];
-  }
-}
-
-// ============================================================================
-// ZIP PROCESSOR
-// ============================================================================
-
-async function processZipFileInFrontend(zipBuffer: ArrayBuffer): Promise<{ [placa: string]: PositionRecord[] }> {
-  const result: { [placa: string]: PositionRecord[] } = {};
-
-  try {
-    const zip = new JSZip();
-    await zip.loadAsync(zipBuffer);
-
-    for (const filename in zip.files) {
-      const file = zip.files[filename];
-
-      if (file.dir) continue;
-      if (filename.includes('__MACOSX') || filename.startsWith('.') || filename.includes('~$')) {
-        continue;
-      }
-
-      const ext = filename.toLowerCase().split('.').pop();
-      if (!['xlsx', 'xls', 'csv'].includes(ext || '')) {
-        continue;
-      }
-
-      const placa = extractPlateFromFilename(filename);
-      if (!placa) {
-        continue;
-      }
-
-      try {
-        const fileBuffer = await file.async('arraybuffer');
-        let records: PositionRecord[] = [];
-
-        if (ext === 'csv') {
-          // Parse CSV
-          const text = new TextDecoder().decode(fileBuffer);
-          const lines = text.split('\n').filter((line) => line.trim());
-
-          if (lines.length >= 2) {
-            const header = lines[0].split(',').map((h) => h.trim().toUpperCase());
-            const dateColIdx = header.findIndex((h) => h.includes('DATA') || h.includes('HORA'));
-            const tempColIdx = header.findIndex((h) => h.includes('TEMP'));
-
-            if (dateColIdx !== -1 && tempColIdx !== -1) {
-              for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map((v) => v.trim());
-                if (values.length <= Math.max(dateColIdx, tempColIdx)) continue;
-
-                const dateVal = values[dateColIdx];
-                const tempVal = values[tempColIdx];
-
-                const parsedDateResult = parseFlexDate(dateVal);
-                const temperature = parseTemperature(tempVal);
-
-                if (parsedDateResult.valid && parsedDateResult.date) {
-                  records.push({
-                    parsedDate: parsedDateResult.date,
-                    temperature,
-                  });
-                }
-              }
-            }
-          }
-        } else {
-          // Parse Excel
-          const workbook = XLSX.read(fileBuffer);
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          if (sheet) {
-            const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
-            const rows = Math.min(range.e.r + 1, 20);
-
-            let dateCol = -1;
-            let tempCol = -1;
-
-            for (let row = 0; row < rows; row++) {
-              for (let col = 0; col <= range.e.c; col++) {
-                const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
-                const cell = sheet[cellRef];
-                if (!cell) continue;
-
-                const value = (cell.v || '').toString().toUpperCase();
-                if (value.includes('TEMP')) tempCol = col;
-                if (value.includes('DATA') || value.includes('HORA')) dateCol = col;
-              }
-
-              if (dateCol !== -1 && tempCol !== -1) break;
-            }
-
-            if (dateCol !== -1 && tempCol !== -1) {
-              for (let row = 20; row <= range.e.r; row++) {
-                const dateRef = XLSX.utils.encode_cell({ r: row, c: dateCol });
-                const tempRef = XLSX.utils.encode_cell({ r: row, c: tempCol });
-
-                const dateCell = sheet[dateRef];
-                const tempCell = sheet[tempRef];
-
-                if (!dateCell) continue;
-
-                const parsedDateResult = parseFlexDate(dateCell.v);
-                const temperature = parseTemperature(tempCell?.v);
-
-                if (parsedDateResult.valid && parsedDateResult.date) {
-                  records.push({
-                    parsedDate: parsedDateResult.date,
-                    temperature,
-                  });
-                }
-              }
-            }
-          }
-        }
-
-        if (records.length > 0) {
-          if (!result[placa]) {
-            result[placa] = [];
-          }
-          result[placa].push(...records);
-        } else {
-          if (!result[placa]) {
-            result[placa] = [];
-          }
-        }
-      } catch (error) {
-        console.error(`Error processing file ${filename}:`, error);
-        if (!result[placa]) {
-          result[placa] = [];
-        }
-      }
-    }
-
-    return result;
-  } catch (error) {
-    console.error('Error processing ZIP file:', error);
-    return result;
-  }
-}
-
-// ============================================================================
-// ANALYSIS ENGINE
-// ============================================================================
-
-function filterRecordsByTimeWindow(records: PositionRecord[], startDate: Date, endDate: Date, toleranceMs: number = 60 * 60 * 1000): PositionRecord[] {
-  const windowStart = new Date(startDate.getTime() - toleranceMs);
-  const windowEnd = new Date(endDate.getTime() + toleranceMs);
-
-  return records.filter((r) => {
-    if (!r.parsedDate) return false;
-    return r.parsedDate >= windowStart && r.parsedDate <= windowEnd;
-  });
-}
-
-function mergeAndSortRecords(records: PositionRecord[]): PositionRecord[] {
-  return records
-    .filter((r) => r.parsedDate !== null)
-    .sort((a, b) => (a.parsedDate?.getTime() || 0) - (b.parsedDate?.getTime() || 0));
-}
-
-function analyzeTrip(trip: MasterTrip, positionFileMap: { [placa: string]: PositionRecord[] }): AnalysisResult {
-  const records = positionFileMap[trip.placa];
-
-  if (!records) {
-    return {
-      placa: trip.placa,
-      carreta: trip.carreta,
-      origem: trip.origem,
-      destino: trip.destino,
-      inicioViagem: trip.inicioViagem,
-      fimViagem: trip.fimViagem,
-      faixa: trip.faixa,
-      rangeMin: trip.rangeMin,
-      rangeMax: trip.rangeMax,
-      eficiencia: 0,
-      status: 'S/ ARQUIVO',
-      tempMedia: 0,
-      tempMin: 0,
-      tempMax: 0,
-      tempMediana: 0,
-      totalRegistros: 0,
-      registrosComTemp: 0,
-      timeWithinMs: 0,
-      timeOutsideMs: 0,
-    };
-  }
-
-  if (trip.rangeMin === null || trip.rangeMax === null) {
-    return {
-      placa: trip.placa,
-      carreta: trip.carreta,
-      origem: trip.origem,
-      destino: trip.destino,
-      inicioViagem: trip.inicioViagem,
-      fimViagem: trip.fimViagem,
-      faixa: trip.faixa,
-      rangeMin: trip.rangeMin,
-      rangeMax: trip.rangeMax,
-      eficiencia: 0,
-      status: 'S/ FAIXA',
-      tempMedia: 0,
-      tempMin: 0,
-      tempMax: 0,
-      tempMediana: 0,
-      totalRegistros: 0,
-      registrosComTemp: 0,
-      timeWithinMs: 0,
-      timeOutsideMs: 0,
-    };
-  }
-
-  const windowRecords = filterRecordsByTimeWindow(records, trip.inicioViagem, trip.fimViagem);
-
-  if (windowRecords.length === 0) {
-    return {
-      placa: trip.placa,
-      carreta: trip.carreta,
-      origem: trip.origem,
-      destino: trip.destino,
-      inicioViagem: trip.inicioViagem,
-      fimViagem: trip.fimViagem,
-      faixa: trip.faixa,
-      rangeMin: trip.rangeMin,
-      rangeMax: trip.rangeMax,
-      eficiencia: 0,
-      status: 'S/ DADOS',
-      tempMedia: 0,
-      tempMin: 0,
-      tempMax: 0,
-      tempMediana: 0,
-      totalRegistros: 0,
-      registrosComTemp: 0,
-      timeWithinMs: 0,
-      timeOutsideMs: 0,
-    };
-  }
-
-  const sortedRecords = mergeAndSortRecords(windowRecords);
-  const efficiencyResult = calculateEfficiency(sortedRecords, trip.rangeMin, trip.rangeMax);
-  const tempStats = calculateTemperatureStats(sortedRecords);
-  const recordsWithTemp = sortedRecords.filter((r) => r.temperature !== null).length;
-
-  return {
-    placa: trip.placa,
-    carreta: trip.carreta,
-    origem: trip.origem,
-    destino: trip.destino,
-    inicioViagem: trip.inicioViagem,
-    fimViagem: trip.fimViagem,
-    faixa: trip.faixa,
-    rangeMin: trip.rangeMin,
-    rangeMax: trip.rangeMax,
-    eficiencia: efficiencyResult.eficiencia,
-    status: efficiencyResult.status,
-    tempMedia: tempStats.media,
-    tempMin: tempStats.min,
-    tempMax: tempStats.max,
-    tempMediana: tempStats.mediana,
-    totalRegistros: sortedRecords.length,
-    registrosComTemp: recordsWithTemp,
-    timeWithinMs: efficiencyResult.timeWithinMs,
-    timeOutsideMs: efficiencyResult.timeOutsideMs,
-  };
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 
 export default function AnaliseGifBrf() {
   const [masterFile, setMasterFile] = useState<File | undefined>(undefined);
-  const [reportsZip, setReportsZip] = useState<File | undefined>(undefined);
+  const [zipFiles, setZipFiles] = useState<File[]>([]);
   const [clientFile, setClientFile] = useState<File | undefined>(undefined);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResult[]>([]);
-  const [kpis, setKpis] = useState<KPI[]>([]);
+  const [kpis, setKpis] = useState<any>(null);
+  const [error, setError] = useState<string>('');
+
+  const analyzeMutation = trpc.txtemp.analyze.useMutation();
+
+  const handleAddZip = (file: File | undefined) => {
+    if (file) {
+      setZipFiles([...zipFiles, file]);
+    }
+  };
+
+  const handleRemoveZip = (index: number) => {
+    setZipFiles(zipFiles.filter((_, i) => i !== index));
+  };
 
   const handleAnalyze = async () => {
-    if (!masterFile || !reportsZip) {
-      alert('Por favor, selecione a Planilha Mestre e o ZIP de Telemetria');
+    if (!masterFile || zipFiles.length === 0) {
+      setError('Por favor, selecione a Planilha Mestre e pelo menos um ZIP de Telemetria');
       return;
     }
 
+    setError('');
     setIsAnalyzing(true);
+
     try {
-      // Parse master file
-      const masterBuffer = await masterFile.arrayBuffer();
-      const trips = parseMasterFileInFrontend(masterBuffer);
+      // Convert files to base64
+      const masterBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.readAsDataURL(masterFile);
+      });
 
-      if (trips.length === 0) {
-        alert('Nenhuma viagem válida encontrada na planilha mestre');
-        setIsAnalyzing(false);
-        return;
+      const zipsBase64 = await Promise.all(
+        zipFiles.map(
+          (file) =>
+            new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve((reader.result as string).split(',')[1]);
+              reader.readAsDataURL(file);
+            })
+        )
+      );
+
+      // Call backend analysis
+      const response = await analyzeMutation.mutateAsync({
+        masterFileBase64: masterBase64,
+        zipFilesBase64: zipsBase64,
+      });
+
+      if (response.success) {
+        // Convert date strings back to Date objects for display
+        const formattedResults = response.results.map((r: any) => ({
+          ...r,
+          inicioViagem: new Date(r.inicioViagem).toLocaleString('pt-BR'),
+          fimViagem: new Date(r.fimViagem).toLocaleString('pt-BR'),
+        }));
+
+        setResults(formattedResults);
+        setKpis(response.kpis);
+      } else {
+        setError(response.error || 'Erro ao analisar dados');
       }
-
-      // Process ZIP
-      const zipBuffer = await reportsZip.arrayBuffer();
-      const positionFileMap = await processZipFileInFrontend(zipBuffer);
-
-      // Analyze trips
-      const analysisResults = trips.map((trip) => analyzeTrip(trip, positionFileMap));
-
-      setResults(analysisResults);
-
-      // Calculate KPIs
-      if (analysisResults.length > 0) {
-        const validResults = analysisResults.filter((r) => r.status !== 'S/ ARQUIVO' && r.status !== 'S/ DADOS' && r.status !== 'S/ FAIXA');
-        const withinCount = analysisResults.filter((r) => r.status === 'within').length;
-        const partialCount = analysisResults.filter((r) => r.status === 'partial').length;
-        const avgEfficiency = validResults.length > 0 ? validResults.reduce((sum, r) => sum + r.eficiencia, 0) / validResults.length : 0;
-
-        setKpis([
-          {
-            label: 'Total de Viagens',
-            value: analysisResults.length,
-            color: 'bg-blue-500',
-          },
-          {
-            label: 'Viagens Within',
-            value: withinCount,
-            unit: `(${((withinCount / analysisResults.length) * 100).toFixed(1)}%)`,
-            color: 'bg-green-500',
-          },
-          {
-            label: 'Viagens Partial',
-            value: partialCount,
-            unit: `(${((partialCount / analysisResults.length) * 100).toFixed(1)}%)`,
-            color: 'bg-yellow-500',
-          },
-          {
-            label: 'Eficiência Média',
-            value: avgEfficiency.toFixed(1),
-            unit: '%',
-            color: 'bg-purple-500',
-          },
-        ]);
-      }
-    } catch (error) {
-      console.error('Erro na análise:', error);
-      alert('Erro ao analisar dados: ' + (error instanceof Error ? error.message : 'Desconhecido'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
       setIsAnalyzing(false);
     }
@@ -521,8 +112,8 @@ export default function AnaliseGifBrf() {
       Carreta: r.carreta,
       Origem: r.origem,
       Destino: r.destino,
-      Início: r.inicioViagem.toLocaleString('pt-BR'),
-      Fim: r.fimViagem.toLocaleString('pt-BR'),
+      Início: r.inicioViagem,
+      Fim: r.fimViagem,
       Faixa: r.faixa,
       'Temp. Média': r.tempMedia.toFixed(1),
       'Temp. Mín': r.tempMin.toFixed(1),
@@ -562,15 +153,58 @@ export default function AnaliseGifBrf() {
             disabled={isAnalyzing}
           />
 
-          <DropZone
-            icon={<Package className="w-8 h-8" />}
-            title="ZIP de Telemetria"
-            subtitle="Arquivo ZIP com dados de temperatura"
-            accept=".zip"
-            onFile={setReportsZip}
-            file={reportsZip}
-            disabled={isAnalyzing}
-          />
+          {/* Multiple ZIP files */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">ZIPs de Telemetria ({zipFiles.length})</label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Trigger file input for adding more ZIPs
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '.zip';
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) handleAddZip(file);
+                  };
+                  input.click();
+                }}
+                disabled={isAnalyzing}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar ZIP
+              </Button>
+            </div>
+
+            {zipFiles.length === 0 ? (
+              <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                <Package className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Clique em "Adicionar ZIP" para selecionar arquivos</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {zipFiles.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4" />
+                      <span className="text-sm">{file.name}</span>
+                      <span className="text-xs text-muted-foreground">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveZip(idx)}
+                      disabled={isAnalyzing}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <DropZone
             icon={<FileSpreadsheet className="w-8 h-8" />}
@@ -582,29 +216,54 @@ export default function AnaliseGifBrf() {
             disabled={isAnalyzing}
           />
 
-          <Button onClick={handleAnalyze} disabled={!masterFile || !reportsZip || isAnalyzing} className="w-full" size="lg">
+          {error && <div className="p-3 bg-red-100 text-red-800 rounded-lg text-sm">{error}</div>}
+
+          <Button onClick={handleAnalyze} disabled={!masterFile || zipFiles.length === 0 || isAnalyzing} className="w-full" size="lg">
             {isAnalyzing ? 'Analisando...' : 'Analisar Dados'}
           </Button>
         </CardContent>
       </Card>
 
       {/* KPIs Section */}
-      {kpis.length > 0 && (
+      {kpis && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {kpis.map((kpi, idx) => (
-            <Card key={idx}>
-              <CardContent className="pt-6">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">{kpi.label}</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{kpi.value}</span>
-                    {kpi.unit && <span className="text-sm text-muted-foreground">{kpi.unit}</span>}
-                  </div>
-                  <div className={`h-1 w-full ${kpi.color} rounded-full opacity-50`} />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total de Viagens</p>
+                <p className="text-2xl font-bold">{kpis.totalTrips}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Viagens Within</p>
+                <p className="text-2xl font-bold text-green-600">{kpis.tripsWithin}</p>
+                <p className="text-xs text-muted-foreground">({((kpis.tripsWithin / kpis.totalTrips) * 100).toFixed(1)}%)</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Viagens Partial</p>
+                <p className="text-2xl font-bold text-yellow-600">{kpis.tripsPartial}</p>
+                <p className="text-xs text-muted-foreground">({((kpis.tripsPartial / kpis.totalTrips) * 100).toFixed(1)}%)</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Eficiência Média</p>
+                <p className="text-2xl font-bold">{kpis.averageEfficiency.toFixed(1)}%</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 

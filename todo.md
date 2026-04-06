@@ -1029,3 +1029,14 @@
 - [x] TypeScript: 0 erros
 - [x] Testes: 143/144 passando (98.6%)
 - [x] Dev server: rodando normalmente
+
+
+## Fase 11 - Correção e Otimização do Módulo TXTEMP (EM PROGRESSO)
+- [ ] Investigar travamento ao clicar em "Analisar Dados"
+- [ ] Revisar estrutura da planilha do cliente (464 viagens, CET, eficiência)
+- [ ] Adaptar parser para novo formato (Referência, Load/DT, Placaveículo, Data Emissão, Data Fim, etc.)
+- [ ] Adicionar suporte para múltiplos ZIPs de telemetria
+- [ ] Mover processamento para backend (tRPC) para evitar travamentos no frontend
+- [ ] Testar com dados reais (EficiênciaTemperatura-Março26retornoaté08abril18h.xlsx)
+- [ ] Validar resultados com 2 ZIPs (TEMPERATURAJUNIOR.zip e PlacasGIFMarço.zip)
+- [ ] Comparar eficiência calculada vs eficiência do cliente
