@@ -995,3 +995,14 @@
 - [x] Reformatar PDF com layout correto - Novo gerador com posicionamento absoluto
 - [x] Exibir advertências pendentes na grid de Relatórios ao entrar - Carrega pendentes de hoje por padrão
 - [x] Testes unitários para validar as correções - 8 testes passando
+
+
+## Fase 9 - Correção do Módulo de Análise GIF BRF
+
+- [ ] Investigar por que apenas 1 viagem foi importada (deveria ser 517)
+- [ ] Corrigir regra de eficiência para usar horário em vez de temperatura
+- [ ] Implementar exportação em formato Excel idêntico ao de importação
+- [ ] Adicionar contador de viagens analisadas
+- [ ] Testar importação completa (517 viagens)
+- [ ] Testar análise de eficiência por horário
+- [ ] Testar exportação em Excel
