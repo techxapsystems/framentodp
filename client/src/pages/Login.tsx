@@ -1,4 +1,5 @@
 import { useState } from "react";
+import React from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,11 +17,18 @@ export default function Login() {
   const [, navigate] = useLocation();
 
 
-  const { mutate: login } = trpc.auth.login.useMutation({
+  const { mutate: login, isPending } = trpc.auth.login.useMutation({
     onSuccess: (result) => {
       if (result.success) {
         localStorage.setItem("user", JSON.stringify(result.user));
-        navigate("/");
+        setIsLoading(false);
+        // Force page reload to trigger Router re-render
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 100);
+      } else {
+        setError("Erro ao fazer login. Tente novamente.");
+        setIsLoading(false);
       }
     },
     onError: (error) => {
@@ -28,6 +36,11 @@ export default function Login() {
       setIsLoading(false);
     },
   });
+
+  // Sync isLoading with isPending
+  React.useEffect(() => {
+    setIsLoading(isPending);
+  }, [isPending]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
