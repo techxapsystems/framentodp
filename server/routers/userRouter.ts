@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { hashPassword } from "../auth";
 
 export const userRouter = router({
   /**
@@ -92,6 +93,7 @@ export const userRouter = router({
           },
           'Login inválido. Use formato: usuario ou usuario@dominio.com'
         ),
+      password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
       role: z.enum(['user', 'admin', 'gestor']),
       department: z.string().min(1),
       modules: z.array(z.string()),
@@ -127,6 +129,7 @@ export const userRouter = router({
           openId,
           name: input.name,
           email: input.email,
+          password: hashPassword(input.password),
           role: input.role,
           department: input.department,
           modules: JSON.stringify(input.modules),

@@ -271,7 +271,7 @@ export default function AnaliseGifBrf() {
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Viagens Within</p>
                 <p className="text-2xl font-bold text-green-600">{kpis.tripsWithin}</p>
-                <p className="text-xs text-muted-foreground">({((kpis.tripsWithin / kpis.totalTrips) * 100).toFixed(1)}%)</p>
+                <p className="text-xs text-muted-foreground">({kpis.totalTrips > 0 ? ((kpis.tripsWithin / kpis.totalTrips) * 100).toFixed(1) : '0'}%)</p>
               </div>
             </CardContent>
           </Card>
@@ -281,7 +281,7 @@ export default function AnaliseGifBrf() {
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Viagens Partial</p>
                 <p className="text-2xl font-bold text-yellow-600">{kpis.tripsPartial}</p>
-                <p className="text-xs text-muted-foreground">({((kpis.tripsPartial / kpis.totalTrips) * 100).toFixed(1)}%)</p>
+                <p className="text-xs text-muted-foreground">({kpis.totalTrips > 0 ? ((kpis.tripsPartial / kpis.totalTrips) * 100).toFixed(1) : '0'}%)</p>
               </div>
             </CardContent>
           </Card>
@@ -290,7 +290,7 @@ export default function AnaliseGifBrf() {
             <CardContent className="pt-6">
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Eficiência Média</p>
-                <p className="text-2xl font-bold">{kpis.averageEfficiency.toFixed(1)}%</p>
+                <p className="text-2xl font-bold">{kpis.averageEfficiency !== null && kpis.averageEfficiency !== undefined ? kpis.averageEfficiency.toFixed(1) : '0'}%</p>
               </div>
             </CardContent>
           </Card>
@@ -334,7 +334,7 @@ export default function AnaliseGifBrf() {
                         {result.origem} → {result.destino}
                       </td>
                       <td className="py-3 px-4 text-xs">{result.faixa}</td>
-                      <td className="py-3 px-4">{result.tempMedia.toFixed(1)}°C</td>
+                      <td className="py-3 px-4">{result.tempMedia !== null && result.tempMedia !== undefined ? result.tempMedia.toFixed(1) : 'N/A'}°C</td>
                       <td className="py-3 px-4">
                         <span
                           className={`px-2 py-1 rounded text-xs font-semibold ${
@@ -347,7 +347,7 @@ export default function AnaliseGifBrf() {
                               : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                           }`}
                         >
-                          {result.eficiencia.toFixed(1)}%
+                          {result.eficiencia !== null && result.eficiencia !== undefined ? result.eficiencia.toFixed(1) : 'N/A'}%
                         </span>
                       </td>
                       <td className="py-3 px-4 text-xs">{result.status}</td>
