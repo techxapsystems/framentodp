@@ -102,8 +102,8 @@ export default function AnaliseGifBrf() {
 
       // Call backend analysis
       analyzeData({
-        masterFileBase64: masterBase64,
-        zipFilesBase64: zipsBase64,
+        masterFile: masterBase64,
+        zipFiles: zipsBase64,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');

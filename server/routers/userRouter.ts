@@ -79,7 +79,10 @@ export const userRouter = router({
   createUser: protectedProcedure
     .input(z.object({
       name: z.string().min(1),
-      email: z.string().email(),
+      email: z.string().email('Email inválido').refine(
+        (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
+        'Email deve conter @ e um domínio válido'
+      ),
       role: z.enum(['user', 'admin', 'gestor']),
       department: z.string().min(1),
       modules: z.array(z.string()),
@@ -142,6 +145,10 @@ export const userRouter = router({
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
+      email: z.string().email('Email inválido').refine(
+        (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
+        'Email deve conter @ e um domínio válido'
+      ).optional(),
       role: z.enum(['user', 'admin', 'gestor']).optional(),
       department: z.string().optional(),
       modules: z.array(z.string()).optional(),
@@ -158,6 +165,7 @@ export const userRouter = router({
 
         const updateData: any = {};
         if (input.name) updateData.name = input.name;
+        if (input.email) updateData.email = input.email;
         if (input.role) updateData.role = input.role;
         if (input.department) updateData.department = input.department;
         if (input.modules) updateData.modules = JSON.stringify(input.modules);

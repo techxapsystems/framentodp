@@ -1040,3 +1040,9 @@
 - [ ] Testar com dados reais (EficiênciaTemperatura-Março26retornoaté08abril18h.xlsx)
 - [ ] Validar resultados com 2 ZIPs (TEMPERATURAJUNIOR.zip e PlacasGIFMarço.zip)
 - [ ] Comparar eficiência calculada vs eficiência do cliente
+
+## Fase 12 - Bug: GET-request to mutation TXTEMP (EM PROGRESSO)
+- [ ] Investigar causa raiz do erro GET-request to mutation
+- [ ] Corrigir o problema
+- [ ] Testar com dados reais via curl/script ANTES de entregar
+- [ ] Validar no browser
