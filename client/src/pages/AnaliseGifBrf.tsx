@@ -24,6 +24,9 @@ interface AnalysisResult {
   tempMediana: number;
   totalRegistros: number;
   registrosComTemp: number;
+  registrosNaJanela?: number;
+  registrosDentroFaixa?: number;
+  registrosForaFaixa?: number;
 }
 
 export default function AnaliseGifBrf() {
@@ -118,24 +121,43 @@ export default function AnaliseGifBrf() {
     }
 
     const exportData = results.map((r) => ({
-      Placa: r.placa,
-      Carreta: r.carreta,
-      Origem: r.origem,
-      Destino: r.destino,
-      Início: r.inicioViagem,
-      Fim: r.fimViagem,
-      Faixa: r.faixa,
-      'Temp. Média': r.tempMedia !== null ? r.tempMedia.toFixed(1) : 'N/A',
-      'Temp. Mín': r.tempMin !== null ? r.tempMin.toFixed(1) : 'N/A',
-      'Temp. Máx': r.tempMax !== null ? r.tempMax.toFixed(1) : 'N/A',
-      Eficiência: r.eficiencia !== null ? r.eficiencia.toFixed(1) : 'N/A',
-      Status: r.status,
-      Registros: r.totalRegistros,
+      'Placaveículo': r.placa || '',
+      'Placacarreta': r.carreta || '',
+      'Origem': r.origem || '',
+      'Destino': r.destino || '',
+      'Data Emissão': r.inicioViagem || '',
+      'Data Fim': r.fimViagem || '',
+      'faixa temperatura': r.faixa || '',
+      'Temp. Mínima': r.tempMin !== null && r.tempMin !== undefined ? r.tempMin.toFixed(2) : '',
+      'Temp. Máxima': r.tempMax !== null && r.tempMax !== undefined ? r.tempMax.toFixed(2) : '',
+      'Temp. Média': r.tempMedia !== null && r.tempMedia !== undefined ? r.tempMedia.toFixed(2) : '',
+      'Registros na Janela': r.registrosNaJanela || r.totalRegistros || 0,
+      'Registros Dentro Faixa': r.registrosDentroFaixa || 0,
+      'Registros Fora Faixa': r.registrosForaFaixa || 0,
+      'Eficiência (%)': r.eficiencia !== null && r.eficiencia !== undefined ? r.eficiencia.toFixed(2) : '',
+      'Status': r.status || '',
     }));
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(exportData);
-    XLSX.utils.book_append_sheet(wb, ws, 'Análise TXTEMP');
+    ws['!cols'] = [
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 25 },
+      { wch: 25 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 18 },
+      { wch: 15 },
+      { wch: 15 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Base');
     XLSX.writeFile(wb, `TXTEMP_Analise_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
@@ -269,7 +291,7 @@ export default function AnaliseGifBrf() {
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Viagens Within</p>
+                <p className="text-sm font-medium text-muted-foreground">Eficiência Boa</p>
                 <p className="text-2xl font-bold text-green-600">{kpis.tripsWithin}</p>
                 <p className="text-xs text-muted-foreground">({kpis.totalTrips > 0 ? ((kpis.tripsWithin / kpis.totalTrips) * 100).toFixed(1) : '0'}%)</p>
               </div>
@@ -279,9 +301,19 @@ export default function AnaliseGifBrf() {
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Viagens Partial</p>
+                <p className="text-sm font-medium text-muted-foreground">Eficiência Regular</p>
                 <p className="text-2xl font-bold text-yellow-600">{kpis.tripsPartial}</p>
                 <p className="text-xs text-muted-foreground">({kpis.totalTrips > 0 ? ((kpis.tripsPartial / kpis.totalTrips) * 100).toFixed(1) : '0'}%)</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Eficiência Ruim</p>
+                <p className="text-2xl font-bold text-red-600">{kpis.tripsOutside}</p>
+                <p className="text-xs text-muted-foreground">({kpis.totalTrips > 0 ? ((kpis.tripsOutside / kpis.totalTrips) * 100).toFixed(1) : '0'}%)</p>
               </div>
             </CardContent>
           </Card>

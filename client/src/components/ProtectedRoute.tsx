@@ -33,7 +33,15 @@ export function ProtectedRoute({
 
     // Verificar módulos se necessário
     if (requiredModules.length > 0) {
-      const userModules = user.modules ? JSON.parse(user.modules) : [];
+      let userModules: string[] = [];
+      if (user.modules) {
+        try {
+          userModules = typeof user.modules === 'string' ? JSON.parse(user.modules) : (Array.isArray(user.modules) ? user.modules : []);
+        } catch (e) {
+          console.warn('Failed to parse user modules:', e);
+          userModules = [];
+        }
+      }
       return requiredModules.some(module => userModules.includes(module));
     }
 

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2, Eye, EyeOff, User, Lock } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -14,39 +15,34 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [, navigate] = useLocation();
 
+
+  const { mutate: login } = trpc.auth.login.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        localStorage.setItem("user", JSON.stringify(result.user));
+        navigate("/");
+      }
+    },
+    onError: (error) => {
+      setError(error.message || "Erro ao fazer login. Verifique suas credenciais.");
+      setIsLoading(false);
+    },
+  });
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: username.trim(),
-          password,
-        }),
+      login({
+        email: username.trim(),
+        password,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erro ao fazer login");
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
-        localStorage.setItem("user", JSON.stringify(result.user));
-        navigate("/");
-      }
     } catch (err: any) {
       setError(
         err.message || "Erro ao fazer login. Verifique suas credenciais."
       );
-    } finally {
       setIsLoading(false);
     }
   };
