@@ -18,6 +18,15 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
+  // Check if user is logged in locally (localStorage)
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    // User is logged in locally, don't redirect to OAuth
+    console.warn("Session expired but user is logged in locally");
+    return;
+  }
+
+  // Only redirect to OAuth if no local user session
   window.location.href = getLoginUrl();
 };
 
