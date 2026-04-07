@@ -80,14 +80,17 @@ export const userRouter = router({
     .input(z.object({
       name: z.string().min(1),
       email: z.string()
-        .min(5, 'Email muito curto')
+        .min(3, 'Login muito curto')
         .refine(
           (email) => {
-            // RFC 5322 simplified regex - allows most common email formats
+            // Accept both email format (user@domain.com) and username format (user.name)
+            // Username: alphanumeric, dots, hyphens, underscores
+            // Email: standard email format
+            const usernameRegex = /^[a-zA-Z0-9._-]+$/;
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
+            return usernameRegex.test(email) || emailRegex.test(email);
           },
-          'Email inválido'
+          'Login inválido. Use formato: usuario ou usuario@dominio.com'
         ),
       role: z.enum(['user', 'admin', 'gestor']),
       department: z.string().min(1),
@@ -153,10 +156,11 @@ export const userRouter = router({
       name: z.string().min(1).optional(),
       email: z.string().refine(
         (email) => {
+          const usernameRegex = /^[a-zA-Z0-9._-]+$/;
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          return emailRegex.test(email);
+          return usernameRegex.test(email) || emailRegex.test(email);
         },
-        'Email inválido'
+        'Login inválido'
       ).optional(),
       role: z.enum(['user', 'admin', 'gestor']).optional(),
       department: z.string().optional(),

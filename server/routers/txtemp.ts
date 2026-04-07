@@ -32,7 +32,7 @@ export const txtempRouter = router({
    * Analyze thermal efficiency from master file and ZIP telemetry files
    * Uses time-based calculation: % of TIME within temperature range
    */
-  analyze: protectedProcedure
+  analyze: publicProcedure
     .input(
       z.object({
         masterFile: z.string(),
