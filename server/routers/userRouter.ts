@@ -79,10 +79,16 @@ export const userRouter = router({
   createUser: protectedProcedure
     .input(z.object({
       name: z.string().min(1),
-      email: z.string().email('Email inválido').refine(
-        (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-        'Email deve conter @ e um domínio válido'
-      ),
+      email: z.string()
+        .min(5, 'Email muito curto')
+        .refine(
+          (email) => {
+            // RFC 5322 simplified regex - allows most common email formats
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+          },
+          'Email inválido'
+        ),
       role: z.enum(['user', 'admin', 'gestor']),
       department: z.string().min(1),
       modules: z.array(z.string()),
@@ -139,15 +145,18 @@ export const userRouter = router({
     }),
 
   /**
-   * Atualiza um usuário
+   * Atualiza um usuário existente
    */
   updateUser: protectedProcedure
     .input(z.object({
-      id: z.number(),
-      name: z.string().optional(),
-      email: z.string().email('Email inválido').refine(
-        (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-        'Email deve conter @ e um domínio válido'
+      id: z.string(),
+      name: z.string().min(1).optional(),
+      email: z.string().refine(
+        (email) => {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          return emailRegex.test(email);
+        },
+        'Email inválido'
       ).optional(),
       role: z.enum(['user', 'admin', 'gestor']).optional(),
       department: z.string().optional(),
