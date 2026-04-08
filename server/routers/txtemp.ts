@@ -312,4 +312,54 @@ export const txtempRouter = router({
         };
       }
     }),
+
+  getComparisonData: publicProcedure
+    .input(
+      z.object({
+        results: z.array(
+          z.object({
+            placa: z.string(),
+            eficiencia: z.number(),
+            eficienciaFinal: z.number().optional(),
+          })
+        ),
+      })
+    )
+    .query(({ input }) => {
+      try {
+        const comparisonData = input.results
+          .filter(r => r.eficienciaFinal !== undefined)
+          .map(r => {
+            const brfEfficiency = r.eficienciaFinal || 0;
+            const systemEfficiency = Math.round(r.eficiencia * 100) / 100;
+            const difference = systemEfficiency - brfEfficiency;
+            const percentDifference = brfEfficiency > 0 ? (difference / brfEfficiency) * 100 : 0;
+
+            let status: 'match' | 'higher' | 'lower' = 'match';
+            if (Math.abs(difference) > 1) {
+              status = difference > 0 ? 'higher' : 'lower';
+            }
+
+            return {
+              placa: r.placa,
+              brfEfficiency,
+              systemEfficiency,
+              difference: Math.round(difference * 100) / 100,
+              percentDifference: Math.round(percentDifference * 100) / 100,
+              status,
+            };
+          });
+
+        return {
+          success: true,
+          data: comparisonData,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: String(error),
+          data: [],
+        };
+      }
+    }),
 });

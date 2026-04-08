@@ -23,6 +23,7 @@ import TemplateLibrary from "./pages/TemplateLibrary";
 import UserManagement from "./pages/UserManagement";
 import Login from "./pages/Login";
 import AnaliseGifBrf from "./pages/AnaliseGifBrf";
+import ComparisonReport from "./pages/ComparisonReport";
 
 
 function Router() {
@@ -124,6 +125,11 @@ function Router() {
         <Route path="/analise-gif-brf" component={() => (
           <ProtectedRoute requiredModules={["analise_gif_brf"]}>
             <AnaliseGifBrf />
+          </ProtectedRoute>
+        )} />
+        <Route path="/relatorio-comparativo" component={() => (
+          <ProtectedRoute requiredModules={["analise_gif_brf"]}>
+            <ComparisonReport />
           </ProtectedRoute>
         )} />
         <Route path="/404" component={NotFound} />

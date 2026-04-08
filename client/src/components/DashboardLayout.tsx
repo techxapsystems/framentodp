@@ -43,6 +43,7 @@ const menuItems: MenuItem[] = [
   { icon: FileText, label: "Relatórios", path: "/relatorios", module: "controle_de_advertencias" },
   { icon: BookOpen, label: "Biblioteca de Modelos", path: "/biblioteca-modelos", module: "controle_de_advertencias" },
   { icon: Thermometer, label: "Análise GIF BRF", path: "/analise-gif-brf", module: "analise_gif_brf" },
+  { icon: BarChart3, label: "Relatório Comparativo", path: "/relatorio-comparativo", module: "analise_gif_brf" },
   
   // Admin
   { icon: Users, label: "Gerenciamento de Usuários", path: "/usuarios" },

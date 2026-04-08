@@ -38,6 +38,7 @@ export interface MasterTripV2 {
   rangeMin: number | null;
   rangeMax: number | null;
   tipoSensor: string;
+  eficienciaFinal?: number;
   rowIndex: number;
 }
 
@@ -62,6 +63,7 @@ export function parseMasterFileV2(fileBuffer: Buffer): MasterTripV2[] {
     const fimCol = 17;         // Data Fim
     const faixaCol = 18;       // faixa temperatura
     const tipoSensorCol = 9;   // Tipo de Sensor 1
+    const eficienciaFinalCol = 15; // EFICIÊNCIA_FINAL
 
     console.log('[TXTEMP V2] Parsing master file with fixed columns');
 
@@ -119,6 +121,17 @@ export function parseMasterFileV2(fileBuffer: Buffer): MasterTripV2[] {
       const carreta = (sheet[XLSX.utils.encode_cell({ r: row, c: carretaCol })]?.v || '').toString().trim();
       const origem = (sheet[XLSX.utils.encode_cell({ r: row, c: origemCol })]?.v || '').toString().trim();
       const destino = (sheet[XLSX.utils.encode_cell({ r: row, c: destinoCol })]?.v || '').toString().trim();
+      
+      // Get EFICIÊNCIA_FINAL
+      const eficienciaRef = XLSX.utils.encode_cell({ r: row, c: eficienciaFinalCol });
+      const eficienciaCell = sheet[eficienciaRef];
+      let eficienciaFinal: number | undefined;
+      if (eficienciaCell?.v !== undefined && eficienciaCell?.v !== null) {
+        const val = parseFloat(eficienciaCell.v.toString());
+        if (!isNaN(val)) {
+          eficienciaFinal = val;
+        }
+      }
 
       trips.push({
         placa,
@@ -131,6 +144,7 @@ export function parseMasterFileV2(fileBuffer: Buffer): MasterTripV2[] {
         rangeMin: faixaRange.min,
         rangeMax: faixaRange.max,
         tipoSensor,
+        eficienciaFinal,
         rowIndex: row,
       });
     }

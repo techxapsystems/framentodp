@@ -1055,3 +1055,12 @@
 - [ ] Remover dados sensíveis/incriminadores da exportação
 - [ ] Criar dashboard de placas não analisadas (sem dados de posição)
 - [ ] Testar exportação com BRF antes de entregar
+
+
+## Relatório Comparativo de Eficiência - NOVO
+
+- [ ] Atualizar backend para retornar EFICIÊNCIA_FINAL na análise
+- [ ] Criar componente de relatório comparativo (BRF vs Sistema)
+- [ ] Adicionar métricas: diferença, variância, concordância
+- [ ] Criar visualização de dispersão (scatter plot)
+- [ ] Testar com dados reais da planilha mestre
