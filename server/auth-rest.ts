@@ -42,7 +42,7 @@ authRestRouter.post("/login", express.json(), async (req, res) => {
         if (dbInstance) {
           const { users } = await import("../drizzle/schema");
           const { eq } = await import("drizzle-orm");
-          await dbInstance.update(users).set({ openId }).where(eq(users.id, user.id));
+          await dbInstance.update(users).set({ openId }).where(eq(users.id as any, user.id));
         }
       } catch (e) {
         console.error("[Auth REST] Error updating openId:", e);

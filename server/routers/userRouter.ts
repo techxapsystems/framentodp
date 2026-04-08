@@ -190,7 +190,7 @@ export const userRouter = router({
         await db
           .update(users)
           .set(updateData)
-          .where(eq(users.id, input.id));
+          .where(eq(users.id, Number(input.id)));
 
         return {
           success: true,

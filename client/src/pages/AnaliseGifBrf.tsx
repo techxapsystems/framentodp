@@ -17,6 +17,8 @@ interface AnalysisResult {
   rangeMin: number | null;
   rangeMax: number | null;
   eficiencia: number;
+  eficienciaFinal?: number;
+  motivoOutside?: string;
   status: string;
   tempMedia: number;
   tempMin: number;
@@ -122,23 +124,32 @@ export default function AnaliseGifBrf() {
       return;
     }
 
-    const exportData = results.map((r) => ({
-      'Placaveículo': r.placa || '',
-      'Placacarreta': r.carreta || '',
-      'Origem': r.origem || '',
-      'Destino': r.destino || '',
-      'Data Emissão': r.inicioViagem || '',
-      'Data Fim': r.fimViagem || '',
-      'faixa temperatura': r.faixa || '',
-      'Temp. Mínima': r.tempMin !== null && r.tempMin !== undefined ? r.tempMin.toFixed(2) : '',
-      'Temp. Máxima': r.tempMax !== null && r.tempMax !== undefined ? r.tempMax.toFixed(2) : '',
-      'Temp. Média': r.tempMedia !== null && r.tempMedia !== undefined ? r.tempMedia.toFixed(2) : '',
-      'Registros na Janela': r.registrosNaJanela || r.totalRegistros || 0,
-      'Registros Dentro Faixa': r.registrosDentroFaixa || 0,
-      'Registros Fora Faixa': r.registrosForaFaixa || 0,
-      'Eficiência (%)': r.eficiencia !== null && r.eficiencia !== undefined ? r.eficiencia.toFixed(2) : '',
-      'Status': r.status || '',
-    }));
+    const exportData = results.map((r) => {
+      const row: any = {
+        'Placaveículo': r.placa || '',
+        'Placacarreta': r.carreta || '',
+        'Origem': r.origem || '',
+        'Destino': r.destino || '',
+        'Data Emissão': r.inicioViagem || '',
+        'Data Fim': r.fimViagem || '',
+        'faixa temperatura': r.faixa || '',
+        'Temp. Mínima': r.tempMin !== null && r.tempMin !== undefined ? r.tempMin.toFixed(2) : '',
+        'Temp. Máxima': r.tempMax !== null && r.tempMax !== undefined ? r.tempMax.toFixed(2) : '',
+        'Temp. Média': r.tempMedia !== null && r.tempMedia !== undefined ? r.tempMedia.toFixed(2) : '',
+        'Registros na Janela': r.registrosNaJanela || r.totalRegistros || 0,
+        'Registros Dentro Faixa': r.registrosDentroFaixa || 0,
+        'Registros Fora Faixa': r.registrosForaFaixa || 0,
+        'Eficiência (%)': r.eficiencia !== null && r.eficiencia !== undefined ? r.eficiencia.toFixed(2) : '',
+        'EFICIÊNCIA_FINAL': r.eficienciaFinal !== null && r.eficienciaFinal !== undefined ? r.eficienciaFinal.toFixed(2) : '',
+        'Status': r.status || '',
+      };
+      
+      if (r.status === 'outside' && r.motivoOutside) {
+        row['MOTIVO_OUTSIDE'] = r.motivoOutside;
+      }
+      
+      return row;
+    });
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(exportData);

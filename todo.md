@@ -1046,3 +1046,12 @@
 - [ ] Corrigir o problema
 - [ ] Testar com dados reais via curl/script ANTES de entregar
 - [ ] Validar no browser
+
+
+## Correções na Exportação Excel (GIF BRF) - PRIORIDADE ALTA
+
+- [ ] Manter coluna EFICIÊNCIA_FINAL da planilha mestre na exportação
+- [ ] Adicionar coluna MOTIVO_OUTSIDE com descrição resumida dos casos fora da faixa
+- [ ] Remover dados sensíveis/incriminadores da exportação
+- [ ] Criar dashboard de placas não analisadas (sem dados de posição)
+- [ ] Testar exportação com BRF antes de entregar

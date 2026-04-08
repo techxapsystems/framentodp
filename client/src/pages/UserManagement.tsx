@@ -36,7 +36,7 @@ function generateTemporaryPassword() {
 
 export default function UserManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",

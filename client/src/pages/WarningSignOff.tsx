@@ -332,7 +332,7 @@ export default function WarningSignOff() {
                           </TableCell>
                           <TableCell className="py-2 px-2 whitespace-nowrap">
                             <Button
-                              size="xs"
+                              size="sm"
                               variant="outline"
                               className="text-xs h-7"
                               onClick={async () => {

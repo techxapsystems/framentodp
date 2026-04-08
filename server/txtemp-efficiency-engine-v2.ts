@@ -18,6 +18,8 @@ export interface EfficiencyResult {
   rangeMin: number | null;
   rangeMax: number | null;
   tipoSensor: string;
+  eficienciaFinal?: number; // EFICIÊNCIA_FINAL from master spreadsheet
+  motivoOutside?: string; // Reason why it's outside range
 
   // Telemetry data
   totalRegistros: number;
@@ -181,12 +183,17 @@ export function calculateTripEfficiency(
   const tempoNaJanelaMs = tempoDentroFaixaMs + tempoForaFaixaMs;
   const eficiencia = tempoNaJanelaMs > 0 ? (tempoDentroFaixaMs / tempoNaJanelaMs) * 100 : 0;
 
-  // Determine status
+  // Determine status and reason for outside
   let status: 'within' | 'partial' | 'outside' = 'outside';
+  let motivoOutside = '';
+  
   if (eficiencia >= 90) {
     status = 'within';
   } else if (eficiencia >= 50) {
     status = 'partial';
+    motivoOutside = `Eficiência ${eficiencia.toFixed(1)}% - Abaixo de 90%`;
+  } else {
+    motivoOutside = `Eficiência ${eficiencia.toFixed(1)}% - Tempo fora da faixa: ${(tempoForaFaixaMs / 60000).toFixed(1)} min`;
   }
 
   return {
@@ -201,6 +208,7 @@ export function calculateTripEfficiency(
     tempoForaFaixaMs,
     eficiencia: Math.round(eficiencia * 10) / 10, // Round to 1 decimal
     status,
+    motivoOutside: status === 'outside' ? motivoOutside : undefined,
     tempMin: tempMin === Infinity ? null : Math.round(tempMin * 10) / 10,
     tempMax: tempMax === -Infinity ? null : Math.round(tempMax * 10) / 10,
     tempMedia: recordsInWindow.length > 0 ? Math.round((tempSum / recordsInWindow.length) * 10) / 10 : null,
