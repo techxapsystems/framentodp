@@ -227,7 +227,7 @@ export const txtempRouter = router({
 
           // Determine status
           let status: 'within' | 'partial' | 'outside' = 'outside';
-          if (eficiencia >= 100) {
+          if (eficiencia >= 90) {
             status = 'within';
           } else if (eficiencia >= 50) {
             status = 'partial';
@@ -261,8 +261,23 @@ export const txtempRouter = router({
           });
         }
 
-        // Phase 4: Calculate KPIs
-        console.log('[TXTEMP V2] Phase 4: Calculating KPIs');
+        // Phase 4: Track plates not analyzed
+        console.log('[TXTEMP V2] Phase 4: Tracking plates not analyzed');
+        const analyzedPlates = new Set(results.map(r => r.placa));
+        const masterPlates = new Set(masterTrips.map(t => t.placa));
+        const notAnalyzedPlates = Array.from(masterPlates).filter(p => !analyzedPlates.has(p));
+        
+        const platesNotFound = results.filter(r => r.status === 'S/ ARQUIVO').map(r => r.placa);
+        const platesNoData = results.filter(r => r.status === 'S/ DADOS').map(r => r.placa);
+        const platesNoRange = results.filter(r => r.status === 'S/ FAIXA').map(r => r.placa);
+
+        console.log(`[TXTEMP V2] Plates not analyzed: ${notAnalyzedPlates.length}`);
+        console.log(`[TXTEMP V2] Plates not found in ZIPs: ${platesNotFound.length}`);
+        console.log(`[TXTEMP V2] Plates with no data in window: ${platesNoData.length}`);
+        console.log(`[TXTEMP V2] Plates with no range: ${platesNoRange.length}`);
+
+        // Phase 5: Calculate KPIs
+        console.log('[TXTEMP V2] Phase 5: Calculating KPIs');
         const kpis = calculateKPIs(results);
 
         console.log('[TXTEMP V2] Analysis complete');
@@ -273,6 +288,12 @@ export const txtempRouter = router({
           success: true,
           results,
           kpis,
+          platesNotAnalyzed: {
+            total: notAnalyzedPlates.length,
+            notFound: platesNotFound,
+            noData: platesNoData,
+            noRange: platesNoRange,
+          },
         };
       } catch (error) {
         console.error('[TXTEMP V2] Error during analysis:', error);

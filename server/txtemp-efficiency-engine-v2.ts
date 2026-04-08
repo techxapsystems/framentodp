@@ -183,7 +183,7 @@ export function calculateTripEfficiency(
 
   // Determine status
   let status: 'within' | 'partial' | 'outside' = 'outside';
-  if (eficiencia >= 100) {
+  if (eficiencia >= 90) {
     status = 'within';
   } else if (eficiencia >= 50) {
     status = 'partial';

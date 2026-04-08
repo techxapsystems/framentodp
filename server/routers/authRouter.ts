@@ -230,4 +230,17 @@ export const authRouter = router({
       createdAt: u.createdAt,
     }));
   }),
+
+  // Temporary endpoint to reset Gabriel's password
+  resetPassword: publicProcedure
+    .input(z.object({ email: z.string(), newPassword: z.string() }))
+    .mutation(async ({ input }) => {
+      const user = await db.getUserByEmail(input.email);
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+      const hashed = hashPassword(input.newPassword);
+      await db.updateUserById(user.id, { password: hashed });
+      return { success: true, message: "Password reset" };
+    }),
 });

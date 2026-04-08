@@ -229,6 +229,21 @@ export async function updateUserById(id: number, updates: any) {
   }
 }
 
+export async function resetPasswordByEmail(email: string, hashedPassword: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    await db
+      .update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.email, email));
+  } catch (error) {
+    console.error("[Database] Error resetting password:", error);
+    throw error;
+  }
+}
+
 export async function deleteUserById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

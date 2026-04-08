@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DropZone } from '@/components/DropZone';
-import { FileSpreadsheet, Package, Download, Trash2, Plus } from 'lucide-react';
+import { FileSpreadsheet, Package, Download, Trash2, Plus, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { trpc } from '@/lib/trpc';
 
@@ -37,6 +37,7 @@ export default function AnaliseGifBrf() {
   const [kpis, setKpis] = useState<any>(null);
   const [error, setError] = useState<string>('');
   const [progress, setProgress] = useState<number>(0);
+  const [platesNotAnalyzed, setPlatesNotAnalyzed] = useState<any>(null);
 
   const { mutate: analyzeData, isPending } = trpc.txtemp.analyze.useMutation({
     onSuccess: (response) => {
@@ -49,6 +50,7 @@ export default function AnaliseGifBrf() {
 
         setResults(formattedResults);
         setKpis(response.kpis);
+        setPlatesNotAnalyzed(response.platesNotAnalyzed);
         setProgress(100);
       } else {
         setError(response.error || 'Erro ao analisar dados');
@@ -278,7 +280,7 @@ export default function AnaliseGifBrf() {
 
       {/* KPIs Section */}
       {kpis && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-2">
@@ -327,6 +329,86 @@ export default function AnaliseGifBrf() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Plates Not Analyzed Dashboard */}
+      {platesNotAnalyzed && platesNotAnalyzed.total > 0 && (
+        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-600" />
+              <div>
+                <CardTitle className="text-orange-800 dark:text-orange-200">Placas Não Analisadas</CardTitle>
+                <CardDescription>Placas que não foram analisadas ou tiveram problemas durante a análise</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border">
+                <p className="text-sm font-medium text-muted-foreground">Sem Arquivo (ZIP)</p>
+                <p className="text-2xl font-bold text-orange-600">{platesNotAnalyzed.notFound.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Placas não encontradas em nenhum ZIP</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border">
+                <p className="text-sm font-medium text-muted-foreground">Sem Dados na Janela</p>
+                <p className="text-2xl font-bold text-yellow-600">{platesNotAnalyzed.noData.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Placas sem registros no período</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border">
+                <p className="text-sm font-medium text-muted-foreground">Sem Faixa Definida</p>
+                <p className="text-2xl font-bold text-red-600">{platesNotAnalyzed.noRange.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Faixa de temperatura vazia</p>
+              </div>
+            </div>
+
+            {/* Detailed lists */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {platesNotAnalyzed.notFound.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Sem Arquivo ({platesNotAnalyzed.notFound.length})</h4>
+                  <div className="bg-white dark:bg-slate-900 rounded p-3 max-h-48 overflow-y-auto border">
+                    <div className="space-y-1">
+                      {platesNotAnalyzed.notFound.map((placa: string, idx: number) => (
+                        <div key={idx} className="text-xs font-mono p-1 bg-orange-100 dark:bg-orange-900/30 rounded">
+                          {placa}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {platesNotAnalyzed.noData.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Sem Dados ({platesNotAnalyzed.noData.length})</h4>
+                  <div className="bg-white dark:bg-slate-900 rounded p-3 max-h-48 overflow-y-auto border">
+                    <div className="space-y-1">
+                      {platesNotAnalyzed.noData.map((placa: string, idx: number) => (
+                        <div key={idx} className="text-xs font-mono p-1 bg-yellow-100 dark:bg-yellow-900/30 rounded">
+                          {placa}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {platesNotAnalyzed.noRange.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Sem Faixa ({platesNotAnalyzed.noRange.length})</h4>
+                  <div className="bg-white dark:bg-slate-900 rounded p-3 max-h-48 overflow-y-auto border">
+                    <div className="space-y-1">
+                      {platesNotAnalyzed.noRange.map((placa: string, idx: number) => (
+                        <div key={idx} className="text-xs font-mono p-1 bg-red-100 dark:bg-red-900/30 rounded">
+                          {placa}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Results Table */}
