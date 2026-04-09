@@ -412,8 +412,8 @@ export const dashboardRouter = router({
   getIdleDriversForWarning: protectedProcedure
     .query(async () => {
       try {
-        const db = await import("../db");
-        const conductors = await db.getAllConductors();
+        const { getAllConductors } = await import("../db");
+        const conductors = await getAllConductors();
         // Mapear para o formato esperado (conductorName, placa, operacao, cargo)
         return conductors.map((c: any) => ({
           conductorName: c.nome,
@@ -423,7 +423,10 @@ export const dashboardRouter = router({
         })) || [];
       } catch (error) {
         console.error("Error fetching conductors:", error);
-        return [];
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Erro ao buscar motoristas: ${String(error)}`,
+        });
       }
     }),
 

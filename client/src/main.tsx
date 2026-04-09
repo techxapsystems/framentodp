@@ -52,9 +52,28 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       fetch(input, init) {
+        const headers: Record<string, string> = {};
+        
+        // Add authorization header from localStorage
+        const user = localStorage.getItem("user");
+        if (user) {
+          try {
+            const userData = JSON.parse(user);
+            if (userData.token) {
+              headers["Authorization"] = `Bearer ${userData.token}`;
+            }
+          } catch (e) {
+            console.warn("Failed to parse user from localStorage");
+          }
+        }
+        
         return globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
+          headers: {
+            ...(init?.headers as Record<string, string>),
+            ...headers,
+          },
         });
       },
     }),
