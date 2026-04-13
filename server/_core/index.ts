@@ -32,6 +32,9 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
+  // Trust proxy for correct protocol detection
+  app.set('trust proxy', 1);
+
   // Middleware para logar todas as requisições
   app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
@@ -42,31 +45,7 @@ async function startServer() {
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
-  
-  // Middleware para logar o body após parsing
-  app.use((req, res, next) => {
-    console.log(`[BODY] ${req.method} ${req.path}`, req.body);
-    console.log(`[QUERY] ${req.method} ${req.path}`, req.query);
-    next();
-  });
-
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  
-  // Middleware para fazer parse do input do tRPC quando for string
-  app.use((req, res, next) => {
-    if (req.query.input && typeof req.query.input === 'string') {
-      try {
-        // tRPC envia input como JSON string na query
-        const parsed = JSON.parse(req.query.input);
-        // Copiar para req.body para que o tRPC reconheça
-        req.body = parsed;
-        console.log(`[PARSED INPUT] ${req.path}`, parsed);
-      } catch (e: unknown) {
-        console.error(`[PARSE ERROR] ${req.path}`, (e as Error).message);
-      }
-    }
-    next();
-  });
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);

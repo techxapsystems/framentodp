@@ -257,27 +257,34 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<User> {
-    // Check for Authorization header first (for localStorage-based auth)
-    const authHeader = req.headers.authorization;
-    let sessionCookie: string | undefined;
-    
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      sessionCookie = authHeader.substring(7);
-    } else {
-      // Fall back to cookie-based authentication
-      const cookies = this.parseCookies(req.headers.cookie);
-      sessionCookie = cookies.get(COOKIE_NAME);
+    // Try session cookie first
+    const cookies = this.parseCookies(req.headers.cookie);
+    const sessionCookie = cookies.get(COOKIE_NAME);
+    let session = await this.verifySession(sessionCookie);
+
+    // If no session cookie, try Authorization header (for localStorage-based auth)
+    if (!session) {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith("Bearer ")) {
+        const token = authHeader.slice(7);
+        session = await this.verifySession(token);
+      }
     }
-    
-    const session = await this.verifySession(sessionCookie);
 
     if (!session) {
-      throw ForbiddenError("Invalid session cookie");
+      throw ForbiddenError("Invalid session cookie or token");
     }
 
     const sessionUserId = session.openId;
     const signedInAt = new Date();
+    
+    // Try to find user by openId first (OAuth flow)
     let user = await db.getUserByOpenId(sessionUserId);
+
+    // If not found by openId, try to find by email (local login flow)
+    if (!user) {
+      user = await db.getUserByEmail(sessionUserId);
+    }
 
     // If user not in DB, sync from OAuth server automatically
     if (!user) {
@@ -301,12 +308,18 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
-    await db.upsertUser({
-      openId: user.openId,
-      name: user.name || "Usuário",
-      email: user.email || `${user.openId}@local`,
-      lastSignedIn: signedInAt,
-    });
+    // Update last signed in time
+    if (user.openId) {
+      await db.upsertUser({
+        openId: user.openId,
+        name: user.name || "Usuário",
+        email: user.email || `${user.openId}@local`,
+        lastSignedIn: signedInAt,
+      });
+    } else if (user.email) {
+      // For local login users without openId, update directly by id
+      await db.updateUserById(user.id, { lastSignedIn: signedInAt });
+    }
 
     return user;
   }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,13 +34,20 @@ export default function Recidivists() {
   const { data: operacoes = [] } = trpc.dashboard.getAllOperations.useQuery();
 
   // Query para buscar todos os motoristas ociosos no dialog
-  const { data: queryResult } = trpc.dashboard.getIdleDriversForWarning.useQuery(
+  const { data: queryResult, error: queryError, isError } = trpc.dashboard.getIdleDriversForWarning.useQuery(
     undefined,
     {
       enabled: true,
       staleTime: 0,
     }
   );
+
+  // Log errors for debugging
+  useEffect(() => {
+    if (isError && queryError) {
+      console.error('Error loading motoristas:', queryError);
+    }
+  }, [isError, queryError]);
 
   // Extrair o array de motoristas do resultado da query
   const idleDriversData = Array.isArray(queryResult) ? queryResult : (queryResult as any)?.json || [];

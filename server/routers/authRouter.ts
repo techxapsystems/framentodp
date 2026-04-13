@@ -15,14 +15,27 @@ export const authRouter = router({
         password: z.string().min(1),
       })
     )
-    .mutation(async ({ input }) => {
-      const user = await db.getUserByEmail(input.email);
+    .mutation(async ({ input, ctx }) => {
+      // Try to find user by email first, then by username
+      let user = await db.getUserByEmail(input.email);
+      if (!user) {
+        // If not found by email, try to find by treating input as username
+        // Search for user where email starts with the username
+        user = await db.getUserByEmail(input.email);
+      }
 
       if (!user || !user.password) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Email ou senha inválidos",
-        });
+        // Try to find by username pattern (e.g., "gabriel.ferreira" -> "gabriel.ferreira@...")
+        const db_module = await import("../db");
+        const allUsers = await db_module.getAllUsers();
+        user = allUsers.find(u => u.email?.startsWith(input.email) || u.email?.includes(input.email)) || null;
+        
+        if (!user || !user.password) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Email ou senha inválidos",
+          });
+        }
       }
 
       if (!verifyPassword(input.password, user.password)) {
@@ -39,6 +52,14 @@ export const authRouter = router({
         });
       }
 
+      // Create session token and set cookie
+      const { sdk } = await import("../_core/sdk");
+      const { COOKIE_NAME, ONE_YEAR_MS } = await import("../../shared/const");
+      const { getSessionCookieOptions } = await import("../_core/cookies");
+      const sessionToken = await sdk.createSessionToken(user.email, { name: user.name });
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
       return {
         success: true,
         user: {
@@ -47,6 +68,7 @@ export const authRouter = router({
           name: user.name,
           role: user.role,
           modules: user.modules ? JSON.parse(user.modules) : [],
+          token: sessionToken,
         },
       };
     }),
