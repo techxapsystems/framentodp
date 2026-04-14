@@ -153,10 +153,9 @@ function DashboardLayoutContent({
       }
     }
     return menuItems.filter(item => {
-      // Configurações sempre visível
-      if (item.path === '/configuracoes') return true;
+      // Itens sem módulo são apenas para admin
+      if (!item.module) return false;
       // Filtrar por módulo
-      if (!item.module) return true;
       return userModules.includes(item.module);
     });
   };

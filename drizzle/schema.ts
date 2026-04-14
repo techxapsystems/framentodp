@@ -636,6 +636,7 @@ export const conductors = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     nome: varchar("nome", { length: 255 }).notNull(),
     cpf: varchar("cpf", { length: 20 }).notNull().unique(),
+    matricula: varchar("matricula", { length: 50 }).notNull(),
     operacao: varchar("operacao", { length: 255 }).notNull(),
     cargo: varchar("cargo", { length: 255 }).notNull(),
     placa: varchar("placa", { length: 50 }).notNull(),
