@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useRef } from "react";
+import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -8,312 +9,363 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Download, FileText, Filter, Search } from "lucide-react";
-import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Download, FileText, Search } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Reports() {
-  const startDateRef = useRef<HTMLInputElement>(null);
-  const endDateRef = useRef<HTMLInputElement>(null);
-  const [selectedOperation, setSelectedOperation] = useState<string>("");
+  const [selectedConductor, setSelectedConductor] = useState<string>("");
   const [searchText, setSearchText] = useState<string>("");
-  const [warnings, setWarnings] = useState<any[]>([]);
-  const [operations, setOperations] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [reportData, setReportData] = useState<any>(null);
 
-  // Carregar operações e advertências pendentes de hoje ao montar o componente
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Carregar todas as operações
-        const response = await fetch("/api/auth/warnings-stats-by-driver");
-        const result = await response.json();
-        const allData = result.result?.data?.json || [];
-        
-        // Extrair operações únicas (filtrar vazias)
-        const uniqueOps = new Set<string>();
-        allData.forEach((item: any) => {
-          if (item.operacao && item.operacao.trim() !== '') uniqueOps.add(item.operacao);
-        });
-        const opsArray = Array.from(uniqueOps).sort();
-        setOperations(opsArray);
-        
-        // Carregar advertências pendentes de hoje por padrão
-        const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
-        
-        const params = new URLSearchParams();
-        params.append('startDate', todayStr);
-        params.append('endDate', todayStr);
-        
-        const todayResponse = await fetch(`/api/auth/warnings-stats-by-driver?${params.toString()}`);
-        const todayResult = await todayResponse.json();
-        const todayData = todayResult.result?.data?.json || [];
-        
-        // Filtrar apenas pendentes
-        const pendingWarnings = todayData.filter((w: any) => !w.assinada);
-        setWarnings(pendingWarnings);
-        
-        // Preencher os campos de data com hoje
-        if (startDateRef.current) startDateRef.current.value = todayStr;
-        if (endDateRef.current) endDateRef.current.value = todayStr;
-      } catch (error) {
-        console.error("Erro ao carregar dados iniciais:", error);
-        toast.error("Erro ao carregar dados iniciais");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadInitialData();
-  }, []);
+  // Buscar todos os motoristas e medidas
+  const { data: conductorsData = [] } = trpc.dashboard.getIdleDriversForWarning.useQuery();
+  const { data: allWarningsData = { advertencias: [], suspensoes: [] } } = trpc.dashboard.getWarningsStatsByDriver.useQuery();
 
-  // Função para buscar com filtros
-  const handleSearch = async () => {
+  // Filtrar motoristas baseado na busca
+  const filteredConductors = conductorsData.filter((c: any) =>
+    c.conductorName.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const handleGenerateReport = async () => {
+    if (!selectedConductor) {
+      toast.error("Selecione um colaborador");
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      setIsLoading(true);
+      // Buscar dados do motorista
+      const conductor = conductorsData.find((c: any) => c.conductorName === selectedConductor);
       
-      // Pegar valores diretamente dos refs
-      const startDate = startDateRef.current?.value || "";
-      const endDate = endDateRef.current?.value || "";
+      // Buscar todas as medidas (advertências e suspensões)
+      // Nota: Usar a query diretamente do hook já carregado
+      const allWarnings = { advertencias: [], suspensoes: [] };
       
-      console.log('Search triggered with:', { startDate, endDate, selectedOperation });
-      
-      // Construir URL com parâmetros de filtro
-      const params = new URLSearchParams();
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
-      if (selectedOperation) params.append('operation', selectedOperation);
-      
-      const url = `/api/auth/warnings-stats-by-driver${params.toString() ? '?' + params.toString() : ''}`;
-      console.log('Fetching URL:', url);
-      const response = await fetch(url);
-      const result = await response.json();
-      const data = result.result?.data?.json || [];
-      
-      console.log('Loaded', data.length, 'warnings');
-      setWarnings(data);
-      
-      if (data.length === 0) {
-        toast.info("Nenhuma advertência encontrada com os filtros aplicados");
-      }
+      // Filtrar medidas do motorista selecionado
+      const advertencias = (allWarningsData.advertencias || []).filter(
+        (w: any) => w.nome === selectedConductor
+      );
+      const suspensoes = (allWarningsData.suspensoes || []).filter(
+        (w: any) => w.nome === selectedConductor
+      );
+
+      setReportData({
+        conductor: conductor || { conductorName: selectedConductor },
+        advertencias,
+        suspensoes,
+        totalMedidas: advertencias.length + suspensoes.length,
+      });
+
+      toast.success("Relatório gerado com sucesso");
     } catch (error) {
-      console.error("Erro ao carregar advertências:", error);
-      toast.error("Erro ao carregar advertências");
+      console.error("Erro ao gerar relatório:", error);
+      toast.error("Erro ao gerar relatório");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Filtrar advertências por critérios (apenas busca, data já é filtrada no backend)
-  const filteredWarnings = useMemo(() => {
-    return warnings.filter((warning) => {
-      const matchesSearch = searchText === "" || 
-        warning.nome?.toLowerCase().includes(searchText.toLowerCase());
-      const matchesOperation = selectedOperation === "" || warning.operacao === selectedOperation;
-      
-      return matchesSearch && matchesOperation;
-    });
-  }, [warnings, searchText, selectedOperation]);
-
-  const generatePDF = async () => {
-    if (filteredWarnings.length === 0) {
-      toast.error("Nenhum dado para gerar relatório");
+  const handleDownloadPDF = () => {
+    if (!reportData) {
+      toast.error("Gere um relatório primeiro");
       return;
     }
 
-    try {
-      toast.loading("Gerando PDF...");
-      
-      const response = await fetch("/api/auth/generate-report-pdf", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          warnings: filteredWarnings,
-        }),
-      });
+    // Criar conteúdo HTML para PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Relatório de Medidas Disciplinares</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .header h1 { margin: 0; color: #333; }
+          .header p { margin: 5px 0; color: #666; }
+          .conductor-info { background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+          .conductor-info p { margin: 5px 0; }
+          .section { margin-bottom: 30px; }
+          .section h2 { color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th { background: #f0f0f0; padding: 10px; text-align: left; border: 1px solid #ddd; }
+          td { padding: 10px; border: 1px solid #ddd; }
+          tr:nth-child(even) { background: #fafafa; }
+          .status-assinada { color: green; font-weight: bold; }
+          .status-pendente { color: orange; font-weight: bold; }
+          .footer { text-align: center; margin-top: 30px; color: #999; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Relatório de Medidas Disciplinares</h1>
+          <p>Histórico de Advertências e Suspensões</p>
+        </div>
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erro ao gerar PDF");
-      }
+        <div class="conductor-info">
+          <p><strong>Colaborador:</strong> ${reportData.conductor.conductorName}</p>
+          <p><strong>Operação:</strong> ${reportData.conductor.operacao || "-"}</p>
+          <p><strong>Placa:</strong> ${reportData.conductor.placa || "-"}</p>
+          <p><strong>Total de Medidas:</strong> ${reportData.totalMedidas}</p>
+          <p><strong>Data do Relatório:</strong> ${new Date().toLocaleDateString("pt-BR")}</p>
+        </div>
 
-      // Obter o blob do PDF
-      const blob = await response.blob();
-      
-      // Criar URL e fazer download
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `relatorio-advertencias-${new Date().getTime()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast.success("Relatório gerado com sucesso!");
-    } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
-      toast.error("Erro ao gerar PDF. Tente novamente.");
+        ${reportData.advertencias.length > 0 ? `
+        <div class="section">
+          <h2>Advertências (${reportData.advertencias.length})</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Data de Cadastro</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${reportData.advertencias.map((adv: any) => `
+              <tr>
+                <td>${new Date(adv.data).toLocaleDateString("pt-BR")}</td>
+                <td class="${adv.assinada ? "status-assinada" : "status-pendente"}">
+                  ${adv.assinada ? "Assinada" : "Pendente"}
+                </td>
+              </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+        ` : ""}
+
+        ${reportData.suspensoes.length > 0 ? `
+        <div class="section">
+          <h2>Suspensões (${reportData.suspensoes.length})</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Data de Cadastro</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${reportData.suspensoes.map((susp: any) => `
+              <tr>
+                <td>${new Date(susp.data).toLocaleDateString("pt-BR")}</td>
+                <td class="${susp.assinada ? "status-assinada" : "status-pendente"}">
+                  ${susp.assinada ? "Assinada" : "Pendente"}
+                </td>
+              </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+        ` : ""}
+
+        <div class="footer">
+          <p>Relatório gerado automaticamente pelo Sistema de Gestão de Motoristas</p>
+          <p>${new Date().toLocaleString("pt-BR")}</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Usar a API de impressão do navegador
+    const printWindow = window.open("", "", "width=800,height=600");
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.print();
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-32 bg-slate-200 rounded-lg" />
-          <div className="h-96 bg-slate-200 rounded-lg" />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="p-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Relatórios de Advertências</h1>
-        <p className="text-muted-foreground mt-2">
-          Gere relatórios filtrados por período, motorista ou operação
+        <h1 className="text-3xl font-bold text-slate-900">
+          Relatório de Medidas Disciplinares
+        </h1>
+        <p className="text-slate-600 mt-2">
+          Histórico de Advertências e Suspensões por Colaborador
         </p>
       </div>
 
-      {/* Filtros */}
+      {/* Formulário de Geração de Relatório */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filtros
-          </CardTitle>
-          <CardDescription>Customize os filtros para gerar o relatório desejado</CardDescription>
+          <CardTitle>Gerar Relatório</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Busca por Motorista */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Buscar Motorista</label>
-              <Input
-                placeholder="Digite o nome do motorista..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-              />
-            </div>
-
-            {/* Filtro por Operação */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Operação</label>
-              <Select value={selectedOperation} onValueChange={setSelectedOperation}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas as operações" />
-                </SelectTrigger>
-                <SelectContent>
-                  {operations.filter((op) => op && op.trim() !== '').map((op) => (
-                    <SelectItem key={op} value={op}>
-                      {op}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Data Inicial */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Data Inicial</label>
-              <Input
-                ref={startDateRef}
-                type="date"
-              />
-            </div>
-
-            {/* Data Final */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Data Final</label>
-              <Input
-                ref={endDateRef}
-                type="date"
-              />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">
+              Buscar Colaborador:
+            </label>
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Digite o nome do colaborador..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Botões de Ação */}
-          <div className="flex gap-2 pt-4">
-            <Button onClick={handleSearch} disabled={isLoading} className="gap-2">
-              <Search className="w-4 h-4" />
-              Buscar
-            </Button>
-            <Button onClick={generatePDF} variant="outline" disabled={filteredWarnings.length === 0} className="gap-2">
-              <Download className="w-4 h-4" />
-              Gerar PDF
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Resultados */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Resultados ({filteredWarnings.length})
-            </span>
-          </CardTitle>
-          <CardDescription>Mostrando {filteredWarnings.length} advertência(s)</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {filteredWarnings.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>Nenhuma advertência encontrada. Clique em "Buscar" para carregar os dados.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Motorista</TableHead>
-                    <TableHead>Operação</TableHead>
-                    <TableHead>Placa</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredWarnings.map((warning, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell className="font-medium">{warning.nome || "-"}</TableCell>
-                      <TableCell>{warning.operacao || "-"}</TableCell>
-                      <TableCell>{warning.placa || "-"}</TableCell>
-                      <TableCell>
-                        {warning.data ? new Date(warning.data).toLocaleDateString("pt-BR") : "-"}
-                      </TableCell>
-                      <TableCell>{warning.tipo || "Advertência"}</TableCell>
-                      <TableCell>
-                        <Badge variant={warning.assinada ? "default" : "secondary"}>
-                          {warning.assinada ? "Assinada" : "Pendente"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+          {searchText && filteredConductors.length > 0 && (
+            <div className="border border-slate-200 rounded-lg max-h-48 overflow-y-auto">
+              {filteredConductors.map((conductor: any) => (
+                <button
+                  key={conductor.conductorName}
+                  onClick={() => {
+                    setSelectedConductor(conductor.conductorName);
+                    setSearchText("");
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-100 border-b border-slate-200 last:border-b-0"
+                >
+                  <div className="font-medium">{conductor.conductorName}</div>
+                  <div className="text-sm text-slate-500">
+                    {conductor.operacao} • {conductor.placa}
+                  </div>
+                </button>
+              ))}
             </div>
           )}
+
+          {selectedConductor && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Selecionado:</strong> {selectedConductor}
+              </p>
+            </div>
+          )}
+
+          <Button
+            onClick={handleGenerateReport}
+            disabled={!selectedConductor || isLoading}
+            className="w-full"
+          >
+            {isLoading ? "Gerando..." : "Gerar Relatório"}
+          </Button>
         </CardContent>
       </Card>
+
+      {/* Resultado do Relatório */}
+      {reportData && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Relatório de {reportData.conductor.conductorName}</CardTitle>
+            <Button
+              onClick={handleDownloadPDF}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Baixar PDF
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Informações do Colaborador */}
+            <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+              <p className="text-sm">
+                <strong>Operação:</strong> {reportData.conductor.operacao || "-"}
+              </p>
+              <p className="text-sm">
+                <strong>Placa:</strong> {reportData.conductor.placa || "-"}
+              </p>
+              <p className="text-sm">
+                <strong>Total de Medidas:</strong> {reportData.totalMedidas}
+              </p>
+            </div>
+
+            {/* Advertências */}
+            {reportData.advertencias.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-yellow-700 mb-3">
+                  Advertências ({reportData.advertencias.length})
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-yellow-50 border-b border-yellow-200">
+                      <tr>
+                        <th className="text-left py-2 px-3">Data de Cadastro</th>
+                        <th className="text-center py-2 px-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reportData.advertencias.map((adv: any, idx: number) => (
+                        <tr key={idx} className="border-b border-slate-200 hover:bg-slate-50">
+                          <td className="py-2 px-3">
+                            {new Date(adv.data).toLocaleDateString("pt-BR")}
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            {adv.assinada ? (
+                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">
+                                Assinada
+                              </span>
+                            ) : (
+                              <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-semibold">
+                                Pendente
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Suspensões */}
+            {reportData.suspensoes.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-red-700 mb-3">
+                  Suspensões ({reportData.suspensoes.length})
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-red-50 border-b border-red-200">
+                      <tr>
+                        <th className="text-left py-2 px-3">Data de Cadastro</th>
+                        <th className="text-center py-2 px-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reportData.suspensoes.map((susp: any, idx: number) => (
+                        <tr key={idx} className="border-b border-slate-200 hover:bg-slate-50">
+                          <td className="py-2 px-3">
+                            {new Date(susp.data).toLocaleDateString("pt-BR")}
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            {susp.assinada ? (
+                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">
+                                Assinada
+                              </span>
+                            ) : (
+                              <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-semibold">
+                                Pendente
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {reportData.totalMedidas === 0 && (
+              <div className="text-center py-8 text-slate-500">
+                <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhuma medida registrada para este colaborador</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

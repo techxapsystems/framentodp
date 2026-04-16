@@ -453,6 +453,9 @@ export async function createWarning(data: any) {
       advertenciaGerada: true,
       advertenciaAplicada: false,
       criadoEm: new Date(),
+      dataInicio: data.dataInicio ? new Date(data.dataInicio) : null,
+      dataFim: data.dataFim ? new Date(data.dataFim) : null,
+      dataRetorno: data.dataRetorno ? new Date(data.dataRetorno) : null,
     });
 
     // Buscar a advertência criada para obter o ID
@@ -840,7 +843,7 @@ export async function getWarningsReport() {
  */
 export async function getWarningsStatsByDriver(filters?: any) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) return { advertencias: [], suspensoes: [] };
 
   try {
     let query = db.select().from(warnings);
@@ -853,25 +856,34 @@ export async function getWarningsStatsByDriver(filters?: any) {
       conductorMap.set(c.nome, c);
     });
 
-    // Retornar todas as advertências com dados completos
-    const result = allWarnings.map((warning: any) => {
+    // Separar advertências e suspensões
+    const advertencias: any[] = [];
+    const suspensoes: any[] = [];
+
+    allWarnings.forEach((warning: any) => {
       const conductor = warning.conductorName || "Desconhecido";
       const conductorInfo = conductorMap.get(conductor);
-      return {
+      const item = {
         id: warning.id,
         nome: conductor,
         operacao: conductorInfo?.operacao || "",
         placa: conductorInfo?.placa || warning.placa || "",
         data: warning.criadoEm || warning.dataAplicacao,
-        tipo: warning.tipo || "Advertência",
+        tipo: warning.tipo || "advertencia",
         assinada: warning.advertenciaAplicada || false,
       };
+
+      if (warning.tipo === "suspensao") {
+        suspensoes.push(item);
+      } else {
+        advertencias.push(item);
+      }
     });
 
-    return result;
+    return { advertencias, suspensoes };
   } catch (error) {
     console.error("[DB] Error getting warnings stats by driver:", error);
-    return [];
+    return { advertencias: [], suspensoes: [] };
   }
 }
 

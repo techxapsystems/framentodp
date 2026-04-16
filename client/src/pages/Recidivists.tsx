@@ -29,6 +29,10 @@ export default function Recidivists() {
   const [licensePlate, setLicensePlate] = useState("");
   const [operacao, setOperacao] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  // Campos de suspensão
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
+  const [dataRetorno, setDataRetorno] = useState("");
 
   // Buscar operações disponíveis
   const { data: operacoes = [] } = trpc.dashboard.getAllOperations.useQuery();
@@ -88,8 +92,13 @@ export default function Recidivists() {
   });
 
   const handleCreateWarning = () => {
-    if (!selectedConductor || !licensePlate || !operacao || !infrationDate || !warningContent) {
+    if (!selectedConductor || !operacao || !infrationDate || !warningContent) {
       toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    if (warningType === "suspensao" && (!dataInicio || !dataFim || !dataRetorno)) {
+      toast.error("Preencha todos os campos de suspensão");
       return;
     }
 
@@ -99,7 +108,10 @@ export default function Recidivists() {
       motivo: warningContent,
       observacao: "",
       tipo: warningType,
-      categoria: warningType === "advertencia" ? "pouco_rodado" : "horas_extras",
+      categoria: "outro",
+      dataInicio: warningType === "suspensao" ? dataInicio : undefined,
+      dataFim: warningType === "suspensao" ? dataFim : undefined,
+      dataRetorno: warningType === "suspensao" ? dataRetorno : undefined,
     });
   };
 
@@ -142,23 +154,42 @@ export default function Recidivists() {
             </DialogHeader>
 
             <div className="space-y-4">
-              {/* Motorista */}
+              {/* Motorista com busca melhorada */}
               <div>
                 <label className="text-sm font-medium text-slate-700 block mb-2">
                   Motorista: *
                 </label>
-                <Select value={selectedConductor} onValueChange={handleConductorChange}>
-                  <SelectTrigger className={selectedConductor ? '' : 'border-red-300 bg-red-50'}>
-                    <SelectValue placeholder="Selecione um motorista" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.isArray(idleDriversData) && idleDriversData.filter((driver: any) => driver.conductorName && driver.conductorName.trim() !== '').map((driver: any) => (
-                      <SelectItem key={driver.conductorName} value={driver.conductorName}>
-                        {driver.conductorName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar por nome, CPF ou matrícula..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    onChange={(e) => {
+                      const searchValue = e.target.value.toLowerCase();
+                      if (searchValue.length === 0) {
+                        // Mostrar todos os motoristas
+                      }
+                    }}
+                  />
+                  <Select value={selectedConductor} onValueChange={handleConductorChange}>
+                    <SelectTrigger className={`absolute inset-0 opacity-0 ${selectedConductor ? '' : 'border-red-300 bg-red-50'}`}>
+                      <SelectValue placeholder="Selecione um motorista" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.isArray(idleDriversData) && idleDriversData.filter((driver: any) => driver.conductorName && driver.conductorName.trim() !== '').map((driver: any) => (
+                        <SelectItem key={driver.conductorName} value={driver.conductorName}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{driver.conductorName}</span>
+                            <span className="text-xs text-slate-500">
+                              {driver.cpf && `CPF: ${driver.cpf}`}
+                              {driver.matricula && ` | Matrícula: ${driver.matricula}`}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Placa do Veículo */}
@@ -216,6 +247,44 @@ export default function Recidivists() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Campos de Suspensão */}
+              {warningType === "suspensao" && (
+                <>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Data de Início (DD/MM/YYYY): *
+                    </label>
+                    <DateMaskInput
+                      value={dataInicio}
+                      onChange={setDataInicio}
+                      placeholder="DD/MM/YYYY"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Data de Fim (DD/MM/YYYY): *
+                    </label>
+                    <DateMaskInput
+                      value={dataFim}
+                      onChange={setDataFim}
+                      placeholder="DD/MM/YYYY"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Data de Retorno (DD/MM/YYYY): *
+                    </label>
+                    <DateMaskInput
+                      value={dataRetorno}
+                      onChange={setDataRetorno}
+                      placeholder="DD/MM/YYYY"
+                    />
+                  </div>
+                </>
+              )}
 
               {/* Conteúdo da Advertência */}
               <div>

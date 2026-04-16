@@ -357,6 +357,10 @@ export const warnings = mysqlTable(
     empresaResponsavel: varchar("empresaResponsavel", { length: 255 }),
     tipoResponsavel: varchar("tipoResponsavel", { length: 100 }),
     responsavelAnotacao: varchar("responsavelAnotacao", { length: 255 }),
+    // Campos específicos para suspensão
+    dataInicio: timestamp("dataInicio"),
+    dataFim: timestamp("dataFim"),
+    dataRetorno: timestamp("dataRetorno"),
   },
   (table) => [
     index("idx_conductorTipo").on(table.conductorName, table.tipo),

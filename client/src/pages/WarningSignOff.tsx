@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertCircle, CheckCircle2, List, Download, Grid3x3 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { trpc } from '@/lib/trpc';
 
 interface Warning {
   id: number;
@@ -34,6 +35,9 @@ export default function WarningSignOff() {
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [signOffNote, setSignOffNote] = useState('');
+  const [confirmAction, setConfirmAction] = useState<'signoff' | 'delete'>('signoff');
+  
+  const deleteWarningMutation = trpc.dashboard.deleteWarning.useMutation();
 
   // Inicializar datas e carregar dados
   useEffect(() => {
@@ -233,6 +237,7 @@ export default function WarningSignOff() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedWarning(warning);
+                            setConfirmAction('signoff');
                             setShowConfirmDialog(true);
                           }}
                         >
@@ -276,6 +281,7 @@ export default function WarningSignOff() {
                                 className="bg-green-600 hover:bg-green-700"
                                 onClick={() => {
                                   setSelectedWarning(warning);
+                                  setConfirmAction('signoff');
                                   setShowConfirmDialog(true);
                                 }}
                               >
@@ -331,45 +337,58 @@ export default function WarningSignOff() {
                             <Badge variant="default" className="text-xs">Assinada</Badge>
                           </TableCell>
                           <TableCell className="py-2 px-2 whitespace-nowrap">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-xs h-7"
-                              onClick={async () => {
-                                try {
-                                  const response = await fetch('/api/auth/download-warning-pdf', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                      warningId: warning.id,
-                                      conductorName: warning.conductorName,
-                                      warningDate: new Date(warning.criadoEm).toLocaleDateString('pt-BR'),
-                                      warningType: warning.categoria,
-                                      warningLevel: warning.nivelAdvertencia,
-                                    }),
-                                  });
-                                  if (response.ok) {
-                                    const blob = await response.blob();
-                                    const url = window.URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `Advertencia_${warning.conductorName.replace(/\s+/g, '_')}.pdf`;
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    window.URL.revokeObjectURL(url);
-                                    document.body.removeChild(a);
-                                    toast.success('PDF baixado com sucesso!');
-                                  } else {
-                                    toast.error('Erro ao gerar PDF');
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7"
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch('/api/auth/download-warning-pdf', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        warningId: warning.id,
+                                        conductorName: warning.conductorName,
+                                        warningDate: new Date(warning.criadoEm).toLocaleDateString('pt-BR'),
+                                        warningType: warning.categoria,
+                                        warningLevel: warning.nivelAdvertencia,
+                                      }),
+                                    });
+                                    if (response.ok) {
+                                      const blob = await response.blob();
+                                      const url = window.URL.createObjectURL(blob);
+                                      const a = document.createElement('a');
+                                      a.href = url;
+                                      a.download = `Advertencia_${warning.conductorName.replace(/\s+/g, '_')}.pdf`;
+                                      document.body.appendChild(a);
+                                      a.click();
+                                      window.URL.revokeObjectURL(url);
+                                      document.body.removeChild(a);
+                                      toast.success('PDF baixado com sucesso!');
+                                    } else {
+                                      toast.error('Erro ao gerar PDF');
+                                    }
+                                  } catch (error) {
+                                    console.error('Erro:', error);
+                                    toast.error('Erro ao baixar PDF');
                                   }
-                                } catch (error) {
-                                  console.error('Erro:', error);
-                                  toast.error('Erro ao baixar PDF');
-                                }
-                              }}
-                            >
-                              Baixar PDF
-                            </Button>
+                                }}
+                              >
+                                Baixar PDF
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="text-xs h-7"
+                                onClick={() => {
+                                  setSelectedWarning(warning);
+                                  setShowConfirmDialog(true);
+                                }}
+                              >
+                                Deletar
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -488,27 +507,58 @@ export default function WarningSignOff() {
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Baixa de Advertência</AlertDialogTitle>
+            <AlertDialogTitle>
+              {confirmAction === 'signoff' ? 'Confirmar Baixa de Advertência' : 'Deletar Advertência'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Você tem certeza que deseja marcar a advertência de {selectedWarning?.conductorName} como assinada?
+              {confirmAction === 'signoff'
+                ? `Você tem certeza que deseja marcar a advertência de ${selectedWarning?.conductorName} como assinada?`
+                : `Você tem certeza que deseja deletar a advertência de ${selectedWarning?.conductorName}? Esta ação não pode ser desfeita.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="sign-off-note">Observação (opcional)</Label>
-              <Textarea
-                id="sign-off-note"
-                placeholder="Adicione uma observação sobre a assinatura..."
-                value={signOffNote}
-                onChange={(e) => setSignOffNote(e.target.value)}
-                className="mt-2"
-              />
+          {confirmAction === 'signoff' && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="sign-off-note">Observação (opcional)</Label>
+                <Textarea
+                  id="sign-off-note"
+                  placeholder="Adicione uma observação sobre a assinatura..."
+                  value={signOffNote}
+                  onChange={(e) => setSignOffNote(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
             </div>
-          </div>
+          )}
           <AlertDialogAction
-            onClick={handleSignOff}
+            onClick={async () => {
+              if (confirmAction === 'signoff') {
+                await handleSignOff();
+              } else {
+                if (!selectedWarning) return;
+                setLoading(true);
+                try {
+                  const result = await deleteWarningMutation.mutateAsync({
+                    warningId: selectedWarning.id,
+                  });
+                  if (result.success) {
+                    toast.success('Advertência deletada com sucesso!');
+                    setShowConfirmDialog(false);
+                    setSelectedWarning(null);
+                    loadWarnings();
+                  } else {
+                    toast.error(result.message || 'Erro ao deletar advertência');
+                  }
+                } catch (error) {
+                  console.error('Erro:', error);
+                  toast.error('Erro ao deletar advertência');
+                } finally {
+                  setLoading(false);
+                }
+              }
+            }}
             disabled={loading}
-            className="bg-green-600 hover:bg-green-700"
+            className={confirmAction === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}
           >
             {loading ? 'Processando...' : 'Confirmar'}
           </AlertDialogAction>

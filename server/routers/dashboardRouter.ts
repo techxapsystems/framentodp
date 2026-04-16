@@ -414,12 +414,14 @@ export const dashboardRouter = router({
       try {
         const { getAllConductors } = await import("../db");
         const conductors = await getAllConductors();
-        // Mapear para o formato esperado (conductorName, placa, operacao, cargo)
+        // Mapear para o formato esperado (conductorName, placa, operacao, cargo, cpf, matricula)
         return conductors.map((c: any) => ({
           conductorName: c.nome,
           placa: c.placa,
           operacao: c.operacao,
           cargo: c.cargo,
+          cpf: c.cpf,
+          matricula: c.matricula,
         })) || [];
       } catch (error) {
         console.error("Error fetching conductors:", error);
@@ -442,6 +444,9 @@ export const dashboardRouter = router({
         nivelAdvertencia: z.number().min(1).max(3),
         motivo: z.string(),
         observacao: z.string().optional(),
+        dataInicio: z.string().optional(),
+        dataFim: z.string().optional(),
+        dataRetorno: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -458,6 +463,9 @@ export const dashboardRouter = router({
           motivo: input.motivo,
           observacao: input.observacao,
           aplicadoPor: ctx.user.email || ctx.user.name || "Sistema",
+          dataInicio: input.dataInicio,
+          dataFim: input.dataFim,
+          dataRetorno: input.dataRetorno,
         });
 
         if (!result?.id) {
@@ -797,7 +805,54 @@ export const dashboardRouter = router({
           message: "Erro ao salvar PDF",
         });
       }
-    })
+    }),
+
+  /**
+   * Deletar advertência com confirmação
+   */
+  deleteWarning: protectedProcedure
+    .input(
+      z.object({
+        warningId: z.number(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Verificar se advertência existe
+        const warning = await db
+          .select()
+          .from(warnings)
+          .where(eq(warnings.id, input.warningId))
+          .limit(1);
+
+        if (!warning || warning.length === 0) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Advertência não encontrada",
+          });
+        }
+
+        // Deletar advertência
+        await db
+          .delete(warnings)
+          .where(eq(warnings.id, input.warningId));
+
+        return {
+          success: true,
+          message: "Advertência deletada com sucesso",
+        };
+      } catch (error) {
+        console.error("[Router] Error deleting warning:", error);
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Erro ao deletar advertência: ${String(error)}`,
+        });
+      }
+    }),
 
   /**
    * Obter histórico de PDFs de uma advertência

@@ -2,11 +2,6 @@ import { jsPDF } from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 
-// Cores Framento
-const FRAMENTO_RED = [230, 57, 70]; // #E63946
-const FRAMENTO_BLUE = [30, 58, 138]; // #1E3A8A
-const FRAMENTO_DARK = [15, 23, 42]; // #0F172A
-
 interface WarningPDFProps {
   conductorName: string;
   licensePlate: string;
@@ -19,6 +14,10 @@ interface WarningPDFProps {
   createdDate?: Date;
 }
 
+/**
+ * Gera PDF usando o mesmo modelo padrão da tela de "Baixa de Advertências"
+ * Garante consistência em todos os pontos do sistema
+ */
 export function generateWarningPDF(data: WarningPDFProps) {
   // Ensure all required fields have values
   const safeData = {
@@ -42,51 +41,36 @@ export function generateWarningPDF(data: WarningPDFProps) {
 
   let yPosition = margin;
 
-  // Cabeçalho com fundo colorido Framento
-  doc.setFillColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
-  doc.rect(0, 0, pageWidth, 35, "F");
+  // Cabeçalho com logo/título (modelo padrão simples)
+  doc.setFontSize(20);
+  doc.setTextColor(0, 0, 0);
+  doc.text("ADVERTÊNCIA", margin, yPosition);
 
-  // Logo/Título em branco sobre fundo azul
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
-  doc.setFont(undefined as any, "bold");
-  doc.text("FRAMENTO TRANSPORTES", margin, 12);
+  yPosition += 10;
+  doc.setFontSize(10);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Framento Transportes - ${new Date().getFullYear()}`, margin, yPosition);
 
-  // Subtítulo
-  doc.setFontSize(12);
-  doc.setFont(undefined as any, "normal");
-  const docType = data.warningType === "pouco_rodado" ? "ADVERTÊNCIA" : "SUSPENSÃO";
-  doc.text(docType, margin, 22);
-
-  // Linha separadora vermelha
-  doc.setDrawColor(FRAMENTO_RED[0], FRAMENTO_RED[1], FRAMENTO_RED[2]);
-  doc.setLineWidth(2);
-  doc.line(margin, 28, pageWidth - margin, 28);
-
-  yPosition = 40;
-  doc.setTextColor(FRAMENTO_DARK[0], FRAMENTO_DARK[1], FRAMENTO_DARK[2]);
-
+  // Linha separadora
   yPosition += 8;
+  doc.setDrawColor(0, 0, 0);
+  doc.line(margin, yPosition, pageWidth - margin, yPosition);
+
+  yPosition += 10;
 
   // Informações do motorista
   doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0);
   doc.setFont(undefined as any, "bold");
-  doc.setTextColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
   doc.text("DADOS DO MOTORISTA", margin, yPosition);
-
-  // Linha separadora azul
-  doc.setDrawColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPosition + 1, pageWidth - margin, yPosition + 1);
 
   yPosition += 7;
   doc.setFont(undefined as any, "normal");
   doc.setFontSize(10);
-  doc.setTextColor(FRAMENTO_DARK[0], FRAMENTO_DARK[1], FRAMENTO_DARK[2]);
 
   const motoristInfo = [
     [`Nome: ${data.conductorName}`, `Placa: ${data.licensePlate}`],
-    [`Operação: ${data.operacao}`, `Data: ${new Date(data.createdDate || Date.now()).toLocaleDateString("pt-BR")}`],
+    [`Operação: ${data.operacao}`, `Data: ${new Date(safeData.createdDate || Date.now()).toLocaleDateString("pt-BR")}`],
   ];
 
   motoristInfo.forEach((row) => {
@@ -100,18 +84,11 @@ export function generateWarningPDF(data: WarningPDFProps) {
   // Informações da advertência
   doc.setFont(undefined as any, "bold");
   doc.setFontSize(11);
-  doc.setTextColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
   doc.text("DETALHES DA ADVERTÊNCIA", margin, yPosition);
-
-  // Linha separadora azul
-  doc.setDrawColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPosition + 1, pageWidth - margin, yPosition + 1);
 
   yPosition += 7;
   doc.setFont(undefined as any, "normal");
   doc.setFontSize(10);
-  doc.setTextColor(FRAMENTO_DARK[0], FRAMENTO_DARK[1], FRAMENTO_DARK[2]);
 
   const warningInfo = [
     [`Tipo: ${data.warningType === "pouco_rodado" ? "Pouco Rodado" : "Horas Extras"}`],
@@ -123,8 +100,8 @@ export function generateWarningPDF(data: WarningPDFProps) {
     yPosition += 6;
   });
 
-  if (data.infrationDays) {
-    doc.text(`Dias de Infração: ${data.infrationDays}`, margin, yPosition);
+  if (safeData.infrationDays) {
+    doc.text(`Dias de Infração: ${safeData.infrationDays}`, margin, yPosition);
     yPosition += 6;
   }
 
@@ -133,56 +110,38 @@ export function generateWarningPDF(data: WarningPDFProps) {
   // Motivo
   doc.setFont(undefined as any, "bold");
   doc.setFontSize(11);
-  doc.setTextColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
   doc.text("MOTIVO", margin, yPosition);
-
-  // Linha separadora azul
-  doc.setDrawColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPosition + 1, pageWidth - margin, yPosition + 1);
 
   yPosition += 7;
   doc.setFont(undefined as any, "normal");
   doc.setFontSize(10);
-  doc.setTextColor(FRAMENTO_DARK[0], FRAMENTO_DARK[1], FRAMENTO_DARK[2]);
 
-  const splitReason = doc.splitTextToSize(data.warningReason, contentWidth);
+  const splitReason = doc.splitTextToSize(safeData.warningReason, contentWidth);
   doc.text(splitReason, margin, yPosition);
   yPosition += splitReason.length * 5 + 5;
 
   // Observação
-  if (data.warningNote) {
+  if (safeData.warningNote) {
     doc.setFont(undefined as any, "bold");
     doc.setFontSize(11);
-    doc.setTextColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
     doc.text("OBSERVAÇÃO", margin, yPosition);
-
-    // Linha separadora azul
-    doc.setDrawColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
-    doc.setLineWidth(0.5);
-    doc.line(margin, yPosition + 1, pageWidth - margin, yPosition + 1);
-
     yPosition += 7;
     doc.setFont(undefined as any, "normal");
     doc.setFontSize(10);
-    doc.setTextColor(FRAMENTO_DARK[0], FRAMENTO_DARK[1], FRAMENTO_DARK[2]);
-
-    const splitNote = doc.splitTextToSize(data.warningNote, contentWidth);
+    const splitNote = doc.splitTextToSize(safeData.warningNote, contentWidth);
     doc.text(splitNote, margin, yPosition);
     yPosition += splitNote.length * 5 + 5;
   }
 
-  // Rodapé com fundo
-  doc.setFillColor(FRAMENTO_BLUE[0], FRAMENTO_BLUE[1], FRAMENTO_BLUE[2]);
-  doc.rect(0, pageHeight - 20, pageWidth, 20, "F");
-
-  doc.setFontSize(8);
-  doc.setTextColor(255, 255, 255);
-  doc.text("TRANSPORTES FRAMENTO LTDA | CNPJ: 00.766.315/0001-44", margin, pageHeight - 12);
-  doc.text(`Emissão: ${new Date().toLocaleDateString("pt-BR")} | Sistema de Gestão de Motoristas`, margin, pageHeight - 7);
+  // Rodapé
+  yPosition = pageHeight - 30;
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text("Este documento foi gerado automaticamente pelo sistema de gestão de motoristas.", margin, yPosition);
+  doc.text(`Data de emissão: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, margin, yPosition + 5);
 
   // Salvar PDF
-  const fileName = `${docType}_${data.conductorName.replace(/\s+/g, "_")}_${new Date().getTime()}.pdf`;
+  const fileName = `Advertencia_${data.conductorName.replace(/\s+/g, "_")}_${new Date().getTime()}.pdf`;
   doc.save(fileName);
 }
 

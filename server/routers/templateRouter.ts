@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getDb } from "../db";
 import { modelCategories, warningTemplates, templateUsageHistory } from "../../drizzle/schema";
-import { eq, like, and, desc } from "drizzle-orm";
+import { eq, like, and, desc, or } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 
@@ -97,7 +97,10 @@ export const templateRouter = router({
           .from(warningTemplates)
           .where(
             and(
-              like(warningTemplates.title, searchPattern),
+              or(
+                like(warningTemplates.title, searchPattern),
+                like(warningTemplates.content, searchPattern)
+              ),
               eq(warningTemplates.isActive, true),
               input.type ? eq(warningTemplates.type, input.type) : undefined
             )
