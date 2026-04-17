@@ -441,6 +441,13 @@ export async function createWarning(data: any) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Função para parsear datas no formato DD/MM/YYYY
+  const parseDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return null;
+    const [day, month, year] = dateStr.split('/');
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  };
+
   try {
     await db.insert(warnings).values({
       conductorName: data.conductorName,
@@ -453,9 +460,9 @@ export async function createWarning(data: any) {
       advertenciaGerada: true,
       advertenciaAplicada: false,
       criadoEm: new Date(),
-      dataInicio: data.dataInicio ? new Date(data.dataInicio) : null,
-      dataFim: data.dataFim ? new Date(data.dataFim) : null,
-      dataRetorno: data.dataRetorno ? new Date(data.dataRetorno) : null,
+      dataInicio: parseDate(data.dataInicio),
+      dataFim: parseDate(data.dataFim),
+      dataRetorno: parseDate(data.dataRetorno),
     });
 
     // Buscar a advertência criada para obter o ID
