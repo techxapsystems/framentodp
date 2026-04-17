@@ -383,6 +383,7 @@ export default function WarningSignOff() {
                                 className="text-xs h-7"
                                 onClick={() => {
                                   setSelectedWarning(warning);
+                                  setConfirmAction('delete');
                                   setShowConfirmDialog(true);
                                 }}
                               >

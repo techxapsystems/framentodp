@@ -1,17 +1,11 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Download, FileText, Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 export default function Reports() {
   const [selectedConductor, setSelectedConductor] = useState<string>("");
@@ -28,6 +22,24 @@ export default function Reports() {
     c.conductorName.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  const getWarningTypeLabel = (categoria: string) => {
+    const labels: Record<string, string> = {
+      pouco_rodado: "Pouco Rodado",
+      horas_extras: "Horas Extras",
+      outro: "Outro",
+    };
+    return labels[categoria] || categoria;
+  };
+
+  const getWarningLevelLabel = (nivel: number) => {
+    const labels: Record<number, string> = {
+      1: "Aviso 1",
+      2: "Aviso 2",
+      3: "Aviso 3 (Crítico)",
+    };
+    return labels[nivel] || `Aviso ${nivel}`;
+  };
+
   const handleGenerateReport = async () => {
     if (!selectedConductor) {
       toast.error("Selecione um colaborador");
@@ -39,16 +51,12 @@ export default function Reports() {
       // Buscar dados do motorista
       const conductor = conductorsData.find((c: any) => c.conductorName === selectedConductor);
       
-      // Buscar todas as medidas (advertências e suspensões)
-      // Nota: Usar a query diretamente do hook já carregado
-      const allWarnings = { advertencias: [], suspensoes: [] };
-      
       // Filtrar medidas do motorista selecionado
       const advertencias = (allWarningsData.advertencias || []).filter(
-        (w: any) => w.nome === selectedConductor
+        (w: any) => w.nome === selectedConductor || w.conductorName === selectedConductor
       );
       const suspensoes = (allWarningsData.suspensoes || []).filter(
-        (w: any) => w.nome === selectedConductor
+        (w: any) => w.nome === selectedConductor || w.conductorName === selectedConductor
       );
 
       setReportData({
@@ -83,25 +91,25 @@ export default function Reports() {
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
           .header { text-align: center; margin-bottom: 30px; }
-          .header h1 { margin: 0; color: #333; }
+          .header h1 { margin: 0; color: #333; font-size: 24px; }
           .header p { margin: 5px 0; color: #666; }
           .conductor-info { background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-          .conductor-info p { margin: 5px 0; }
+          .conductor-info p { margin: 5px 0; font-size: 12px; }
           .section { margin-bottom: 30px; }
-          .section h2 { color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-          th { background: #f0f0f0; padding: 10px; text-align: left; border: 1px solid #ddd; }
-          td { padding: 10px; border: 1px solid #ddd; }
+          .section h2 { color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px; font-size: 16px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+          th { background: #f0f0f0; padding: 8px; text-align: left; border: 1px solid #ddd; font-weight: bold; }
+          td { padding: 8px; border: 1px solid #ddd; }
           tr:nth-child(even) { background: #fafafa; }
           .status-assinada { color: green; font-weight: bold; }
           .status-pendente { color: orange; font-weight: bold; }
-          .footer { text-align: center; margin-top: 30px; color: #999; font-size: 12px; }
+          .footer { text-align: center; margin-top: 30px; color: #999; font-size: 10px; }
         </style>
       </head>
       <body>
         <div class="header">
           <h1>Relatório de Medidas Disciplinares</h1>
-          <p>Histórico de Advertências e Suspensões</p>
+          <p>Histórico Completo de Advertências e Suspensões</p>
         </div>
 
         <div class="conductor-info">
@@ -119,13 +127,19 @@ export default function Reports() {
             <thead>
               <tr>
                 <th>Data de Cadastro</th>
+                <th>Tipo</th>
+                <th>Nível</th>
+                <th>Motivo</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
               ${reportData.advertencias.map((adv: any) => `
               <tr>
-                <td>${new Date(adv.data).toLocaleDateString("pt-BR")}</td>
+                <td>${new Date(adv.criadoEm).toLocaleDateString("pt-BR")}</td>
+                <td>${adv.categoria ? getWarningTypeLabel(adv.categoria) : "-"}</td>
+                <td>${adv.nivelAdvertencia ? getWarningLevelLabel(adv.nivelAdvertencia) : "-"}</td>
+                <td>${adv.motivo ? adv.motivo.substring(0, 50) + (adv.motivo.length > 50 ? "..." : "") : "-"}</td>
                 <td class="${adv.assinada ? "status-assinada" : "status-pendente"}">
                   ${adv.assinada ? "Assinada" : "Pendente"}
                 </td>
@@ -143,13 +157,19 @@ export default function Reports() {
             <thead>
               <tr>
                 <th>Data de Cadastro</th>
+                <th>Tipo</th>
+                <th>Nível</th>
+                <th>Motivo</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
               ${reportData.suspensoes.map((susp: any) => `
               <tr>
-                <td>${new Date(susp.data).toLocaleDateString("pt-BR")}</td>
+                <td>${new Date(susp.criadoEm).toLocaleDateString("pt-BR")}</td>
+                <td>${susp.categoria ? getWarningTypeLabel(susp.categoria) : "-"}</td>
+                <td>${susp.nivelAdvertencia ? getWarningLevelLabel(susp.nivelAdvertencia) : "-"}</td>
+                <td>${susp.motivo ? susp.motivo.substring(0, 50) + (susp.motivo.length > 50 ? "..." : "") : "-"}</td>
                 <td class="${susp.assinada ? "status-assinada" : "status-pendente"}">
                   ${susp.assinada ? "Assinada" : "Pendente"}
                 </td>
@@ -185,7 +205,7 @@ export default function Reports() {
           Relatório de Medidas Disciplinares
         </h1>
         <p className="text-slate-600 mt-2">
-          Histórico de Advertências e Suspensões por Colaborador
+          Histórico Completo de Advertências e Suspensões por Colaborador
         </p>
       </div>
 
@@ -290,6 +310,9 @@ export default function Reports() {
                     <thead className="bg-yellow-50 border-b border-yellow-200">
                       <tr>
                         <th className="text-left py-2 px-3">Data de Cadastro</th>
+                        <th className="text-left py-2 px-3">Tipo</th>
+                        <th className="text-center py-2 px-3">Nível</th>
+                        <th className="text-left py-2 px-3">Motivo</th>
                         <th className="text-center py-2 px-3">Status</th>
                       </tr>
                     </thead>
@@ -297,18 +320,28 @@ export default function Reports() {
                       {reportData.advertencias.map((adv: any, idx: number) => (
                         <tr key={idx} className="border-b border-slate-200 hover:bg-slate-50">
                           <td className="py-2 px-3">
-                            {new Date(adv.data).toLocaleDateString("pt-BR")}
+                            {new Date(adv.criadoEm).toLocaleDateString("pt-BR")}
+                          </td>
+                          <td className="py-2 px-3">
+                            {adv.categoria ? getWarningTypeLabel(adv.categoria) : "-"}
                           </td>
                           <td className="py-2 px-3 text-center">
-                            {adv.assinada ? (
-                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">
-                                Assinada
-                              </span>
+                            {adv.nivelAdvertencia ? (
+                              <Badge variant="outline">{getWarningLevelLabel(adv.nivelAdvertencia)}</Badge>
                             ) : (
-                              <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-semibold">
-                                Pendente
-                              </span>
+                              "-"
                             )}
+                          </td>
+                          <td className="py-2 px-3 text-xs">
+                            {adv.motivo ? adv.motivo.substring(0, 50) + (adv.motivo.length > 50 ? "..." : "") : "-"}
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <Badge
+                              variant={adv.assinada ? "default" : "destructive"}
+                              className="text-xs"
+                            >
+                              {adv.assinada ? "Assinada" : "Pendente"}
+                            </Badge>
                           </td>
                         </tr>
                       ))}
@@ -329,6 +362,9 @@ export default function Reports() {
                     <thead className="bg-red-50 border-b border-red-200">
                       <tr>
                         <th className="text-left py-2 px-3">Data de Cadastro</th>
+                        <th className="text-left py-2 px-3">Tipo</th>
+                        <th className="text-center py-2 px-3">Nível</th>
+                        <th className="text-left py-2 px-3">Motivo</th>
                         <th className="text-center py-2 px-3">Status</th>
                       </tr>
                     </thead>
@@ -336,18 +372,28 @@ export default function Reports() {
                       {reportData.suspensoes.map((susp: any, idx: number) => (
                         <tr key={idx} className="border-b border-slate-200 hover:bg-slate-50">
                           <td className="py-2 px-3">
-                            {new Date(susp.data).toLocaleDateString("pt-BR")}
+                            {new Date(susp.criadoEm).toLocaleDateString("pt-BR")}
+                          </td>
+                          <td className="py-2 px-3">
+                            {susp.categoria ? getWarningTypeLabel(susp.categoria) : "-"}
                           </td>
                           <td className="py-2 px-3 text-center">
-                            {susp.assinada ? (
-                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">
-                                Assinada
-                              </span>
+                            {susp.nivelAdvertencia ? (
+                              <Badge variant="outline">{getWarningLevelLabel(susp.nivelAdvertencia)}</Badge>
                             ) : (
-                              <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-semibold">
-                                Pendente
-                              </span>
+                              "-"
                             )}
+                          </td>
+                          <td className="py-2 px-3 text-xs">
+                            {susp.motivo ? susp.motivo.substring(0, 50) + (susp.motivo.length > 50 ? "..." : "") : "-"}
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <Badge
+                              variant={susp.assinada ? "default" : "destructive"}
+                              className="text-xs"
+                            >
+                              {susp.assinada ? "Assinada" : "Pendente"}
+                            </Badge>
                           </td>
                         </tr>
                       ))}
@@ -359,8 +405,7 @@ export default function Reports() {
 
             {reportData.totalMedidas === 0 && (
               <div className="text-center py-8 text-slate-500">
-                <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>Nenhuma medida registrada para este colaborador</p>
+                Nenhuma medida disciplinar encontrada para este colaborador
               </div>
             )}
           </CardContent>
