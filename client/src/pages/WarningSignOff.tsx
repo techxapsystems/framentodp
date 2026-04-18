@@ -15,7 +15,8 @@ import { trpc } from '@/lib/trpc';
 interface Warning {
   id: number;
   conductorName: string;
-  categoria: string;
+  tipo: 'advertencia' | 'suspensao';
+  categoria?: string;
   criadoEm: string;
   assinada: boolean;
   motivo?: string;
@@ -111,13 +112,8 @@ export default function WarningSignOff() {
     }
   };
 
-  const getWarningTypeLabel = (categoria: string) => {
-    const labels: Record<string, string> = {
-      pouco_rodado: 'Pouco Rodado',
-      horas_extras: 'Horas Extras',
-      outro: 'Outro',
-    };
-    return labels[categoria] || categoria;
+  const getWarningTypeLabel = (tipo: 'advertencia' | 'suspensao') => {
+    return tipo === 'advertencia' ? 'Advertência' : 'Suspensão';
   };
 
   const getWarningLevelLabel = (nivel: number) => {
@@ -221,7 +217,11 @@ export default function WarningSignOff() {
                         <div className="flex-1 grid grid-cols-4 gap-4 items-center text-sm">
                           <div className="font-semibold">{warning.conductorName}</div>
                           <div>{new Date(warning.criadoEm).toLocaleDateString('pt-BR')}</div>
-                          <div>{getWarningTypeLabel(warning.categoria)}</div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={warning.tipo === 'advertencia' ? 'default' : 'destructive'}>
+                              {getWarningTypeLabel(warning.tipo)}
+                            </Badge>
+                          </div>
                           <div className="flex items-center gap-2">
                             {warning.nivelAdvertencia && (
                               <Badge variant="outline" className="text-xs">
@@ -266,7 +266,11 @@ export default function WarningSignOff() {
                             <TableCell>
                               {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
                             </TableCell>
-                            <TableCell>{getWarningTypeLabel(warning.categoria)}</TableCell>
+                            <TableCell>
+                              <Badge variant={warning.tipo === 'advertencia' ? 'default' : 'destructive'}>
+                                {getWarningTypeLabel(warning.tipo)}
+                              </Badge>
+                            </TableCell>
                             <TableCell>
                               {warning.nivelAdvertencia
                                 ? getWarningLevelLabel(warning.nivelAdvertencia)
@@ -327,7 +331,11 @@ export default function WarningSignOff() {
                           <TableCell className="py-2 px-2 whitespace-nowrap">
                             {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
                           </TableCell>
-                          <TableCell className="py-2 px-2 whitespace-nowrap">{getWarningTypeLabel(warning.categoria)}</TableCell>
+                           <TableCell className="py-2 px-2 whitespace-nowrap">
+                              <Badge variant={warning.tipo === 'advertencia' ? 'default' : 'destructive'}>
+                                {getWarningTypeLabel(warning.tipo)}
+                              </Badge>
+                            </TableCell>
                           <TableCell className="py-2 px-2 whitespace-nowrap">
                             {warning.nivelAdvertencia
                               ? getWarningLevelLabel(warning.nivelAdvertencia)
@@ -351,7 +359,7 @@ export default function WarningSignOff() {
                                         warningId: warning.id,
                                         conductorName: warning.conductorName,
                                         warningDate: new Date(warning.criadoEm).toLocaleDateString('pt-BR'),
-                                        warningType: warning.categoria,
+                                        warningType: warning.tipo,
                                         warningLevel: warning.nivelAdvertencia,
                                       }),
                                     });
@@ -433,7 +441,11 @@ export default function WarningSignOff() {
                 </div>
                 <div>
                   <div className="text-sm text-gray-600">Tipo</div>
-                  <div className="font-semibold">{getWarningTypeLabel(selectedWarning.categoria)}</div>
+                  <div className="font-semibold flex items-center gap-2">
+                    <Badge variant={selectedWarning.tipo === 'advertencia' ? 'default' : 'destructive'}>
+                      {getWarningTypeLabel(selectedWarning.tipo)}
+                    </Badge>
+                  </div>
                 </div>
               </div>
               {selectedWarning.nivelAdvertencia && (
@@ -471,7 +483,7 @@ export default function WarningSignOff() {
                       warningId: selectedWarning.id,
                       conductorName: selectedWarning.conductorName,
                       warningDate: new Date(selectedWarning.criadoEm).toLocaleDateString('pt-BR'),
-                      warningType: selectedWarning.categoria,
+                       warningType: selectedWarning.tipo,
                       warningLevel: selectedWarning.nivelAdvertencia,
                     }),
                   });
