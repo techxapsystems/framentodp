@@ -28,8 +28,10 @@ export default function WarningSignOff() {
   const startDateRef = useRef<HTMLInputElement>(null);
   const endDateRef = useRef<HTMLInputElement>(null);
 
-  const [pendingWarnings, setPendingWarnings] = useState<Warning[]>([]);
-  const [signedWarnings, setSignedWarnings] = useState<Warning[]>([]);
+  const [pendingAdvertencias, setPendingAdvertencias] = useState<Warning[]>([]);
+  const [pendingSuspensoes, setPendingSuspensoes] = useState<Warning[]>([]);
+  const [signedAdvertencias, setSignedAdvertencias] = useState<Warning[]>([]);
+  const [signedSuspensoes, setSignedSuspensoes] = useState<Warning[]>([]);
   const [selectedWarning, setSelectedWarning] = useState<Warning | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
@@ -66,12 +68,16 @@ export default function WarningSignOff() {
       const stats = result.result?.data?.json || {};
       const allWarnings = stats.warnings || [];
 
-      // Separar assinadas e não assinadas
-      const pending = allWarnings.filter((w: any) => !w.advertenciaAplicada);
-      const signed = allWarnings.filter((w: any) => w.advertenciaAplicada);
+      // Separar por tipo e status
+      const pendingAdv = allWarnings.filter((w: any) => !w.advertenciaAplicada && w.tipo === 'advertencia');
+      const pendingSusp = allWarnings.filter((w: any) => !w.advertenciaAplicada && w.tipo === 'suspensao');
+      const signedAdv = allWarnings.filter((w: any) => w.advertenciaAplicada && w.tipo === 'advertencia');
+      const signedSusp = allWarnings.filter((w: any) => w.advertenciaAplicada && w.tipo === 'suspensao');
 
-      setPendingWarnings(pending);
-      setSignedWarnings(signed);
+      setPendingAdvertencias(pendingAdv);
+      setPendingSuspensoes(pendingSusp);
+      setSignedAdvertencias(signedAdv);
+      setSignedSuspensoes(signedSusp);
     } catch (error) {
       console.error('Erro ao carregar advertências:', error);
       toast.error('Erro ao carregar advertências');
@@ -125,13 +131,350 @@ export default function WarningSignOff() {
     return labels[nivel] || `Aviso ${nivel}`;
   };
 
+  const renderPendingWarningsGrid = () => (
+    <div className="space-y-4">
+      {/* Advertências Pendentes */}
+      {pendingAdvertencias.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-sm mb-2 text-blue-600">Advertências Pendentes ({pendingAdvertencias.length})</h3>
+          <div className="space-y-2">
+            {pendingAdvertencias.map((warning) => (
+              <div
+                key={warning.id}
+                className="border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer flex items-center justify-between gap-4"
+                onClick={() => {
+                  setSelectedWarning(warning);
+                  setShowDetailDialog(true);
+                }}
+              >
+                <div className="flex-1 grid grid-cols-4 gap-4 items-center text-sm">
+                  <div className="font-semibold">{warning.conductorName}</div>
+                  <div>{new Date(warning.criadoEm).toLocaleDateString('pt-BR')}</div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="default">
+                      {getWarningTypeLabel(warning.tipo)}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {warning.nivelAdvertencia && (
+                      <Badge variant="outline" className="text-xs">
+                        {getWarningLevelLabel(warning.nivelAdvertencia)}
+                      </Badge>
+                    )}
+                    <Badge variant="destructive" className="text-xs">Pendente</Badge>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedWarning(warning);
+                    setConfirmAction('signoff');
+                    setShowConfirmDialog(true);
+                  }}
+                >
+                  Dar Baixa
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Suspensões Pendentes */}
+      {pendingSuspensoes.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-sm mb-2 text-red-600">Suspensões Pendentes ({pendingSuspensoes.length})</h3>
+          <div className="space-y-2">
+            {pendingSuspensoes.map((warning) => (
+              <div
+                key={warning.id}
+                className="border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer flex items-center justify-between gap-4 border-red-300 bg-red-50"
+                onClick={() => {
+                  setSelectedWarning(warning);
+                  setShowDetailDialog(true);
+                }}
+              >
+                <div className="flex-1 grid grid-cols-4 gap-4 items-center text-sm">
+                  <div className="font-semibold">{warning.conductorName}</div>
+                  <div>{new Date(warning.criadoEm).toLocaleDateString('pt-BR')}</div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="destructive">
+                      {getWarningTypeLabel(warning.tipo)}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="destructive" className="text-xs">Pendente</Badge>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedWarning(warning);
+                    setConfirmAction('signoff');
+                    setShowConfirmDialog(true);
+                  }}
+                >
+                  Dar Baixa
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderPendingWarningsTable = () => (
+    <div className="overflow-x-auto space-y-6">
+      {/* Tabela de Advertências Pendentes */}
+      {pendingAdvertencias.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-sm mb-2 text-blue-600">Advertências Pendentes ({pendingAdvertencias.length})</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Motorista</TableHead>
+                <TableHead>Data de Cadastro</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Nível</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Ação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingAdvertencias.map((warning) => (
+                <TableRow key={warning.id}>
+                  <TableCell className="font-medium">{warning.conductorName}</TableCell>
+                  <TableCell>
+                    {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="default">
+                      {getWarningTypeLabel(warning.tipo)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {warning.nivelAdvertencia
+                      ? getWarningLevelLabel(warning.nivelAdvertencia)
+                      : '-'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="destructive">Pendente</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        setSelectedWarning(warning);
+                        setConfirmAction('signoff');
+                        setShowConfirmDialog(true);
+                      }}
+                    >
+                      Dar Baixa
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Tabela de Suspensões Pendentes */}
+      {pendingSuspensoes.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-sm mb-2 text-red-600">Suspensões Pendentes ({pendingSuspensoes.length})</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Motorista</TableHead>
+                <TableHead>Data de Cadastro</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Ação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingSuspensoes.map((warning) => (
+                <TableRow key={warning.id} className="bg-red-50">
+                  <TableCell className="font-medium">{warning.conductorName}</TableCell>
+                  <TableCell>
+                    {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="destructive">
+                      {getWarningTypeLabel(warning.tipo)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="destructive">Pendente</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        setSelectedWarning(warning);
+                        setConfirmAction('signoff');
+                        setShowConfirmDialog(true);
+                      }}
+                    >
+                      Dar Baixa
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderSignedWarningsTable = () => (
+    <div className="overflow-x-auto space-y-6">
+      {/* Tabela de Advertências Assinadas */}
+      {signedAdvertencias.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-sm mb-2 text-blue-600">Advertências Assinadas ({signedAdvertencias.length})</h3>
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow className="bg-gray-100">
+                <TableHead className="py-2 px-2">Motorista</TableHead>
+                <TableHead className="py-2 px-2">Data</TableHead>
+                <TableHead className="py-2 px-2">Tipo</TableHead>
+                <TableHead className="py-2 px-2">Nível</TableHead>
+                <TableHead className="py-2 px-2">Status</TableHead>
+                <TableHead className="py-2 px-2">Ação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {signedAdvertencias.map((warning) => (
+                <TableRow key={warning.id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium py-2 px-2 whitespace-nowrap">{warning.conductorName}</TableCell>
+                  <TableCell className="py-2 px-2 whitespace-nowrap">
+                    {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell className="py-2 px-2 whitespace-nowrap">
+                    <Badge variant="default">
+                      {getWarningTypeLabel(warning.tipo)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-2 px-2 whitespace-nowrap">
+                    {warning.nivelAdvertencia
+                      ? getWarningLevelLabel(warning.nivelAdvertencia)
+                      : '-'}
+                  </TableCell>
+                  <TableCell className="py-2 px-2 whitespace-nowrap">
+                    <Badge variant="default" className="text-xs">Assinada</Badge>
+                  </TableCell>
+                  <TableCell className="py-2 px-2 whitespace-nowrap">
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedWarning(warning);
+                          setShowDetailDialog(true);
+                        }}
+                      >
+                        Ver
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedWarning(warning);
+                          setConfirmAction('delete');
+                          setShowConfirmDialog(true);
+                        }}
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Tabela de Suspensões Assinadas */}
+      {signedSuspensoes.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-sm mb-2 text-red-600">Suspensões Assinadas ({signedSuspensoes.length})</h3>
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow className="bg-gray-100">
+                <TableHead className="py-2 px-2">Motorista</TableHead>
+                <TableHead className="py-2 px-2">Data</TableHead>
+                <TableHead className="py-2 px-2">Tipo</TableHead>
+                <TableHead className="py-2 px-2">Status</TableHead>
+                <TableHead className="py-2 px-2">Ação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {signedSuspensoes.map((warning) => (
+                <TableRow key={warning.id} className="hover:bg-gray-50 bg-red-50">
+                  <TableCell className="font-medium py-2 px-2 whitespace-nowrap">{warning.conductorName}</TableCell>
+                  <TableCell className="py-2 px-2 whitespace-nowrap">
+                    {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell className="py-2 px-2 whitespace-nowrap">
+                    <Badge variant="destructive">
+                      {getWarningTypeLabel(warning.tipo)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-2 px-2 whitespace-nowrap">
+                    <Badge variant="default" className="text-xs">Assinada</Badge>
+                  </TableCell>
+                  <TableCell className="py-2 px-2 whitespace-nowrap">
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedWarning(warning);
+                          setShowDetailDialog(true);
+                        }}
+                      >
+                        Ver
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedWarning(warning);
+                          setConfirmAction('delete');
+                          setShowConfirmDialog(true);
+                        }}
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="p-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Baixa de Advertências</h1>
+        <h1 className="text-3xl font-bold">Baixa de Advertências e Suspensões</h1>
         <p className="text-muted-foreground mt-2">
-          Registre o recebimento de advertências assinadas pelos motoristas
+          Registre o recebimento de advertências e suspensões assinadas pelos motoristas
         </p>
       </div>
 
@@ -167,18 +510,18 @@ export default function WarningSignOff() {
         </CardContent>
       </Card>
 
-      {/* Advertências Pendentes */}
+      {/* Medidas Pendentes */}
       {loading ? (
         <div className="text-center py-8">Carregando...</div>
       ) : (
         <>
-          {pendingWarnings.length > 0 && (
+          {(pendingAdvertencias.length > 0 || pendingSuspensoes.length > 0) && (
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle className="flex items-center gap-2">
                     <AlertCircle className="w-5 h-5 text-red-600" />
-                    Advertências Pendentes ({pendingWarnings.length})
+                    Medidas Pendentes ({pendingAdvertencias.length + pendingSuspensoes.length})
                   </CardTitle>
                   <div className="flex gap-2">
                     <Button
@@ -203,381 +546,143 @@ export default function WarningSignOff() {
                 </div>
               </CardHeader>
               <CardContent>
-                {viewMode === 'grid' ? (
-                  <div className="space-y-2">
-                    {pendingWarnings.map((warning) => (
-                      <div
-                        key={warning.id}
-                        className="border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer flex items-center justify-between gap-4"
-                        onClick={() => {
-                          setSelectedWarning(warning);
-                          setShowDetailDialog(true);
-                        }}
-                      >
-                        <div className="flex-1 grid grid-cols-4 gap-4 items-center text-sm">
-                          <div className="font-semibold">{warning.conductorName}</div>
-                          <div>{new Date(warning.criadoEm).toLocaleDateString('pt-BR')}</div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={warning.tipo === 'advertencia' ? 'default' : 'destructive'}>
-                              {getWarningTypeLabel(warning.tipo)}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {warning.nivelAdvertencia && (
-                              <Badge variant="outline" className="text-xs">
-                                {getWarningLevelLabel(warning.nivelAdvertencia)}
-                              </Badge>
-                            )}
-                            <Badge variant="destructive" className="text-xs">Pendente</Badge>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedWarning(warning);
-                            setConfirmAction('signoff');
-                            setShowConfirmDialog(true);
-                          }}
-                        >
-                          Dar Baixa
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Motorista</TableHead>
-                          <TableHead>Data de Cadastro</TableHead>
-                          <TableHead>Tipo</TableHead>
-                          <TableHead>Nível</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Ação</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pendingWarnings.map((warning) => (
-                          <TableRow key={warning.id}>
-                            <TableCell className="font-medium">{warning.conductorName}</TableCell>
-                            <TableCell>
-                              {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={warning.tipo === 'advertencia' ? 'default' : 'destructive'}>
-                                {getWarningTypeLabel(warning.tipo)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {warning.nivelAdvertencia
-                                ? getWarningLevelLabel(warning.nivelAdvertencia)
-                                : '-'}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="destructive">Pendente</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700"
-                                onClick={() => {
-                                  setSelectedWarning(warning);
-                                  setConfirmAction('signoff');
-                                  setShowConfirmDialog(true);
-                                }}
-                              >
-                                Dar Baixa
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                {viewMode === 'grid' ? renderPendingWarningsGrid() : renderPendingWarningsTable()}
               </CardContent>
             </Card>
           )}
 
-          {/* Advertências Assinadas */}
-          {signedWarnings.length > 0 && (
+          {/* Medidas Assinadas */}
+          {(signedAdvertencias.length > 0 || signedSuspensoes.length > 0) && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  Advertências Assinadas ({signedWarnings.length})
+                  Medidas Assinadas ({signedAdvertencias.length + signedSuspensoes.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table className="text-sm">
-                    <TableHeader>
-                      <TableRow className="bg-gray-100">
-                        <TableHead className="py-2 px-2">Motorista</TableHead>
-                        <TableHead className="py-2 px-2">Data</TableHead>
-                        <TableHead className="py-2 px-2">Tipo</TableHead>
-                        <TableHead className="py-2 px-2">Nível</TableHead>
-                        <TableHead className="py-2 px-2">Status</TableHead>
-                        <TableHead className="py-2 px-2">Ação</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {signedWarnings.map((warning) => (
-                        <TableRow key={warning.id} className="hover:bg-gray-50">
-                          <TableCell className="font-medium py-2 px-2 whitespace-nowrap">{warning.conductorName}</TableCell>
-                          <TableCell className="py-2 px-2 whitespace-nowrap">
-                            {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
-                          </TableCell>
-                           <TableCell className="py-2 px-2 whitespace-nowrap">
-                              <Badge variant={warning.tipo === 'advertencia' ? 'default' : 'destructive'}>
-                                {getWarningTypeLabel(warning.tipo)}
-                              </Badge>
-                            </TableCell>
-                          <TableCell className="py-2 px-2 whitespace-nowrap">
-                            {warning.nivelAdvertencia
-                              ? getWarningLevelLabel(warning.nivelAdvertencia)
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="py-2 px-2 whitespace-nowrap">
-                            <Badge variant="default" className="text-xs">Assinada</Badge>
-                          </TableCell>
-                          <TableCell className="py-2 px-2 whitespace-nowrap">
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7"
-                                onClick={async () => {
-                                  try {
-                                    const response = await fetch('/api/auth/download-warning-pdf', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({
-                                        warningId: warning.id,
-                                        conductorName: warning.conductorName,
-                                        warningDate: new Date(warning.criadoEm).toLocaleDateString('pt-BR'),
-                                        warningType: warning.tipo,
-                                        warningLevel: warning.nivelAdvertencia,
-                                      }),
-                                    });
-                                    if (response.ok) {
-                                      const blob = await response.blob();
-                                      const url = window.URL.createObjectURL(blob);
-                                      const a = document.createElement('a');
-                                      a.href = url;
-                                      a.download = `Advertencia_${warning.conductorName.replace(/\s+/g, '_')}.pdf`;
-                                      document.body.appendChild(a);
-                                      a.click();
-                                      window.URL.revokeObjectURL(url);
-                                      document.body.removeChild(a);
-                                      toast.success('PDF baixado com sucesso!');
-                                    } else {
-                                      toast.error('Erro ao gerar PDF');
-                                    }
-                                  } catch (error) {
-                                    console.error('Erro:', error);
-                                    toast.error('Erro ao baixar PDF');
-                                  }
-                                }}
-                              >
-                                Baixar PDF
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="text-xs h-7"
-                                onClick={() => {
-                                  setSelectedWarning(warning);
-                                  setConfirmAction('delete');
-                                  setShowConfirmDialog(true);
-                                }}
-                              >
-                                Deletar
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                {renderSignedWarningsTable()}
               </CardContent>
             </Card>
           )}
 
-          {pendingWarnings.length === 0 && signedWarnings.length === 0 && (
+          {!pendingAdvertencias.length && !pendingSuspensoes.length && !signedAdvertencias.length && !signedSuspensoes.length && !loading && (
             <Card>
-              <CardContent className="py-8">
-                <div className="text-center text-gray-500">
-                  Nenhuma advertência encontrada no período selecionado
-                </div>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                Nenhuma medida encontrada no período selecionado
               </CardContent>
             </Card>
           )}
         </>
       )}
 
-      {/* Dialog de Detalhes */}
-      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Detalhes da Advertência</DialogTitle>
-          </DialogHeader>
-          {selectedWarning && (
-            <div className="space-y-4">
-              <div>
-                <div className="text-sm text-gray-600">Motorista</div>
-                <div className="font-semibold">{selectedWarning.conductorName}</div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-gray-600">Data de Cadastro</div>
-                  <div className="font-semibold">
-                    {new Date(selectedWarning.criadoEm).toLocaleDateString('pt-BR')}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-600">Tipo</div>
-                  <div className="font-semibold flex items-center gap-2">
-                    <Badge variant={selectedWarning.tipo === 'advertencia' ? 'default' : 'destructive'}>
-                      {getWarningTypeLabel(selectedWarning.tipo)}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-              {selectedWarning.nivelAdvertencia && (
-                <div>
-                  <div className="text-sm text-gray-600">Nível</div>
-                  <div className="font-semibold">
-                    {getWarningLevelLabel(selectedWarning.nivelAdvertencia)}
-                  </div>
-                </div>
-              )}
-              {selectedWarning.motivo && (
-                <div>
-                  <div className="text-sm text-gray-600">Motivo</div>
-                  <div className="font-semibold">{selectedWarning.motivo}</div>
-                </div>
-              )}
-              {selectedWarning.observacao && (
-                <div>
-                  <div className="text-sm text-gray-600">Observação</div>
-                  <div className="font-semibold">{selectedWarning.observacao}</div>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                if (!selectedWarning) return;
-                try {
-                  const response = await fetch('/api/auth/download-warning-pdf', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      warningId: selectedWarning.id,
-                      conductorName: selectedWarning.conductorName,
-                      warningDate: new Date(selectedWarning.criadoEm).toLocaleDateString('pt-BR'),
-                       warningType: selectedWarning.tipo,
-                      warningLevel: selectedWarning.nivelAdvertencia,
-                    }),
-                  });
-                  if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `Advertencia_${selectedWarning.conductorName.replace(/\s+/g, '_')}.pdf`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    toast.success('PDF baixado com sucesso!');
-                  } else {
-                    toast.error('Erro ao gerar PDF');
-                  }
-                } catch (error) {
-                  console.error('Erro:', error);
-                  toast.error('Erro ao baixar PDF');
-                }
-              }}
-            >
-              Baixar PDF
-            </Button>
-            <Button variant="outline" onClick={() => setShowDetailDialog(false)}>
-              Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+      {/* Diálogos */}
       {/* Dialog de Confirmação */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmAction === 'signoff' ? 'Confirmar Baixa de Advertência' : 'Deletar Advertência'}
+              {confirmAction === 'signoff' ? 'Confirmar Baixa' : 'Confirmar Remoção'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction === 'signoff'
-                ? `Você tem certeza que deseja marcar a advertência de ${selectedWarning?.conductorName} como assinada?`
-                : `Você tem certeza que deseja deletar a advertência de ${selectedWarning?.conductorName}? Esta ação não pode ser desfeita.`}
+                ? `Deseja marcar a ${selectedWarning?.tipo === 'advertencia' ? 'advertência' : 'suspensão'} como assinada?`
+                : 'Deseja remover este registro?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {confirmAction === 'signoff' && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="sign-off-note">Observação (opcional)</Label>
-                <Textarea
-                  id="sign-off-note"
-                  placeholder="Adicione uma observação sobre a assinatura..."
-                  value={signOffNote}
-                  onChange={(e) => setSignOffNote(e.target.value)}
-                  className="mt-2"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="signoff-note">Observação (opcional)</Label>
+              <Textarea
+                id="signoff-note"
+                placeholder="Digite uma observação..."
+                value={signOffNote}
+                onChange={(e) => setSignOffNote(e.target.value)}
+              />
             </div>
           )}
-          <AlertDialogAction
-            onClick={async () => {
-              if (confirmAction === 'signoff') {
-                await handleSignOff();
-              } else {
-                if (!selectedWarning) return;
-                setLoading(true);
-                try {
-                  const result = await deleteWarningMutation.mutateAsync({
-                    warningId: selectedWarning.id,
-                  });
-                  if (result.success) {
-                    toast.success('Advertência deletada com sucesso!');
-                    setShowConfirmDialog(false);
-                    setSelectedWarning(null);
-                    loadWarnings();
-                  } else {
-                    toast.error(result.message || 'Erro ao deletar advertência');
-                  }
-                } catch (error) {
-                  console.error('Erro:', error);
-                  toast.error('Erro ao deletar advertência');
-                } finally {
-                  setLoading(false);
-                }
-              }
-            }}
-            disabled={loading}
-            className={confirmAction === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}
-          >
-            {loading ? 'Processando...' : 'Confirmar'}
-          </AlertDialogAction>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
         </AlertDialogContent>
+        <AlertDialogAction
+          onClick={() => {
+            if (confirmAction === 'signoff') {
+              handleSignOff();
+            } else if (confirmAction === 'delete' && selectedWarning) {
+              deleteWarningMutation.mutate(
+                { warningId: selectedWarning.id },
+                {
+                  onSuccess: () => {
+                    toast.success('Medida removida com sucesso');
+                    setShowConfirmDialog(false);
+                    loadWarnings();
+                  },
+                  onError: () => {
+                    toast.error('Erro ao remover medida');
+                  },
+                }
+              );
+            }
+          }}
+        >
+          Confirmar
+        </AlertDialogAction>
+        <AlertDialogCancel>Cancelar</AlertDialogCancel>
       </AlertDialog>
+
+      {/* Dialog de Detalhes */}
+      {selectedWarning && (
+        <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Detalhes da {selectedWarning.tipo === 'advertencia' ? 'Advertência' : 'Suspensão'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Motorista</Label>
+                  <p className="font-semibold">{selectedWarning.conductorName}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Tipo</Label>
+                  <p className="font-semibold">
+                    {selectedWarning.tipo === 'advertencia' ? 'Advertência' : 'Suspensão'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Data de Cadastro</Label>
+                  <p className="font-semibold">
+                    {new Date(selectedWarning.criadoEm).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+                {selectedWarning.nivelAdvertencia && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Nível</Label>
+                    <p className="font-semibold">
+                      {getWarningLevelLabel(selectedWarning.nivelAdvertencia)}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Motivo</Label>
+                <p className="text-sm whitespace-pre-wrap break-words">{selectedWarning.motivo || '-'}</p>
+              </div>
+              {selectedWarning.observacao && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Observação</Label>
+                  <p className="text-sm whitespace-pre-wrap break-words">{selectedWarning.observacao}</p>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowDetailDialog(false)}>
+                Fechar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
