@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+'use client';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -678,7 +679,14 @@ export default function WarningSignOff() {
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDetailDialog(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowDetailDialog(false);
+                  setSelectedWarning(null);
+                }}
+                disabled={loading}
+              >
                 Fechar
               </Button>
             </DialogFooter>
