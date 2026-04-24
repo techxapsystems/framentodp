@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import { administrativeEmployees, InsertAdministrativeEmployee } from "../../drizzle/schema";
@@ -15,7 +15,7 @@ const AdministrativeEmployeeSchema = z.object({
 });
 
 export const importAdministrativeRouter = router({
-  importEmployees: protectedProcedure
+  importEmployees: publicProcedure
     .input(
       z.object({
         employees: z.array(AdministrativeEmployeeSchema),
@@ -106,4 +106,13 @@ export const importAdministrativeRouter = router({
         .where(eq(administrativeEmployees.id, input.id));
       return { success: true };
     }),
+
+  getEmployees: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) {
+      throw new Error("Database not available");
+    }
+    const employees = await db.select().from(administrativeEmployees);
+    return employees;
+  }),
 });
