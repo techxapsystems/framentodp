@@ -601,31 +601,33 @@ export default function WarningSignOff() {
               />
             </div>
           )}
-        </AlertDialogContent>
-        <AlertDialogAction
-          onClick={() => {
-            if (confirmAction === 'signoff') {
-              handleSignOff();
-            } else if (confirmAction === 'delete' && selectedWarning) {
-              deleteWarningMutation.mutate(
-                { warningId: selectedWarning.id },
-                {
-                  onSuccess: () => {
-                    toast.success('Medida removida com sucesso');
-                    setShowConfirmDialog(false);
-                    loadWarnings();
-                  },
-                  onError: () => {
-                    toast.error('Erro ao remover medida');
-                  },
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmAction === 'signoff') {
+                  handleSignOff();
+                } else if (confirmAction === 'delete' && selectedWarning) {
+                  deleteWarningMutation.mutate(
+                    { warningId: selectedWarning.id },
+                    {
+                      onSuccess: () => {
+                        toast.success('Medida removida com sucesso');
+                        setShowConfirmDialog(false);
+                        loadWarnings();
+                      },
+                      onError: () => {
+                        toast.error('Erro ao remover medida');
+                      },
+                    }
+                  );
                 }
-              );
-            }
-          }}
-        >
-          Confirmar
-        </AlertDialogAction>
-        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
       </AlertDialog>
 
       {/* Dialog de Detalhes */}

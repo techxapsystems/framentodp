@@ -873,11 +873,21 @@ export async function getWarningsStatsByDriver(filters?: any) {
       const item = {
         id: warning.id,
         nome: conductor,
+        conductorName: conductor,
         operacao: conductorInfo?.operacao || "",
         placa: conductorInfo?.placa || warning.placa || "",
+        criadoEm: warning.criadoEm || warning.dataAplicacao,
         data: warning.criadoEm || warning.dataAplicacao,
         tipo: warning.tipo || "advertencia",
         assinada: warning.advertenciaAplicada || false,
+        advertenciaAplicada: warning.advertenciaAplicada || false,
+        motivo: warning.motivo || "",
+        observacao: warning.observacao || "",
+        nivelAdvertencia: warning.nivelAdvertencia || 1,
+        categoria: warning.categoria || "",
+        dataInicio: warning.dataInicio || null,
+        dataFim: warning.dataFim || null,
+        dataRetorno: warning.dataRetorno || null,
       };
 
       if (warning.tipo === "suspensao") {
