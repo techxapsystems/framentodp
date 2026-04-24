@@ -678,7 +678,42 @@ export default function WarningSignOff() {
                 </div>
               )}
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex gap-2 justify-between">
+              <Button 
+                variant="default"
+                onClick={() => {
+                  if (selectedWarning) {
+                    // Gerar PDF
+                    const element = document.createElement('div');
+                    element.innerHTML = `
+                      <div style="padding: 20px; font-family: Arial, sans-serif;">
+                        <h1 style="text-align: center; margin-bottom: 30px;">
+                          ${selectedWarning.tipo === 'advertencia' ? 'ADVERTÊNCIA DISCIPLINAR' : 'SUSPENSÃO DISCIPLINAR'}
+                        </h1>
+                        <div style="margin-bottom: 20px;">
+                          <p><strong>Motorista:</strong> ${selectedWarning.conductorName}</p>
+                          <p><strong>Data de Cadastro:</strong> ${new Date(selectedWarning.criadoEm).toLocaleDateString('pt-BR')}</p>
+                          <p><strong>Tipo:</strong> ${selectedWarning.tipo === 'advertencia' ? 'Advertência' : 'Suspensão'}</p>
+                          ${selectedWarning.nivelAdvertencia ? `<p><strong>Nível:</strong> ${getWarningLevelLabel(selectedWarning.nivelAdvertencia)}</p>` : ''}
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                          <h3>Motivo:</h3>
+                          <p>${selectedWarning.motivo || '-'}</p>
+                        </div>
+                        ${selectedWarning.observacao ? `<div style="margin-bottom: 20px;"><h3>Observação:</h3><p>${selectedWarning.observacao}</p></div>` : ''}
+                      </div>
+                    `;
+                    const printWindow = window.open('', '', 'height=600,width=800');
+                    if (printWindow) {
+                      printWindow.document.write(element.innerHTML);
+                      printWindow.document.close();
+                      printWindow.print();
+                    }
+                  }
+                }}
+              >
+                Imprimir PDF
+              </Button>
               <Button 
                 variant="outline" 
                 onClick={() => {
