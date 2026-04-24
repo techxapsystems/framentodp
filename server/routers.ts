@@ -7,6 +7,7 @@ import { dashboardRouter } from "./routers/dashboardRouter";
 import { configRouter } from "./routers/configRouter";
 import { auditRouter } from "./routers/auditRouter";
 import { retentionRouter } from "./routers/retentionRouter";
+import { importAdministrativeRouter } from "./routers/importAdministrativeRouter";
 import { templateRouter } from "./routers/templateRouter";
 import { pdfRouter } from "./routers/pdfRouter";
 import { userRouter } from "./routers/userRouter";
@@ -22,6 +23,7 @@ export const appRouter = router({
   config: configRouter,
   audit: auditRouter,
   retention: retentionRouter,
+  importAdministrative: importAdministrativeRouter,
   templates: templateRouter,
   pdf: pdfRouter,
   users: userRouter,

@@ -657,3 +657,31 @@ export const conductors = mysqlTable(
 
 export type Conductor = typeof conductors.$inferSelect;
 export type InsertConductor = typeof conductors.$inferInsert;
+
+
+/**
+ * Funcionários Administrativos - cadastro de funcionários não-motoristas
+ */
+export const administrativeEmployees = mysqlTable(
+  "administrative_employees",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    cadastro: varchar("cadastro", { length: 50 }).notNull(),
+    tipo: varchar("tipo", { length: 50 }).notNull(),
+    nome: varchar("nome", { length: 255 }).notNull(),
+    admissao: varchar("admissao", { length: 50 }).notNull(),
+    cargo: varchar("cargo", { length: 255 }).notNull(),
+    situacao: varchar("situacao", { length: 100 }).notNull(),
+    cpf: varchar("cpf", { length: 20 }).notNull().unique(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [
+    index("idx_cpf").on(table.cpf),
+    index("idx_nome").on(table.nome),
+    index("idx_cargo").on(table.cargo),
+  ]
+);
+
+export type AdministrativeEmployee = typeof administrativeEmployees.$inferSelect;
+export type InsertAdministrativeEmployee = typeof administrativeEmployees.$inferInsert;

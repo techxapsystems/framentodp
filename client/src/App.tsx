@@ -24,6 +24,7 @@ import UserManagement from "./pages/UserManagement";
 import Login from "./pages/Login";
 import AnaliseGifBrf from "./pages/AnaliseGifBrf";
 import ComparisonReport from "./pages/ComparisonReport";
+import ImportAdministrative from "./pages/ImportAdministrative";
 
 
 function Router() {
@@ -99,6 +100,11 @@ function Router() {
         <Route path="/importacao" component={() => (
           <ProtectedRoute requiredModules={["operacional_jornada"]}>
             <Import />
+          </ProtectedRoute>
+        )} />
+        <Route path="/importacao-administrativos" component={() => (
+          <ProtectedRoute requiredRole="admin">
+            <ImportAdministrative />
           </ProtectedRoute>
         )} />
         <Route path="/configuracoes" component={Settings} />

@@ -204,6 +204,13 @@
       "when": 1776248803633,
       "tag": "0028_graceful_salo",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1777062043161,
+      "tag": "0029_wooden_mandroid",
+      "breakpoints": true
     }
   ]
 }
