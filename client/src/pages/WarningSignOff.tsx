@@ -12,6 +12,7 @@ import { AlertCircle, CheckCircle2, List, Download, Grid3x3 } from 'lucide-react
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { trpc } from '@/lib/trpc';
+import { generateWarningPDF } from '@/components/WarningPDFGenerator';
 
 interface Warning {
   id: number;
@@ -23,6 +24,13 @@ interface Warning {
   motivo?: string;
   observacao?: string;
   nivelAdvertencia?: number;
+  placa?: string;
+  operacao?: string;
+  cpf?: string;
+  ctps?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  dataRetorno?: string;
 }
 
 export default function WarningSignOff() {
@@ -679,36 +687,25 @@ export default function WarningSignOff() {
               )}
             </div>
             <DialogFooter className="flex gap-2 justify-between">
-              <Button 
-                variant="default"
+              <Button
+                variant="outline"
                 onClick={() => {
                   if (selectedWarning) {
-                    // Gerar PDF
-                    const element = document.createElement('div');
-                    element.innerHTML = `
-                      <div style="padding: 20px; font-family: Arial, sans-serif;">
-                        <h1 style="text-align: center; margin-bottom: 30px;">
-                          ${selectedWarning.tipo === 'advertencia' ? 'ADVERTÊNCIA DISCIPLINAR' : 'SUSPENSÃO DISCIPLINAR'}
-                        </h1>
-                        <div style="margin-bottom: 20px;">
-                          <p><strong>Motorista:</strong> ${selectedWarning.conductorName}</p>
-                          <p><strong>Data de Cadastro:</strong> ${new Date(selectedWarning.criadoEm).toLocaleDateString('pt-BR')}</p>
-                          <p><strong>Tipo:</strong> ${selectedWarning.tipo === 'advertencia' ? 'Advertência' : 'Suspensão'}</p>
-                          ${selectedWarning.nivelAdvertencia ? `<p><strong>Nível:</strong> ${getWarningLevelLabel(selectedWarning.nivelAdvertencia)}</p>` : ''}
-                        </div>
-                        <div style="margin-bottom: 20px;">
-                          <h3>Motivo:</h3>
-                          <p>${selectedWarning.motivo || '-'}</p>
-                        </div>
-                        ${selectedWarning.observacao ? `<div style="margin-bottom: 20px;"><h3>Observação:</h3><p>${selectedWarning.observacao}</p></div>` : ''}
-                      </div>
-                    `;
-                    const printWindow = window.open('', '', 'height=600,width=800');
-                    if (printWindow) {
-                      printWindow.document.write(element.innerHTML);
-                      printWindow.document.close();
-                      printWindow.print();
-                    }
+                    generateWarningPDF({
+                      conductorName: String(selectedWarning.conductorName || ''),
+                      licensePlate: String((selectedWarning as any).placa || ''),
+                      operacao: String((selectedWarning as any).operacao || ''),
+                      warningLevel: String(selectedWarning.nivelAdvertencia) || 'Aviso 1',
+                      warningType: String(selectedWarning.tipo || 'advertencia'),
+                      warningReason: String(selectedWarning.motivo || ''),
+                      warningNote: selectedWarning.observacao ? String(selectedWarning.observacao) : undefined,
+                      createdDate: new Date(String(selectedWarning.criadoEm)),
+                      cpf: String((selectedWarning as any).cpf || ''),
+                      ctps: String((selectedWarning as any).ctps || ''),
+                      dataInicio: String((selectedWarning as any).dataInicio || ''),
+                      dataFim: String((selectedWarning as any).dataFim || ''),
+                      dataRetorno: String((selectedWarning as any).dataRetorno || ''),
+                    });
                   }
                 }}
               >
