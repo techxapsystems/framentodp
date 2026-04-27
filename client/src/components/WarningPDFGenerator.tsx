@@ -209,7 +209,7 @@ export function generateWarningPDF(data: WarningPDFProps) {
     month: "long",
     day: "numeric",
   });
-  doc.text(`BETIM, ${dataFormatada}.`, margin, yPosition);
+  doc.text(`CHAPECÓ, ${dataFormatada}.`, margin, yPosition);
   yPosition += 15;
 
   // Linhas de assinatura
