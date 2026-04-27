@@ -1,6 +1,6 @@
 import { eq, and, gte, lte, desc, inArray, or, isNotNull, count, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations, warningPdfHistory, conductors, InsertConductor } from "../drizzle/schema";
+import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations, warningPdfHistory, conductors, InsertConductor, administrativeEmployees } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -982,6 +982,50 @@ export async function getAllConductors() {
     return await db.select().from(conductors);
   } catch (error) {
     console.error("[DB] Error getting all conductors:", error);
+    return [];
+  }
+}
+
+/**
+ * Obter todos os funcionários (motoristas + administrativos)
+ */
+export async function getAllEmployees() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const [conductorsList, adminList] = await Promise.all([
+      db.select().from(conductors),
+      db.select().from(administrativeEmployees),
+    ]);
+    
+    // Combinar motoristas e administrativos
+    const combined = [
+      ...conductorsList.map((c: any) => ({
+        id: c.id,
+        nome: c.nome,
+        placa: c.placa,
+        operacao: c.operacao,
+        cargo: c.cargo,
+        cpf: c.cpf,
+        matricula: c.matricula,
+        tipo: 'motorista',
+      })),
+      ...adminList.map((a: any) => ({
+        id: a.id,
+        nome: a.nome,
+        placa: null,
+        operacao: null,
+        cargo: a.cargo,
+        cpf: a.cpf,
+        matricula: null,
+        tipo: 'administrativo',
+      })),
+    ];
+    
+    return combined;
+  } catch (error) {
+    console.error("[DB] Error getting all employees:", error);
     return [];
   }
 }

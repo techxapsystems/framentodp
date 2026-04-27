@@ -13,6 +13,9 @@ import {
 import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
+// Invalidar cache de funcionarios quando importados
+let employeeCacheTimestamp = 0;
+
 export const dashboardRouter = router({
   /**
    * Obtém dados do dia para o dashboard HOJE
@@ -412,22 +415,23 @@ export const dashboardRouter = router({
   getIdleDriversForWarning: protectedProcedure
     .query(async () => {
       try {
-        const { getAllConductors } = await import("../db");
-        const conductors = await getAllConductors();
+        const { getAllEmployees } = await import("../db");
+        const employees = await getAllEmployees();
         // Mapear para o formato esperado (conductorName, placa, operacao, cargo, cpf, matricula)
-        return conductors.map((c: any) => ({
-          conductorName: c.nome,
-          placa: c.placa,
-          operacao: c.operacao,
-          cargo: c.cargo,
-          cpf: c.cpf,
-          matricula: c.matricula,
+        return employees.map((e: any) => ({
+          conductorName: e.nome,
+          placa: e.placa,
+          operacao: e.operacao,
+          cargo: e.cargo,
+          cpf: e.cpf,
+          matricula: e.matricula,
+          tipo: e.tipo,
         })) || [];
       } catch (error) {
-        console.error("Error fetching conductors:", error);
+        console.error("Error fetching employees:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Erro ao buscar motoristas: ${String(error)}`,
+          message: `Erro ao buscar funcionarios: ${String(error)}`,
         });
       }
     }),
