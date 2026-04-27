@@ -666,9 +666,22 @@ export async function getWarningsStats(params: {
 
     const allWarnings = await query;
 
+    // Buscar dados dos motoristas para filtrar por operação
+    const conductorsList = await db.select().from(conductors);
+    const conductorMap = new Map(conductorsList.map((c: any) => [c.nome, c]));
+
+    // Filtrar por operação se fornecido
+    let filteredWarnings = allWarnings;
+    if (params.operacao) {
+      filteredWarnings = allWarnings.filter((warning: any) => {
+        const conductor = conductorMap.get(warning.conductorName);
+        return conductor && conductor.operacao === params.operacao;
+      });
+    }
+
     // Enriquecer com dados de CPF e CTPS
     const enrichedWarnings = await Promise.all(
-      allWarnings.map(async (warning: any) => {
+      filteredWarnings.map(async (warning: any) => {
         // Buscar dados do motorista ou administrativo
         let cpf = null;
         let ctps = null;
@@ -693,7 +706,7 @@ export async function getWarningsStats(params: {
 
           if (admin && admin.length > 0) {
             cpf = admin[0].cpf;
-            ctps = null; // Administrativos não têm CTPS
+            ctps = null; // Administrativos não tém CTPS
           }
         }
 
@@ -796,9 +809,21 @@ export async function getWarningsStatsByOperation(params?: {
 
     const allWarnings = await query;
 
-    // Agrupar por tipo de advertência (já que não há campo operacao)
+    // Buscar dados dos motoristas para obter operação
+    const conductorsList = await db.select().from(conductors);
+    const conductorMap = new Map(conductorsList.map((c: any) => [c.nome, c]));
+
+    // Filtrar por operação se fornecido e agrupar por tipo de advertência
     const grouped: Record<string, any> = {};
     allWarnings.forEach((warning: any) => {
+      // Se operacao foi especificada, filtrar por ela
+      if (params?.operacao) {
+        const conductor = conductorMap.get(warning.conductorName);
+        if (!conductor || conductor.operacao !== params.operacao) {
+          return; // Pular se não corresponder à operação
+        }
+      }
+
       const tipo = warning.tipo || "Desconhecido";
       if (!grouped[tipo]) {
         grouped[tipo] = {
