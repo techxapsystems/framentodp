@@ -861,7 +861,26 @@ export async function getAllOperations() {
   if (!db) return [];
 
   try {
-    return [];
+    // Buscar todas as operações únicas dos motoristas
+    const conductorsList = await db.select().from(conductors);
+    
+    // Extrair operações únicas
+    const operacoes = new Map<string, string>();
+    conductorsList.forEach((c: any) => {
+      if (c.operacao && c.operacao.trim()) {
+        operacoes.set(c.operacao, c.operacao);
+      }
+    });
+    
+    // Converter para array e ordenar
+    const result = Array.from(operacoes.values())
+      .sort()
+      .map((op: string) => ({
+        id: op,
+        nome: op,
+      }));
+    
+    return result;
   } catch (error) {
     console.error("[DB] Error getting all operations:", error);
     return [];
