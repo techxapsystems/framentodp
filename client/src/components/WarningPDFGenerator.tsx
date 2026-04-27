@@ -27,8 +27,8 @@ export function generateWarningPDF(data: WarningPDFProps) {
     warningNote: data.warningNote || "",
     infrationDays: data.infrationDays || "",
     createdDate: data.createdDate || new Date(),
-    cpf: data.cpf || "XXX.XXX.XXX-XX",
-    ctps: data.ctps || "XXXXXXX",
+    cpf: data.cpf || "___.___.___-__",
+    ctps: data.ctps || "_________    ____ - __",
   };
 
   const doc = new jsPDF({
@@ -59,7 +59,7 @@ export function generateWarningPDF(data: WarningPDFProps) {
   };
 
   // ===== TÍTULO =====
-  doc.setFontSize(18);
+  doc.setFontSize(16);
   doc.setTextColor(0, 0, 0);
   doc.setFont(undefined as any, "bold");
 
@@ -77,37 +77,53 @@ export function generateWarningPDF(data: WarningPDFProps) {
   doc.setFont(undefined as any, "normal");
 
   // Empresa
-  doc.text("Empresa: TRANSPORTES FRAMENTOLTDA", margin, yPosition);
+  doc.setFont(undefined as any, "bold");
+  doc.text("Empresa:", margin, yPosition);
+  doc.setFont(undefined as any, "normal");
+  doc.text("TRANSPORTES FRAMENTO LTDA", margin + 30, yPosition);
   yPosition += 5;
 
-  // Endereço (em duas colunas)
-  doc.text("Contorno da Petrobras, 107", margin, yPosition);
-  doc.text("MG", pageWidth - margin - 20, yPosition);
+  // Endereço linha 1
+  doc.setFont(undefined as any, "bold");
+  doc.text("", margin, yPosition);
+  doc.setFont(undefined as any, "normal");
+  doc.text("Contorno da Petrobras, 107", margin + 30, yPosition);
   yPosition += 5;
 
-  // CEP e Cidade
-  doc.text("32.669-500 - BETIM", margin, yPosition);
+  // Endereço linha 2 com estado
+  doc.text("32.669-500 - BETIM", margin + 30, yPosition);
+  doc.text("MG", pageWidth - margin - 15, yPosition);
   yPosition += 5;
 
   // CNPJ
-  doc.text("CNPJ: 00.766.315/0009-00", margin, yPosition);
+  doc.setFont(undefined as any, "bold");
+  doc.text("CNPJ:", margin, yPosition);
+  doc.setFont(undefined as any, "normal");
+  doc.text("00.766.315/0009-00", margin + 30, yPosition);
   yPosition += 8;
 
   // ===== DADOS DO FUNCIONÁRIO =====
+  doc.setFont(undefined as any, "bold");
+  doc.text("Empregado:", margin, yPosition);
   doc.setFont(undefined as any, "normal");
-  doc.setFontSize(10);
-
-  doc.text(`Empregado: ${data.conductorName}`, margin, yPosition);
+  doc.text(data.conductorName.toUpperCase(), margin + 30, yPosition);
   yPosition += 5;
 
-  doc.text(`CPF: ${safeData.cpf}`, margin, yPosition);
+  doc.setFont(undefined as any, "bold");
+  doc.text("CPF:", margin, yPosition);
+  doc.setFont(undefined as any, "normal");
+  doc.text(safeData.cpf, margin + 30, yPosition);
   yPosition += 5;
 
-  doc.text(`CTPS: ${safeData.ctps}`, margin, yPosition);
+  doc.setFont(undefined as any, "bold");
+  doc.text("CTPS:", margin, yPosition);
+  doc.setFont(undefined as any, "normal");
+  doc.text(safeData.ctps, margin + 30, yPosition);
   yPosition += 10;
 
   // ===== MOTIVO DA MEDIDA =====
   checkPageBreak(20);
+  doc.setFont(undefined as any, "normal");
 
   const motivoIntro = `Tem esta a finalidade de aplicar-lhe a pena de ${
     safeData.warningType === "suspensao" ? "suspensão" : "advertência"
@@ -148,23 +164,16 @@ export function generateWarningPDF(data: WarningPDFProps) {
   // ===== PERÍODO DE SUSPENSÃO (se for suspensão) =====
   if (safeData.warningType === "suspensao" && (data.dataInicio || data.dataFim || data.dataRetorno)) {
     checkPageBreak(25);
-    doc.setFont(undefined as any, "bold");
-    doc.text("PERÍODO DE SUSPENSÃO", margin, yPosition);
-    yPosition += 7;
-
-    doc.setFont(undefined as any, "normal");
-    if (data.dataInicio) {
-      doc.text(`Data de Início: ${data.dataInicio}`, margin, yPosition);
+    
+    // Parágrafo sobre suspensão
+    const suspensionText = `Dessa forma, comunicamos a aplicação de suspensão disciplinar de 02 (dois) dias, sem remuneração dos dias e do respectivo DSR, conforme previsto na legislação trabalhista e empresa, com fundamento no Art. 482, alíneas "b" (mau procedimento) e "j" (ato lesivo da honra ou da boa fama praticado no serviço), da CLT, com início em ${data.dataInicio}, término em ${data.dataFim} e retorno às atividades em ${data.dataRetorno}.`;
+    
+    const suspensionLines = doc.splitTextToSize(suspensionText, contentWidth);
+    suspensionLines.forEach((line: string) => {
+      checkPageBreak(5);
+      doc.text(line, margin, yPosition);
       yPosition += 5;
-    }
-    if (data.dataFim) {
-      doc.text(`Data de Término: ${data.dataFim}`, margin, yPosition);
-      yPosition += 5;
-    }
-    if (data.dataRetorno) {
-      doc.text(`Data de Retorno: ${data.dataRetorno}`, margin, yPosition);
-      yPosition += 5;
-    }
+    });
     yPosition += 5;
   }
 
@@ -186,28 +195,36 @@ export function generateWarningPDF(data: WarningPDFProps) {
   doc.setFont(undefined as any, "normal");
   doc.setFontSize(10);
 
-  // Linha de assinatura empresa
-  doc.line(margin, yPosition, margin + 50, yPosition);
-  yPosition += 5;
-  doc.text("TRANSPORTES FRAMENTOLTDA", margin, yPosition);
-  yPosition += 10;
+  // "Favor dar ciente na cópia desta."
+  doc.text("Favor dar ciente na cópia desta.", margin, yPosition);
+  yPosition += 8;
 
-  // Linha de assinatura funcionário
-  doc.line(margin + 60, yPosition - 10, margin + 110, yPosition - 10);
-  yPosition -= 5;
-  doc.text(data.conductorName.toUpperCase(), margin + 60, yPosition);
+  // Local e data
+  const dataFormatada = new Date(safeData.createdDate).toLocaleDateString("pt-BR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  doc.text(`BETIM, ${dataFormatada}.`, margin, yPosition);
+  yPosition += 15;
+
+  // Linhas de assinatura
+  doc.line(margin, yPosition, margin + 50, yPosition);
+  doc.line(margin + contentWidth - 50, yPosition, margin + contentWidth, yPosition);
+  yPosition += 5;
+
+  // Nomes das assinaturas
+  doc.setFontSize(9);
+  doc.text("TRANSPORTES FRAMENTO LTDA", margin + 5, yPosition);
+  doc.text(data.conductorName.toUpperCase(), margin + contentWidth - 45, yPosition);
 
   // ===== RODAPÉ =====
   doc.setFontSize(8);
   doc.setFont(undefined as any, "normal");
-  doc.setTextColor(100, 100, 100);
-
-  const dataFormatada = new Date(safeData.createdDate).toLocaleDateString("pt-BR");
-  const footerText = `Favor dar ciente na cópia desta.`;
-  doc.text(footerText, pageWidth / 2, pageHeight - 15, { align: "center" });
-
-  // Data no rodapé
-  doc.text(dataFormatada, pageWidth / 2, pageHeight - 10, { align: "center" });
+  doc.setTextColor(80, 80, 80);
+  
+  const footerLine = `FPD0131.COL - ${dataFormatada.split(" ")[0]} - 16:38:16                    TRANSPORTES FRAMENTO LTDA`;
+  doc.text(footerLine, pageWidth / 2, pageHeight - 10, { align: "center" });
 
   // Salvar PDF
   const fileName = `${titleText.replace(/\s+/g, "_")}_${data.conductorName.replace(/\s+/g, "_")}.pdf`;
