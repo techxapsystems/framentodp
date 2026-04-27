@@ -666,18 +666,57 @@ export async function getWarningsStats(params: {
 
     const allWarnings = await query;
 
+    // Enriquecer com dados de CPF e CTPS
+    const enrichedWarnings = await Promise.all(
+      allWarnings.map(async (warning: any) => {
+        // Buscar dados do motorista ou administrativo
+        let cpf = null;
+        let ctps = null;
+
+        // Tentar buscar em conductors
+        const conductor = await db
+          .select()
+          .from(conductors)
+          .where(eq(conductors.nome, warning.conductorName))
+          .limit(1);
+
+        if (conductor && conductor.length > 0) {
+          cpf = conductor[0].cpf;
+          ctps = conductor[0].ctps;
+        } else {
+          // Tentar buscar em administrativeEmployees
+          const admin = await db
+            .select()
+            .from(administrativeEmployees)
+            .where(eq(administrativeEmployees.nome, warning.conductorName))
+            .limit(1);
+
+          if (admin && admin.length > 0) {
+            cpf = admin[0].cpf;
+            ctps = null; // Administrativos não têm CTPS
+          }
+        }
+
+        return {
+          ...warning,
+          cpf,
+          ctps,
+        };
+      })
+    );
+
     // Contar assinadas vs não assinadas
-    const assinadas = allWarnings.filter((w: any) => w.advertenciaAplicada).length;
-    const naoAssinadas = allWarnings.length - assinadas;
+    const assinadas = enrichedWarnings.filter((w: any) => w.advertenciaAplicada).length;
+    const naoAssinadas = enrichedWarnings.length - assinadas;
     // Taxa de Devolução = (Assinadas / Total) * 100
-    const taxaDevolucao = allWarnings.length > 0 ? (assinadas / allWarnings.length) * 100 : 0;
+    const taxaDevolucao = enrichedWarnings.length > 0 ? (assinadas / enrichedWarnings.length) * 100 : 0;
 
     return {
-      total: allWarnings.length,
+      total: enrichedWarnings.length,
       assinadas,
       naoAssinadas,
       taxaDevolucao: parseFloat(taxaDevolucao.toFixed(1)),
-      warnings: allWarnings,
+      warnings: enrichedWarnings,
     };
   } catch (error) {
     console.error("[DB] Error getting warnings stats:", error);
@@ -876,6 +915,8 @@ export async function getWarningsStatsByDriver(filters?: any) {
         conductorName: conductor,
         operacao: conductorInfo?.operacao || "",
         placa: conductorInfo?.placa || warning.placa || "",
+        cpf: conductorInfo?.cpf || "",
+        ctps: conductorInfo?.ctps || "",
         criadoEm: warning.criadoEm || warning.dataAplicacao,
         data: warning.criadoEm || warning.dataAplicacao,
         tipo: warning.tipo || "advertencia",
@@ -1008,6 +1049,7 @@ export async function getAllEmployees() {
         operacao: c.operacao,
         cargo: c.cargo,
         cpf: c.cpf,
+        ctps: c.ctps,
         matricula: c.matricula,
         tipo: 'motorista',
       })),
@@ -1018,6 +1060,7 @@ export async function getAllEmployees() {
         operacao: null,
         cargo: a.cargo,
         cpf: a.cpf,
+        ctps: null,
         matricula: null,
         tipo: 'administrativo',
       })),

@@ -87,19 +87,23 @@ export function generateWarningPDF(data: WarningPDFProps) {
   doc.setFont(undefined as any, "bold");
   doc.text("", margin, yPosition);
   doc.setFont(undefined as any, "normal");
-  doc.text("Contorno da Petrobras, 107", margin + 30, yPosition);
+  doc.text("Rua Borges de Medeiros, 897-E, Sala 1201", margin + 30, yPosition);
   yPosition += 5;
 
-  // Endereço linha 2 com estado
-  doc.text("32.669-500 - BETIM", margin + 30, yPosition);
-  doc.text("MG", pageWidth - margin - 15, yPosition);
+  // Endereço linha 2
+  doc.text("Presidente Médici", margin + 30, yPosition);
+  yPosition += 5;
+
+  // Endereço linha 3 com estado
+  doc.text("89.801-161 - CHAPECÓ", margin + 30, yPosition);
+  doc.text("SC", pageWidth - margin - 15, yPosition);
   yPosition += 5;
 
   // CNPJ
   doc.setFont(undefined as any, "bold");
   doc.text("CNPJ:", margin, yPosition);
   doc.setFont(undefined as any, "normal");
-  doc.text("00.766.315/0009-00", margin + 30, yPosition);
+  doc.text("00.766.315/0001-44", margin + 30, yPosition);
   yPosition += 8;
 
   // ===== DADOS DO FUNCIONÁRIO =====
