@@ -442,7 +442,36 @@ authRestRouter.delete("/warnings/:id", express.json(), async (req, res) => {
       return res.status(400).json({ error: "ID de advertência inválido" });
     }
 
+    // Obter dados da advertência antes de deletar para auditoria
+    const warning = await db.getWarningById(warningId);
+    
     await db.deleteWarning(warningId);
+    
+    // Log de auditoria (apenas para admins)
+    if (warning) {
+      const userId = (req as any).user?.id || 0;
+      const userEmail = (req as any).user?.email || "sistema";
+      const userName = (req as any).user?.name || "Sistema";
+      const userRole = (req as any).user?.role || "user";
+      
+      // Apenas registrar se for admin
+      if (userRole === "admin") {
+        await db.logWarningAudit(
+          warningId,
+          "deletado",
+          userId,
+          userEmail,
+          userName,
+          warning.conductorName,
+          undefined,
+          warning as any,
+          undefined,
+          req.body.motivo || "Deletado pelo sistema",
+          req.ip
+        );
+      }
+    }
+    
     return res.status(200).json({ success: true, message: "Advertência deletada com sucesso" });
   } catch (error) {
     console.error("[API] Error deleting warning:", error);
@@ -461,16 +490,110 @@ authRestRouter.put("/warnings/:id", express.json(), async (req, res) => {
       return res.status(400).json({ error: "ID de advertência inválido" });
     }
 
-    await db.updateWarning(warningId, {
+    // Obter dados anteriores para auditoria
+    const warningBefore = await db.getWarningById(warningId);
+    
+    const updateData = {
       motivo: motivo || undefined,
       observacao: observacao || undefined,
       dataInicio: dataInicio || undefined,
       dataFim: dataFim || undefined,
-    });
+    };
+    
+    await db.updateWarning(warningId, updateData);
+    
+    // Log de auditoria (apenas para admins)
+    const userId = (req as any).user?.id || 0;
+    const userEmail = (req as any).user?.email || "sistema";
+    const userName = (req as any).user?.name || "Sistema";
+    const userRole = (req as any).user?.role || "user";
+    
+    if (userRole === "admin" && warningBefore) {
+      // Identificar quais campos foram alterados
+      const camposAlterados = [];
+      const valorAnterior: Record<string, unknown> = {};
+      const valorNovo: Record<string, unknown> = {};
+      
+      if (motivo && motivo !== warningBefore.motivo) {
+        camposAlterados.push("motivo");
+        valorAnterior.motivo = warningBefore.motivo;
+        valorNovo.motivo = motivo;
+      }
+      if (observacao && observacao !== warningBefore.observacao) {
+        camposAlterados.push("observacao");
+        valorAnterior.observacao = warningBefore.observacao;
+        valorNovo.observacao = observacao;
+      }
+      if (dataInicio && dataInicio !== warningBefore.dataInicio?.toString()) {
+        camposAlterados.push("dataInicio");
+        valorAnterior.dataInicio = warningBefore.dataInicio;
+        valorNovo.dataInicio = dataInicio;
+      }
+      if (dataFim && dataFim !== warningBefore.dataFim?.toString()) {
+        camposAlterados.push("dataFim");
+        valorAnterior.dataFim = warningBefore.dataFim;
+        valorNovo.dataFim = dataFim;
+      }
+      
+      if (camposAlterados.length > 0) {
+        await db.logWarningAudit(
+          warningId,
+          "editado",
+          userId,
+          userEmail,
+          userName,
+          warningBefore.conductorName,
+          camposAlterados,
+          valorAnterior,
+          valorNovo,
+          req.body.motivo_auditoria || undefined,
+          req.ip
+        );
+      }
+    }
 
     return res.status(200).json({ success: true, message: "Advertência atualizada com sucesso" });
   } catch (error) {
     console.error("[API] Error updating warning:", error);
     return res.status(500).json({ error: "Erro ao atualizar advertência: " + (error instanceof Error ? error.message : String(error)) });
+  }
+});
+
+
+// GET /api/auth/warnings-audit-log - Get warning audit history
+authRestRouter.get("/warnings-audit-log", async (req, res) => {
+  try {
+    // Verificar se é admin
+    const userRole = (req as any).user?.role;
+    if (userRole !== "admin") {
+      return res.status(403).json({ error: "Apenas administradores podem acessar o histórico de auditoria" });
+    }
+
+    const { conductor, action, startDate, endDate } = req.query;
+    
+    let history: any[] = [];
+
+    if (conductor) {
+      // Buscar histórico por motorista
+      const start = startDate ? new Date(startDate as string) : undefined;
+      const end = endDate ? new Date(endDate as string) : undefined;
+      history = await db.getConductorWarningAuditHistory(conductor as string, start, end);
+    } else if (action) {
+      // Buscar histórico por ação (não implementado, mas pode ser adicionado)
+      history = [];
+    } else {
+      // Retornar vazio se nenhum filtro for fornecido
+      history = [];
+    }
+
+    // Filtrar por ação se fornecido
+    if (action) {
+      history = history.filter((log) => log.acao === action);
+    }
+
+    return res.status(200).json(history);
+  } catch (error) {
+    console.error("[API] Error getting warning audit history:", error);
+    return res.status(500).json({ error: "Erro ao buscar histórico de auditoria: " + (error instanceof Error ? error.message : String(error)) });
   }
 });

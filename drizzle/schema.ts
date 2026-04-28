@@ -686,3 +686,37 @@ export const administrativeEmployees = mysqlTable(
 
 export type AdministrativeEmployee = typeof administrativeEmployees.$inferSelect;
 export type InsertAdministrativeEmployee = typeof administrativeEmployees.$inferInsert;
+
+
+/**
+ * Histórico de Auditoria - rastreia todas as alterações em advertências e suspensões
+ * Restrito a usuários administradores
+ */
+export const warningAuditLog = mysqlTable(
+  "warning_audit_log",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    warningId: int("warningId").notNull(),
+    conductorName: varchar("conductorName", { length: 255 }).notNull(),
+    acao: mysqlEnum("acao", ["criado", "editado", "deletado", "assinado"]).notNull(),
+    camposAlterados: text("camposAlterados"), // JSON com campos que foram alterados
+    valorAnterior: text("valorAnterior"), // JSON com valores anteriores
+    valorNovo: text("valorNovo"), // JSON com valores novos
+    usuarioId: int("usuarioId").notNull(),
+    usuarioEmail: varchar("usuarioEmail", { length: 320 }).notNull(),
+    usuarioNome: varchar("usuarioNome", { length: 255 }).notNull(),
+    motivo: text("motivo"), // Motivo da alteração (opcional)
+    ipAddress: varchar("ipAddress", { length: 45 }),
+    criadoEm: timestamp("criadoEm").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_warningId").on(table.warningId),
+    index("idx_conductorName").on(table.conductorName),
+    index("idx_usuarioId").on(table.usuarioId),
+    index("idx_acao").on(table.acao),
+    index("idx_criadoEm").on(table.criadoEm),
+  ]
+);
+
+export type WarningAuditLog = typeof warningAuditLog.$inferSelect;
+export type InsertWarningAuditLog = typeof warningAuditLog.$inferInsert;

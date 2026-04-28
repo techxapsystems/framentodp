@@ -1,6 +1,6 @@
 import { eq, and, gte, lte, desc, inArray, or, isNotNull, count, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations, warningPdfHistory, conductors, InsertConductor, administrativeEmployees } from "../drizzle/schema";
+import { InsertUser, users, journeys, recurrences, warnings, imports, configurations, orientations, warningPdfHistory, conductors, InsertConductor, administrativeEmployees, warningAuditLog, InsertWarningAuditLog } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1287,6 +1287,170 @@ export async function listConductors() {
     return conductorsList;
   } catch (error) {
     console.error("[DB] Error listing conductors:", error);
+    return [];
+  }
+}
+
+
+/**
+ * Registra uma ação de auditoria para uma advertência
+ * Restrito a usuários administradores
+ */
+export async function logWarningAudit(
+  warningId: number,
+  acao: "criado" | "editado" | "deletado" | "assinado",
+  usuarioId: number,
+  usuarioEmail: string,
+  usuarioNome: string,
+  conductorName: string,
+  camposAlterados?: string[],
+  valorAnterior?: Record<string, unknown>,
+  valorNovo?: Record<string, unknown>,
+  motivo?: string,
+  ipAddress?: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot log warning audit: database not available");
+    return;
+  }
+
+  try {
+    const auditLog: InsertWarningAuditLog = {
+      warningId,
+      conductorName,
+      acao,
+      camposAlterados: camposAlterados ? JSON.stringify(camposAlterados) : null,
+      valorAnterior: valorAnterior ? JSON.stringify(valorAnterior) : null,
+      valorNovo: valorNovo ? JSON.stringify(valorNovo) : null,
+      usuarioId,
+      usuarioEmail,
+      usuarioNome,
+      motivo: motivo || null,
+      ipAddress: ipAddress || null,
+    };
+
+    await db.insert(warningAuditLog).values(auditLog);
+    console.log(`[Audit] Warning ${warningId} - ${acao} by ${usuarioEmail}`);
+  } catch (error) {
+    console.error("[DB] Error logging warning audit:", error);
+  }
+}
+
+/**
+ * Obtém o histórico de auditoria de uma advertência
+ * Restrito a usuários administradores
+ */
+export async function getWarningAuditHistory(warningId: number): Promise<any[]> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get warning audit history: database not available");
+    return [];
+  }
+
+  try {
+    const history = await db
+      .select()
+      .from(warningAuditLog)
+      .where(eq(warningAuditLog.warningId, warningId))
+      .orderBy(desc(warningAuditLog.criadoEm));
+
+    return history.map((log) => ({
+      ...log,
+      camposAlterados: log.camposAlterados ? JSON.parse(log.camposAlterados) : null,
+      valorAnterior: log.valorAnterior ? JSON.parse(log.valorAnterior) : null,
+      valorNovo: log.valorNovo ? JSON.parse(log.valorNovo) : null,
+    }));
+  } catch (error) {
+    console.error("[DB] Error getting warning audit history:", error);
+    return [];
+  }
+}
+
+/**
+ * Obtém o histórico de auditoria de um motorista
+ * Restrito a usuários administradores
+ */
+export async function getConductorWarningAuditHistory(
+  conductorName: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<any[]> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get conductor audit history: database not available");
+    return [];
+  }
+
+  try {
+    const conditions = [eq(warningAuditLog.conductorName, conductorName)];
+
+    if (startDate) {
+      conditions.push(gte(warningAuditLog.criadoEm, startDate));
+    }
+
+    if (endDate) {
+      conditions.push(lte(warningAuditLog.criadoEm, endDate));
+    }
+
+    const history = await db
+      .select()
+      .from(warningAuditLog)
+      .where(and(...conditions))
+      .orderBy(desc(warningAuditLog.criadoEm));
+
+    return history.map((log) => ({
+      ...log,
+      camposAlterados: log.camposAlterados ? JSON.parse(log.camposAlterados) : null,
+      valorAnterior: log.valorAnterior ? JSON.parse(log.valorAnterior) : null,
+      valorNovo: log.valorNovo ? JSON.parse(log.valorNovo) : null,
+    }));
+  } catch (error) {
+    console.error("[DB] Error getting conductor audit history:", error);
+    return [];
+  }
+}
+
+/**
+ * Obtém o histórico de auditoria de um usuário
+ * Restrito a usuários administradores
+ */
+export async function getUserWarningAuditHistory(
+  usuarioId: number,
+  startDate?: Date,
+  endDate?: Date
+): Promise<any[]> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get user audit history: database not available");
+    return [];
+  }
+
+  try {
+    const conditions = [eq(warningAuditLog.usuarioId, usuarioId)];
+
+    if (startDate) {
+      conditions.push(gte(warningAuditLog.criadoEm, startDate));
+    }
+
+    if (endDate) {
+      conditions.push(lte(warningAuditLog.criadoEm, endDate));
+    }
+
+    const history = await db
+      .select()
+      .from(warningAuditLog)
+      .where(and(...conditions))
+      .orderBy(desc(warningAuditLog.criadoEm));
+
+    return history.map((log) => ({
+      ...log,
+      camposAlterados: log.camposAlterados ? JSON.parse(log.camposAlterados) : null,
+      valorAnterior: log.valorAnterior ? JSON.parse(log.valorAnterior) : null,
+      valorNovo: log.valorNovo ? JSON.parse(log.valorNovo) : null,
+    }));
+  } catch (error) {
+    console.error("[DB] Error getting user audit history:", error);
     return [];
   }
 }

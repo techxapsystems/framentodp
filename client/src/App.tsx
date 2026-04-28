@@ -22,6 +22,7 @@ import DataRetention from "./pages/DataRetention";
 import TemplateLibrary from "./pages/TemplateLibrary";
 import UserManagement from "./pages/UserManagement";
 import Login from "./pages/Login";
+import WarningAuditLog from "./pages/WarningAuditLog";
 import AnaliseGifBrf from "./pages/AnaliseGifBrf";
 import ComparisonReport from "./pages/ComparisonReport";
 import ImportAdministrative from "./pages/ImportAdministrative";
@@ -121,6 +122,11 @@ function Router() {
         <Route path="/usuarios" component={() => (
           <ProtectedRoute requiredRole="admin">
             <UserManagement />
+          </ProtectedRoute>
+        )} />
+        <Route path="/auditoria-advertencias" component={() => (
+          <ProtectedRoute requiredRole="admin">
+            <WarningAuditLog />
           </ProtectedRoute>
         )} />
         <Route path="/biblioteca-modelos" component={() => (

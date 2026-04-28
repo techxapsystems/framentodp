@@ -370,7 +370,12 @@ export default function WarningSignOff() {
                 <TableRow key={warning.id}>
                   <TableCell className="font-medium">{warning.conductorName}</TableCell>
                   <TableCell>
-                    {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
+                    <div className="text-sm">
+                      <div>{new Date(warning.criadoEm).toLocaleDateString('pt-BR')}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(warning.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="default">
@@ -447,7 +452,12 @@ export default function WarningSignOff() {
                 <TableRow key={warning.id} className="bg-red-50">
                   <TableCell className="font-medium">{warning.conductorName}</TableCell>
                   <TableCell>
-                    {new Date(warning.criadoEm).toLocaleDateString('pt-BR')}
+                    <div className="text-sm">
+                      <div>{new Date(warning.criadoEm).toLocaleDateString('pt-BR')}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(warning.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="destructive">
