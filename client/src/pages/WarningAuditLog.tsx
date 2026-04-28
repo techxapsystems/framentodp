@@ -28,7 +28,7 @@ interface AuditLog {
 // Componente que renderiza o conteúdo (com hooks)
 function WarningAuditLogContent() {
   const [searchConductor, setSearchConductor] = useState("");
-  const [filterAction, setFilterAction] = useState<"" | "criado" | "editado" | "deletado" | "assinado">("");
+  const [filterAction, setFilterAction] = useState<"all" | "criado" | "editado" | "deletado" | "assinado">("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -40,7 +40,7 @@ function WarningAuditLogContent() {
     try {
       const params = new URLSearchParams();
       if (searchConductor) params.append("conductor", searchConductor);
-      if (filterAction) params.append("action", filterAction);
+      if (filterAction && filterAction !== "all") params.append("action", filterAction);
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
 
@@ -114,7 +114,7 @@ function WarningAuditLogContent() {
                   <SelectValue placeholder="Todas as ações" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as ações</SelectItem>
+                  <SelectItem value="all">Todas as ações</SelectItem>
                   <SelectItem value="criado">Criado</SelectItem>
                   <SelectItem value="editado">Editado</SelectItem>
                   <SelectItem value="deletado">Deletado</SelectItem>
