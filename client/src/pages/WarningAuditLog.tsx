@@ -26,6 +26,7 @@ interface AuditLog {
 }
 
 export default function WarningAuditLog() {
+  // ✅ HOOKS NO TOPO DO COMPONENTE - ANTES DE QUALQUER LÓGICA CONDICIONAL
   const { user } = useAuth();
   const [searchConductor, setSearchConductor] = useState("");
   const [filterAction, setFilterAction] = useState<"" | "criado" | "editado" | "deletado" | "assinado">("");
@@ -35,7 +36,7 @@ export default function WarningAuditLog() {
   const [loading, setLoading] = useState(false);
   const [expandedLog, setExpandedLog] = useState<number | null>(null);
 
-  // Verificar se o usuário é admin
+  // ✅ AGORA SIM: Verificar se o usuário é admin DEPOIS dos hooks
   if (!user || user.role !== "admin") {
     return (
       <div className="flex items-center justify-center min-h-screen">
