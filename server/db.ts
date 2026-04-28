@@ -460,6 +460,7 @@ export async function createWarning(data: any) {
       advertenciaGerada: true,
       advertenciaAplicada: false,
       criadoEm: new Date(),
+      dataAnotacao: parseDate(data.dataInfracao) || new Date(), // Data da infração
       dataInicio: parseDate(data.dataInicio),
       dataFim: parseDate(data.dataFim),
       dataRetorno: parseDate(data.dataRetorno),

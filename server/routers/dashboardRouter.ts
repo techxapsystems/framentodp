@@ -448,6 +448,7 @@ export const dashboardRouter = router({
         nivelAdvertencia: z.number().min(1).max(3),
         motivo: z.string(),
         observacao: z.string().optional(),
+        dataInfracao: z.string().optional(), // Data da infração
         dataInicio: z.string().optional(),
         dataFim: z.string().optional(),
         dataRetorno: z.string().optional(),
@@ -467,6 +468,7 @@ export const dashboardRouter = router({
           motivo: input.motivo,
           observacao: input.observacao,
           aplicadoPor: ctx.user.email || ctx.user.name || "Sistema",
+          dataInfracao: input.dataInfracao,
           dataInicio: input.dataInicio,
           dataFim: input.dataFim,
           dataRetorno: input.dataRetorno,

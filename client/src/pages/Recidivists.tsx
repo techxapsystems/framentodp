@@ -173,6 +173,7 @@ export default function Recidivists() {
       observacao: "",
       tipo: warningType,
       categoria: "outro",
+      dataInfracao: infrationDate, // Adicionar data da infração
       dataInicio: warningType === "suspensao" ? dataInicio : undefined,
       dataFim: warningType === "suspensao" ? dataFim : undefined,
       dataRetorno: warningType === "suspensao" ? dataRetorno : undefined,

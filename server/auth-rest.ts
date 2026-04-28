@@ -430,3 +430,47 @@ authRestRouter.post("/download-warning-pdf", express.json(), async (req, res) =>
     return res.status(500).json({ error: "Erro ao gerar PDF da advertência: " + (error instanceof Error ? error.message : String(error)) });
   }
 });
+
+
+// DELETE /api/auth/warnings/:id - Delete a warning
+authRestRouter.delete("/warnings/:id", express.json(), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const warningId = parseInt(id, 10);
+
+    if (!warningId || isNaN(warningId)) {
+      return res.status(400).json({ error: "ID de advertência inválido" });
+    }
+
+    await db.deleteWarning(warningId);
+    return res.status(200).json({ success: true, message: "Advertência deletada com sucesso" });
+  } catch (error) {
+    console.error("[API] Error deleting warning:", error);
+    return res.status(500).json({ error: "Erro ao deletar advertência: " + (error instanceof Error ? error.message : String(error)) });
+  }
+});
+
+// PUT /api/auth/warnings/:id - Update a warning
+authRestRouter.put("/warnings/:id", express.json(), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const warningId = parseInt(id, 10);
+    const { motivo, observacao, dataInicio, dataFim } = req.body;
+
+    if (!warningId || isNaN(warningId)) {
+      return res.status(400).json({ error: "ID de advertência inválido" });
+    }
+
+    await db.updateWarning(warningId, {
+      motivo: motivo || undefined,
+      observacao: observacao || undefined,
+      dataInicio: dataInicio || undefined,
+      dataFim: dataFim || undefined,
+    });
+
+    return res.status(200).json({ success: true, message: "Advertência atualizada com sucesso" });
+  } catch (error) {
+    console.error("[API] Error updating warning:", error);
+    return res.status(500).json({ error: "Erro ao atualizar advertência: " + (error instanceof Error ? error.message : String(error)) });
+  }
+});

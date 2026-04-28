@@ -127,6 +127,63 @@ export default function WarningSignOff() {
     }
   };
 
+  const handleDeleteWarning = async () => {
+    if (!selectedWarning) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/auth/warnings/${selectedWarning.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        toast.success('Advertência deletada com sucesso!');
+        setShowConfirmDialog(false);
+        setSelectedWarning(null);
+        loadWarnings();
+      } else {
+        toast.error('Erro ao deletar advertência');
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      toast.error('Erro ao processar solicitação');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateWarning = async () => {
+    if (!selectedWarning) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/auth/warnings/${selectedWarning.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          motivo: selectedWarning.motivo,
+          observacao: signOffNote,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Advertência atualizada com sucesso!');
+        setShowDetailDialog(false);
+        setSignOffNote('');
+        setSelectedWarning(null);
+        loadWarnings();
+      } else {
+        toast.error('Erro ao atualizar advertência');
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      toast.error('Erro ao processar solicitação');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getWarningTypeLabel = (tipo: 'advertencia' | 'suspensao') => {
     return tipo === 'advertencia' ? 'Advertência' : 'Suspensão';
   };
@@ -173,18 +230,45 @@ export default function WarningSignOff() {
                     <Badge variant="destructive" className="text-xs">Pendente</Badge>
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedWarning(warning);
-                    setConfirmAction('signoff');
-                    setShowConfirmDialog(true);
-                  }}
-                >
-                  Dar Baixa
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="whitespace-nowrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedWarning(warning);
+                      setShowDetailDialog(true);
+                    }}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="whitespace-nowrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedWarning(warning);
+                      setConfirmAction('delete');
+                      setShowConfirmDialog(true);
+                    }}
+                  >
+                    Excluir
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedWarning(warning);
+                      setConfirmAction('signoff');
+                      setShowConfirmDialog(true);
+                    }}
+                  >
+                    Dar Baixa
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -217,18 +301,45 @@ export default function WarningSignOff() {
                     <Badge variant="destructive" className="text-xs">Pendente</Badge>
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedWarning(warning);
-                    setConfirmAction('signoff');
-                    setShowConfirmDialog(true);
-                  }}
-                >
-                  Dar Baixa
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="whitespace-nowrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedWarning(warning);
+                      setShowDetailDialog(true);
+                    }}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="whitespace-nowrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedWarning(warning);
+                      setConfirmAction('delete');
+                      setShowConfirmDialog(true);
+                    }}
+                  >
+                    Excluir
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedWarning(warning);
+                      setConfirmAction('signoff');
+                      setShowConfirmDialog(true);
+                    }}
+                  >
+                    Dar Baixa
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -275,17 +386,40 @@ export default function WarningSignOff() {
                     <Badge variant="destructive">Pendente</Badge>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                      onClick={() => {
-                        setSelectedWarning(warning);
-                        setConfirmAction('signoff');
-                        setShowConfirmDialog(true);
-                      }}
-                    >
-                      Dar Baixa
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedWarning(warning);
+                          setShowDetailDialog(true);
+                        }}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          setSelectedWarning(warning);
+                          setConfirmAction('delete');
+                          setShowConfirmDialog(true);
+                        }}
+                      >
+                        Excluir
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() => {
+                          setSelectedWarning(warning);
+                          setConfirmAction('signoff');
+                          setShowConfirmDialog(true);
+                        }}
+                      >
+                        Dar Baixa
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -324,17 +458,40 @@ export default function WarningSignOff() {
                     <Badge variant="destructive">Pendente</Badge>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                      onClick={() => {
-                        setSelectedWarning(warning);
-                        setConfirmAction('signoff');
-                        setShowConfirmDialog(true);
-                      }}
-                    >
-                      Dar Baixa
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedWarning(warning);
+                          setShowDetailDialog(true);
+                        }}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          setSelectedWarning(warning);
+                          setConfirmAction('delete');
+                          setShowConfirmDialog(true);
+                        }}
+                      >
+                        Excluir
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() => {
+                          setSelectedWarning(warning);
+                          setConfirmAction('signoff');
+                          setShowConfirmDialog(true);
+                        }}
+                      >
+                        Dar Baixa
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -616,20 +773,8 @@ export default function WarningSignOff() {
               onClick={() => {
                 if (confirmAction === 'signoff') {
                   handleSignOff();
-                } else if (confirmAction === 'delete' && selectedWarning) {
-                  deleteWarningMutation.mutate(
-                    { warningId: selectedWarning.id },
-                    {
-                      onSuccess: () => {
-                        toast.success('Medida removida com sucesso');
-                        setShowConfirmDialog(false);
-                        loadWarnings();
-                      },
-                      onError: () => {
-                        toast.error('Erro ao remover medida');
-                      },
-                    }
-                  );
+                } else if (confirmAction === 'delete') {
+                  handleDeleteWarning();
                 }
               }}
             >
@@ -711,16 +856,25 @@ export default function WarningSignOff() {
               >
                 Imprimir PDF
               </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setShowDetailDialog(false);
-                  setSelectedWarning(null);
-                }}
-                disabled={loading}
-              >
-                Fechar
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={handleUpdateWarning}
+                  disabled={loading}
+                >
+                  Salvar Alterações
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowDetailDialog(false);
+                    setSelectedWarning(null);
+                  }}
+                  disabled={loading}
+                >
+                  Fechar
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
