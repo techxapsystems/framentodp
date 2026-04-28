@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -25,9 +25,8 @@ interface AuditLog {
   criadoEm: Date;
 }
 
-export default function WarningAuditLog() {
-  // ✅ HOOKS NO TOPO DO COMPONENTE - ANTES DE QUALQUER LÓGICA CONDICIONAL
-  const { user } = useAuth();
+// Componente que renderiza o conteúdo (com hooks)
+function WarningAuditLogContent() {
   const [searchConductor, setSearchConductor] = useState("");
   const [filterAction, setFilterAction] = useState<"" | "criado" | "editado" | "deletado" | "assinado">("");
   const [startDate, setStartDate] = useState("");
@@ -35,27 +34,6 @@ export default function WarningAuditLog() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedLog, setExpandedLog] = useState<number | null>(null);
-
-  // ✅ AGORA SIM: Verificar se o usuário é admin DEPOIS dos hooks
-  if (!user || user.role !== "admin") {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
-              Acesso Negado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Apenas administradores podem acessar o histórico de auditoria de advertências.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   const handleSearch = async () => {
     setLoading(true);
@@ -274,4 +252,33 @@ export default function WarningAuditLog() {
       </div>
     </div>
   );
+}
+
+// Componente principal que verifica admin ANTES de renderizar conteúdo com hooks
+export default function WarningAuditLog() {
+  const { user } = useAuth();
+
+  // Se não for admin, mostra mensagem de acesso negado
+  if (!user || user.role !== "admin") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              Acesso Negado
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Apenas administradores podem acessar o histórico de auditoria de advertências.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Só renderiza o conteúdo com hooks se for admin
+  return <WarningAuditLogContent />;
 }
