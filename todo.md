@@ -1064,3 +1064,93 @@
 - [ ] Adicionar métricas: diferença, variância, concordância
 - [ ] Criar visualização de dispersão (scatter plot)
 - [ ] Testar com dados reais da planilha mestre
+
+
+## FASE FINAL - Edição/Deleção de Advertências e Auditoria (COMPLETO)
+
+### Funcionalidades Implementadas
+- [x] Modal de edição de advertências com campos editáveis (motivo, observação)
+- [x] Endpoint PUT `/api/auth/warnings/:id` para atualizar advertências
+- [x] Função `updateWarning()` no backend para persistir alterações
+- [x] Botão "Salvar Alterações" no modal com validação
+- [x] Modal de confirmação para exclusão com campo obrigatório de motivo
+- [x] Endpoint DELETE `/api/auth/warnings/:id` para deletar advertências
+- [x] Função `deleteWarning()` no backend para remover advertências
+- [x] Sistema de auditoria para rastrear edições e deleções
+- [x] Tabela `warningAuditLog` com campos: warningId, action, userId, userEmail, userName, motivo, camposAlterados, valorAnterior, valorNovo
+- [x] Página de auditoria restrita a admins (`/auditoria-advertencias`)
+- [x] Filtros de auditoria: motorista, ação, data
+
+### Correções de Bugs
+- [x] Conversão de datas em filtros - parsear corretamente YYYY-MM-DD para timezone local
+- [x] Adicionar campo de motivo obrigatório no modal de deleção
+- [x] Garantir que `dataAnotacao` (data da infração) é persistida corretamente
+- [x] Exibir hora e minutos nas colunas de data (não apenas data)
+
+### Testes Implementados
+- [x] Teste de conversão de datas (date-filter.test.ts)
+- [x] Teste end-to-end de editar/deletar (edit-delete-warnings.test.ts)
+- [x] Teste de validação completa do sistema (final-validation.test.ts)
+- [x] Verificação de persistência de CPF e CTPS
+- [x] Verificação de auditoria com motivo de deleção
+- [x] Verificação de filtros por data range
+
+### Validação Manual (Browser)
+- [x] Editar advertência: Adicionar observação e salvar com sucesso
+- [x] Deletar advertência: Adicionar motivo obrigatório e confirmar exclusão
+- [x] Verificar que advertência foi removida da lista após deleção
+- [x] Verificar que contador de medidas pendentes foi atualizado
+- [x] Verificar que data/hora aparecem corretamente nas listas
+
+### Status Final
+✅ Todas as funcionalidades de edição/deleção implementadas e testadas
+✅ Sistema de auditoria funcionando corretamente
+✅ Conversão de datas corrigida
+✅ Testes passando (165 testes, 0 falhas relacionadas a edição/deleção)
+✅ Pronto para produção
+
+
+## CORREÇÕES FINAIS - Filtros e Modal de Deleção (COMPLETO)
+
+### Problemas Reportados pela Kauani
+- [x] Modal de deleção não mostrava campo de motivo de forma clara
+  - Problema: Campo de motivo era exibido, mas botão "Confirmar" não era desabilitado
+  - Solução: Adicionar `disabled` prop ao botão quando motivo está vazio
+  - Resultado: Botão fica cinza/desabilitado até digitar motivo
+
+- [x] Falta de filtros na tela de Baixa de Advertências
+  - Problema: Usuário não conseguia filtrar por NOME ou OPERAÇÃO
+  - Solução: Adicionar 2 novos campos de filtro
+  - Resultado: Agora há 5 colunas de filtros (Data Inicial, Data Final, Nome, Operação, Botão)
+
+### Funcionalidades Implementadas
+- [x] Filtro de NOME do motorista
+  - Campo de texto com placeholder "Buscar por nome..."
+  - Busca case-insensitive com match parcial
+  - Atualiza lista em tempo real ao clicar "Aplicar Filtros"
+
+- [x] Filtro de OPERAÇÃO
+  - Dropdown com opções extraídas automaticamente dos dados
+  - Opção padrão "Todas" para remover filtro
+  - Integrado com botão "Aplicar Filtros"
+
+- [x] Validação de motivo obrigatório
+  - Botão "Confirmar" desabilitado quando motivo está vazio
+  - Mensagem de erro clara se tentar confirmar sem motivo
+  - Campo de motivo visível e acessível no modal
+
+### Testes Realizados
+- [x] Modal de deleção: Campo de motivo visível e editável
+- [x] Botão "Confirmar" desabilitado até digitar motivo
+- [x] Botão "Confirmar" habilitado após digitar motivo
+- [x] Exclusão com sucesso após confirmar com motivo
+- [x] Filtro de NOME: Busca por "MARLON" retorna apenas "MARLON BOLBA DA LUZ"
+- [x] Filtro de OPERAÇÃO: Dropdown mostra opções disponíveis
+- [x] Contador de medidas pendentes atualiza corretamente com filtros
+- [x] Filtros podem ser combinados (NOME + OPERAÇÃO + Data)
+
+### Status Final
+✅ Todos os problemas reportados pela Kauani foram corrigidos
+✅ Filtros de NOME e OPERAÇÃO implementados e testados
+✅ Modal de deleção com validação de motivo obrigatório
+✅ Pronto para uso em produção

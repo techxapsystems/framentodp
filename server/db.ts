@@ -650,14 +650,14 @@ export async function getWarningsStats(params: {
   try {
     let conditions: any[] = [];
 
-    // Filtrar por data se fornecido
+    // Filtrar por data se fornecido (usar dataAnotacao - data da infração)
     if (params.startDate) {
-      conditions.push(gte(warnings.criadoEm, params.startDate));
+      conditions.push(gte(warnings.dataAnotacao, params.startDate));
     }
     if (params.endDate) {
       const endOfDay = new Date(params.endDate);
       endOfDay.setHours(23, 59, 59, 999);
-      conditions.push(lte(warnings.criadoEm, endOfDay));
+      conditions.push(lte(warnings.dataAnotacao, endOfDay));
     }
 
     let query = db.select().from(warnings);

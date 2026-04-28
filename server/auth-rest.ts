@@ -98,8 +98,16 @@ authRestRouter.get("/warnings-stats", async (req, res) => {
     const operacao = req.query.operacao as string;
 
     const filters: any = {};
-    if (startDateStr) filters.startDate = new Date(startDateStr);
-    if (endDateStr) filters.endDate = new Date(endDateStr);
+    if (startDateStr) {
+      const [year, month, day] = startDateStr.split('-').map(Number);
+      const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+      filters.startDate = startDate;
+    }
+    if (endDateStr) {
+      const [year, month, day] = endDateStr.split('-').map(Number);
+      const endDate = new Date(year, month - 1, day, 23, 59, 59, 999);
+      filters.endDate = endDate;
+    }
     if (operacao) filters.operacao = operacao;
 
     const stats = await db.getWarningsStats(filters);
@@ -123,8 +131,16 @@ authRestRouter.get("/warnings-stats-by-operation", async (req, res) => {
     const operacao = req.query.operacao as string;
 
     const filters: any = {};
-    if (startDateStr) filters.startDate = new Date(startDateStr);
-    if (endDateStr) filters.endDate = new Date(endDateStr);
+    if (startDateStr) {
+      const [year, month, day] = startDateStr.split('-').map(Number);
+      const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+      filters.startDate = startDate;
+    }
+    if (endDateStr) {
+      const [year, month, day] = endDateStr.split('-').map(Number);
+      const endDate = new Date(year, month - 1, day, 23, 59, 59, 999);
+      filters.endDate = endDate;
+    }
     if (operacao) filters.operacao = operacao;
 
     const stats = await db.getWarningsStatsByOperation(filters);
@@ -148,8 +164,16 @@ authRestRouter.get("/warnings-stats-by-driver", async (req, res) => {
     const operation = req.query.operation as string;
 
     const filters: any = {};
-    if (startDateStr) filters.startDate = new Date(startDateStr);
-    if (endDateStr) filters.endDate = new Date(endDateStr);
+    if (startDateStr) {
+      const [year, month, day] = startDateStr.split('-').map(Number);
+      const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+      filters.startDate = startDate;
+    }
+    if (endDateStr) {
+      const [year, month, day] = endDateStr.split('-').map(Number);
+      const endDate = new Date(year, month - 1, day, 23, 59, 59, 999);
+      filters.endDate = endDate;
+    }
     if (operation) filters.operacao = operation;
 
     const stats = await db.getWarningsStatsByDriver(filters);

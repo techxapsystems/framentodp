@@ -49,6 +49,10 @@ export default function WarningSignOff() {
   const [signOffNote, setSignOffNote] = useState('');
   const [confirmAction, setConfirmAction] = useState<'signoff' | 'delete'>('signoff');
   const [deleteReason, setDeleteReason] = useState('');
+  const [filterName, setFilterName] = useState('');
+  const [filterOperation, setFilterOperation] = useState('');
+  const [operations, setOperations] = useState<string[]>([]);
+  const [filteredWarnings, setFilteredWarnings] = useState<Warning[]>([]);
   
   const deleteWarningMutation = trpc.dashboard.deleteWarning.useMutation();
 
@@ -76,7 +80,21 @@ export default function WarningSignOff() {
       const response = await fetch(`/api/auth/warnings-stats?${params.toString()}`);
       const result = await response.json();
       const stats = result.result?.data?.json || {};
-      const allWarnings = stats.warnings || [];
+      let allWarnings = stats.warnings || [];
+
+      // Extrair operacoes unicas
+      const uniqueOps = Array.from(new Set(allWarnings.map((w: any) => w.operacao).filter(Boolean)));
+      setOperations(uniqueOps as string[]);
+
+      // Aplicar filtros de NOME e OPERACAO
+      if (filterName.trim()) {
+        allWarnings = allWarnings.filter((w: any) => 
+          w.conductorName.toLowerCase().includes(filterName.toLowerCase())
+        );
+      }
+      if (filterOperation) {
+        allWarnings = allWarnings.filter((w: any) => w.operacao === filterOperation);
+      }
 
       // Separar por tipo e status
       const pendingAdv = allWarnings.filter((w: any) => !w.advertenciaAplicada && w.tipo === 'advertencia');
@@ -678,7 +696,7 @@ export default function WarningSignOff() {
           <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start-date">Data Inicial</Label>
               <Input
@@ -694,6 +712,29 @@ export default function WarningSignOff() {
                 type="date"
                 ref={endDateRef}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-name">Nome do Motorista</Label>
+              <Input
+                id="filter-name"
+                placeholder="Buscar por nome..."
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-operation">Operacao</Label>
+              <select
+                id="filter-operation"
+                value={filterOperation}
+                onChange={(e) => setFilterOperation(e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              >
+                <option value="">Todas</option>
+                {operations.map((op) => (
+                  <option key={op} value={op}>{op}</option>
+                ))}
+              </select>
             </div>
             <div className="flex items-end gap-2">
               <Button onClick={loadWarnings} className="w-full">
@@ -795,6 +836,18 @@ export default function WarningSignOff() {
               />
             </div>
           )}
+          {confirmAction === 'delete' && (
+            <div className="space-y-2">
+              <Label htmlFor="delete-reason">Motivo da Exclusão (obrigatório)</Label>
+              <Textarea
+                id="delete-reason"
+                placeholder="Informe o motivo da exclusão..."
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                className="min-h-24"
+              />
+            </div>
+          )}
           <div className="flex gap-2 justify-end">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
@@ -802,9 +855,14 @@ export default function WarningSignOff() {
                 if (confirmAction === 'signoff') {
                   handleSignOff();
                 } else if (confirmAction === 'delete') {
+                  if (!deleteReason.trim()) {
+                    toast.error('Por favor, informe o motivo da exclusão');
+                    return;
+                  }
                   handleDeleteWarning();
                 }
               }}
+              disabled={confirmAction === 'delete' && !deleteReason.trim()}
             >
               Confirmar
             </AlertDialogAction>
@@ -850,14 +908,22 @@ export default function WarningSignOff() {
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Motivo</Label>
-                <p className="text-sm whitespace-pre-wrap break-words">{selectedWarning.motivo || '-'}</p>
+                <Textarea
+                  value={selectedWarning.motivo || ''}
+                  onChange={(e) => setSelectedWarning({ ...selectedWarning, motivo: e.target.value })}
+                  placeholder="Digite o motivo da advertência"
+                  className="mt-2"
+                />
               </div>
-              {selectedWarning.observacao && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Observação</Label>
-                  <p className="text-sm whitespace-pre-wrap break-words">{selectedWarning.observacao}</p>
-                </div>
-              )}
+              <div>
+                <Label className="text-xs text-muted-foreground">Observação</Label>
+                <Textarea
+                  value={signOffNote || selectedWarning.observacao || ''}
+                  onChange={(e) => setSignOffNote(e.target.value)}
+                  placeholder="Digite observações adicionais"
+                  className="mt-2"
+                />
+              </div>
             </div>
             <DialogFooter className="flex gap-2 justify-between">
               <Button
