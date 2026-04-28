@@ -166,6 +166,14 @@ export default function Recidivists() {
       return;
     }
 
+    // Converter data DD/MM ou DD/MM/YYYY para formato completo
+    let formattedDate = infrationDate;
+    if (infrationDate.length === 5) {
+      // Se for DD/MM, adicionar ano atual
+      const currentYear = new Date().getFullYear();
+      formattedDate = `${infrationDate}/${currentYear}`;
+    }
+
     createWarningMutation.mutate({
       conductorName: selectedConductor,
       nivelAdvertencia: 1,
@@ -173,7 +181,7 @@ export default function Recidivists() {
       observacao: "",
       tipo: warningType,
       categoria: "outro",
-      dataInfracao: infrationDate, // Adicionar data da infração
+      dataInfracao: formattedDate, // Adicionar data da infração
       dataInicio: warningType === "suspensao" ? dataInicio : undefined,
       dataFim: warningType === "suspensao" ? dataFim : undefined,
       dataRetorno: warningType === "suspensao" ? dataRetorno : undefined,
