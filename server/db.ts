@@ -497,11 +497,34 @@ export async function updateWarning(id: number, updates: any) {
   }
 }
 
-export async function deleteWarning(id: number) {
+export async function deleteWarning(id: number, userId?: number, userEmail?: string, userName?: string, motivo?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
+    // Buscar a advertência antes de deletar para registrar no audit
+    const warningToDelete = await db.select().from(warnings).where(eq(warnings.id, id)).limit(1);
+    
+    if (warningToDelete.length === 0) {
+      throw new Error(`Warning with id ${id} not found`);
+    }
+
+    const warning = warningToDelete[0];
+
+    // Registrar no audit log ANTES de deletar
+    await db.insert(warningAuditLog).values({
+      warningId: id,
+      conductorName: warning.conductorName,
+      acao: "deletado",
+      valorAnterior: JSON.stringify(warning),
+      usuarioId: userId || 0,
+      usuarioEmail: userEmail || "sistema",
+      usuarioNome: userName || "Sistema",
+      motivo: motivo || "",
+      criadoEm: new Date(),
+    });
+
+    // Agora deletar
     await db.delete(warnings).where(eq(warnings.id, id));
   } catch (error) {
     console.error("[Database] Error deleting warning:", error);

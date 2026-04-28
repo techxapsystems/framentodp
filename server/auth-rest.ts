@@ -621,3 +621,68 @@ authRestRouter.get("/warnings-audit-log", async (req, res) => {
     return res.status(500).json({ error: "Erro ao buscar histórico de auditoria: " + (error instanceof Error ? error.message : String(error)) });
   }
 });
+
+// POST /api/auth/restore-warnings - Restore deleted warnings (ADMIN ONLY)
+authRestRouter.post("/restore-warnings", async (req, res) => {
+  try {
+    // NOTA: Endpoint temporário para restauração de emergência
+    // TODO: Remover após restauração das advertências
+
+    const dbModule = await import("./db");
+    const { warnings, warningAuditLog } = await import("../drizzle/schema");
+    const { eq } = await import("drizzle-orm");
+    
+    const dbInstance = await dbModule.getDb();
+    if (!dbInstance) {
+      return res.status(500).json({ error: "Database not available" });
+    }
+
+    // Buscar todas as deleções
+    const deletions = await dbInstance
+      .select()
+      .from(warningAuditLog)
+      .where(eq(warningAuditLog.acao, "deletado"));
+
+    let restored = 0;
+    const errors: string[] = [];
+
+    // Restaurar cada advertência
+    for (const deletion of deletions) {
+      try {
+        const valorAnterior = deletion.valorAnterior ? JSON.parse(deletion.valorAnterior) : {};
+        
+        await dbInstance.insert(warnings).values({
+          conductorName: deletion.conductorName,
+          tipo: valorAnterior.tipo || "advertencia",
+          categoria: valorAnterior.categoria || "outro",
+          nivelAdvertencia: valorAnterior.nivelAdvertencia || 1,
+          motivo: valorAnterior.motivo || "",
+          observacao: valorAnterior.observacao || "",
+          aplicadoPor: valorAnterior.aplicadoPor || "Sistema",
+          advertenciaGerada: true,
+          advertenciaAplicada: false,
+          criadoEm: valorAnterior.criadoEm || new Date(),
+          dataAnotacao: valorAnterior.dataAnotacao || new Date(),
+          dataInicio: valorAnterior.dataInicio || null,
+          dataFim: valorAnterior.dataFim || null,
+          dataRetorno: valorAnterior.dataRetorno || null,
+        });
+        
+        restored++;
+      } catch (error) {
+        errors.push(`Failed to restore ${deletion.conductorName}: ${error}`);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Restored ${restored} warnings`,
+      restored,
+      errors,
+      totalDeleted: deletions.length,
+    });
+  } catch (error) {
+    console.error("[API] Error restoring warnings:", error);
+    return res.status(500).json({ error: "Erro ao restaurar advertências: " + (error instanceof Error ? error.message : String(error)) });
+  }
+});

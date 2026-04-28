@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,70 +25,89 @@ interface AuditLog {
   criadoEm: Date;
 }
 
-// Componente que renderiza o conteúdo (com hooks)
-function WarningAuditLogContent() {
-  const [searchConductor, setSearchConductor] = useState("");
-  const [filterAction, setFilterAction] = useState<"all" | "criado" | "editado" | "deletado" | "assinado">("all");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+export default function WarningAuditLog() {
+  const { user } = useAuth();
   const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [expandedLog, setExpandedLog] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [searchConductor, setSearchConductor] = useState("");
+  const [selectedAction, setSelectedAction] = useState("all");
+  const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>([]);
 
-  const handleSearch = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (searchConductor) params.append("conductor", searchConductor);
-      if (filterAction && filterAction !== "all") params.append("action", filterAction);
-      if (startDate) params.append("startDate", startDate);
-      if (endDate) params.append("endDate", endDate);
+  // Verificar se é admin
+  if (!user || user.role !== "admin") {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Você não tem permissão para acessar esta página.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-      const response = await fetch(`/api/auth/warnings-audit-log?${params.toString()}`);
-      if (response.ok) {
+  // Carregar dados de auditoria
+  useEffect(() => {
+    const loadAuditLogs = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/auth/warnings-audit-log");
+        if (!response.ok) throw new Error("Failed to load audit logs");
         const data = await response.json();
-        setLogs(data);
+        setLogs(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Error loading audit logs:", error);
+        setLogs([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Erro ao buscar histórico:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getActionBadge = (acao: string) => {
-    const variants: Record<string, { label: string; variant: any }> = {
-      criado: { label: "Criado", variant: "default" },
-      editado: { label: "Editado", variant: "secondary" },
-      deletado: { label: "Deletado", variant: "destructive" },
-      assinado: { label: "Assinado", variant: "outline" },
     };
-    const config = variants[acao] || { label: acao, variant: "default" };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
 
-  const getActionIcon = (acao: string) => {
-    switch (acao) {
-      case "criado":
-        return <Plus className="h-4 w-4" />;
-      case "editado":
-        return <Edit className="h-4 w-4" />;
-      case "deletado":
-        return <Trash2 className="h-4 w-4" />;
-      case "assinado":
-        return <CheckCircle className="h-4 w-4" />;
-      default:
-        return null;
+    loadAuditLogs();
+  }, []);
+
+  // Filtrar logs
+  useEffect(() => {
+    let filtered = logs;
+
+    if (searchConductor.trim()) {
+      filtered = filtered.filter((log) =>
+        log.conductorName.toLowerCase().includes(searchConductor.toLowerCase())
+      );
     }
+
+    if (selectedAction !== "all") {
+      filtered = filtered.filter((log) => log.acao === selectedAction);
+    }
+
+    setFilteredLogs(filtered);
+  }, [logs, searchConductor, selectedAction]);
+
+  // Obter ações únicas
+  const actions = Array.from(new Set(logs.map((log) => log.acao)));
+
+  // Função para renderizar badge de ação
+  const getActionBadge = (acao: string) => {
+    const variants: Record<string, string> = {
+      criado: "bg-green-100 text-green-800",
+      editado: "bg-blue-100 text-blue-800",
+      deletado: "bg-red-100 text-red-800",
+      assinado: "bg-purple-100 text-purple-800",
+    };
+    return variants[acao] || "bg-gray-100 text-gray-800";
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Histórico de Auditoria de Advertências</h1>
-        <p className="text-muted-foreground mt-2">
-          Rastreie todas as alterações realizadas em advertências e suspensões
-        </p>
+        <h1 className="text-3xl font-bold">Auditoria de Advertências</h1>
+        <p className="text-gray-600 mt-2">Histórico completo de alterações em advertências</p>
       </div>
 
       {/* Filtros */}
@@ -97,188 +116,79 @@ function WarningAuditLogContent() {
           <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Motorista</label>
+              <label className="text-sm font-medium">Motorista</label>
               <Input
-                placeholder="Nome do motorista"
+                placeholder="Buscar por nome..."
                 value={searchConductor}
                 onChange={(e) => setSearchConductor(e.target.value)}
               />
             </div>
-
             <div>
-              <label className="text-sm font-medium mb-2 block">Ação</label>
-              <Select value={filterAction} onValueChange={(v: any) => setFilterAction(v)}>
+              <label className="text-sm font-medium">Ação</label>
+              <Select value={selectedAction} onValueChange={setSelectedAction}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Todas as ações" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as ações</SelectItem>
-                  <SelectItem value="criado">Criado</SelectItem>
-                  <SelectItem value="editado">Editado</SelectItem>
-                  <SelectItem value="deletado">Deletado</SelectItem>
-                  <SelectItem value="assinado">Assinado</SelectItem>
+                  {actions.map((action) => (
+                    <SelectItem key={action} value={action}>
+                      {action.charAt(0).toUpperCase() + action.slice(1)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Data Inicial</label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Data Final</label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
           </div>
-
-          <Button onClick={handleSearch} disabled={loading} className="w-full bg-yellow-400 hover:bg-yellow-500 text-black">
-            {loading ? "Buscando..." : "Buscar Histórico"}
-          </Button>
         </CardContent>
       </Card>
 
       {/* Resultados */}
-      <div className="space-y-4">
-        {logs.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">
-                Nenhum registro encontrado. Use os filtros acima para buscar.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          logs.map((log) => (
-            <Card key={log.id} className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      {getActionIcon(log.acao)}
-                      <span className="font-medium">{log.conductorName}</span>
-                      {getActionBadge(log.acao)}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Advertência #{log.warningId}
-                    </p>
-                  </div>
-                  <div className="text-right text-sm text-muted-foreground">
-                    <p>{format(new Date(log.criadoEm), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
-                    <p className="text-xs">{log.usuarioNome}</p>
-                  </div>
-                </div>
-              </CardHeader>
-
-              {expandedLog === log.id && (
-                <CardContent className="space-y-4 border-t pt-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="font-medium">Usuário</p>
-                      <p className="text-muted-foreground">{log.usuarioEmail}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium">IP</p>
-                      <p className="text-muted-foreground text-xs">{log.ipAddress || "N/A"}</p>
-                    </div>
-                  </div>
-
-                  {log.motivo && (
-                    <div>
-                      <p className="font-medium text-sm">Motivo</p>
-                      <p className="text-sm text-muted-foreground">{log.motivo}</p>
-                    </div>
-                  )}
-
-                  {log.camposAlterados && log.camposAlterados.length > 0 && (
-                    <div>
-                      <p className="font-medium text-sm mb-2">Campos Alterados</p>
-                      <div className="space-y-2">
-                        {log.camposAlterados.map((campo, idx) => (
-                          <div key={idx} className="bg-muted p-2 rounded text-xs">
-                            <p className="font-medium">{campo}</p>
-                            {log.valorAnterior && log.valorAnterior[campo] !== undefined && (
-                              <p className="text-muted-foreground">
-                                Antes: {String(log.valorAnterior[campo] as any)}
-                              </p>
-                            )}
-                            {log.valorNovo && log.valorNovo[campo] !== undefined && (
-                              <p className="text-muted-foreground">
-                                Depois: {String(log.valorNovo[campo] as any)}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setExpandedLog(null)}
-                    className="w-full"
-                  >
-                    Fechar Detalhes
-                  </Button>
-                </CardContent>
-              )}
-
-              {expandedLog !== log.id && (
-                <CardContent className="pt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setExpandedLog(log.id)}
-                    className="w-full"
-                  >
-                    Ver Detalhes
-                  </Button>
-                </CardContent>
-              )}
-            </Card>
-          ))
-        )}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Registros ({filteredLogs.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">Carregando...</div>
+          ) : filteredLogs.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">Nenhum registro encontrado</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Motorista</th>
+                    <th className="px-4 py-2 text-left">Ação</th>
+                    <th className="px-4 py-2 text-left">Usuário</th>
+                    <th className="px-4 py-2 text-left">Data/Hora</th>
+                    <th className="px-4 py-2 text-left">Motivo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredLogs.map((log) => (
+                    <tr key={log.id} className="border-b hover:bg-gray-50">
+                      <td className="px-4 py-2">{log.conductorName}</td>
+                      <td className="px-4 py-2">
+                        <Badge className={getActionBadge(log.acao)}>
+                          {log.acao}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-2">{log.usuarioNome}</td>
+                      <td className="px-4 py-2">
+                        {format(new Date(log.criadoEm), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </td>
+                      <td className="px-4 py-2">{log.motivo || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
-}
-
-// Componente principal que verifica admin ANTES de renderizar conteúdo com hooks
-export default function WarningAuditLog() {
-  const { user } = useAuth();
-
-  // Se não for admin, mostra mensagem de acesso negado
-  if (!user || user.role !== "admin") {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
-              Acesso Negado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Apenas administradores podem acessar o histórico de auditoria de advertências.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Só renderiza o conteúdo com hooks se for admin
-  return <WarningAuditLogContent />;
 }
