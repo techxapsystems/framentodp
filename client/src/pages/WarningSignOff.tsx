@@ -48,6 +48,7 @@ export default function WarningSignOff() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [signOffNote, setSignOffNote] = useState('');
   const [confirmAction, setConfirmAction] = useState<'signoff' | 'delete'>('signoff');
+  const [deleteReason, setDeleteReason] = useState('');
   
   const deleteWarningMutation = trpc.dashboard.deleteWarning.useMutation();
 
@@ -129,18 +130,25 @@ export default function WarningSignOff() {
 
   const handleDeleteWarning = async () => {
     if (!selectedWarning) return;
+    
+    if (!deleteReason.trim()) {
+      toast.error('Por favor, informe o motivo da exclusão');
+      return;
+    }
 
     setLoading(true);
     try {
       const response = await fetch(`/api/auth/warnings/${selectedWarning.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo: deleteReason }),
       });
 
       if (response.ok) {
         toast.success('Advertência deletada com sucesso!');
         setShowConfirmDialog(false);
         setSelectedWarning(null);
+        setDeleteReason('');
         loadWarnings();
       } else {
         toast.error('Erro ao deletar advertência');
@@ -215,7 +223,12 @@ export default function WarningSignOff() {
               >
                 <div className="flex-1 grid grid-cols-4 gap-4 items-center text-sm">
                   <div className="font-semibold">{warning.conductorName}</div>
-                  <div>{new Date(warning.criadoEm).toLocaleDateString('pt-BR')}</div>
+                  <div>
+                    <div>{new Date(warning.criadoEm).toLocaleDateString('pt-BR')}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(warning.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="default">
                       {getWarningTypeLabel(warning.tipo)}
@@ -291,7 +304,12 @@ export default function WarningSignOff() {
               >
                 <div className="flex-1 grid grid-cols-4 gap-4 items-center text-sm">
                   <div className="font-semibold">{warning.conductorName}</div>
-                  <div>{new Date(warning.criadoEm).toLocaleDateString('pt-BR')}</div>
+                  <div>
+                    <div>{new Date(warning.criadoEm).toLocaleDateString('pt-BR')}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(warning.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="destructive">
                       {getWarningTypeLabel(warning.tipo)}
