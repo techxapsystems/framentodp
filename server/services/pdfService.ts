@@ -158,7 +158,7 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
 
       doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
       doc.text(introText, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
-      doc.moveDown(0.4);
+      doc.moveDown(1.2);
 
       // ============================================================
       // DESCRIÇÃO (texto principal do motivo)
@@ -166,7 +166,7 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
       if (data.description) {
         doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
         doc.text(data.description, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
-        doc.moveDown(0.4);
+        doc.moveDown(1.2);
       }
 
       // ============================================================
@@ -175,7 +175,7 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
       if (data.reason && data.reason !== data.description) {
         doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
         doc.text(data.reason, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
-        doc.moveDown(0.4);
+        doc.moveDown(1.2);
       }
 
       // ============================================================
@@ -192,7 +192,7 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
 
         doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
         doc.text(suspText, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
-        doc.moveDown(0.4);
+        doc.moveDown(1.2);
       }
 
       // ============================================================
@@ -202,7 +202,7 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
 
       doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
       doc.text(receiptText, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
-      doc.moveDown(0.4);
+      doc.moveDown(1.2);
 
       // ============================================================
       // PARÁGRAFO FINAL (ESCLARECIMENTO)
@@ -211,7 +211,7 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
 
       doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
       doc.text(finalText, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
-      doc.moveDown(0.8);
+      doc.moveDown(1.5);
 
       // ============================================================
       // LOCAL E DATA (alinhado à direita, como no modelo)
