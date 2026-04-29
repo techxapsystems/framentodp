@@ -1154,3 +1154,29 @@
 ✅ Filtros de NOME e OPERAÇÃO implementados e testados
 ✅ Modal de deleção com validação de motivo obrigatório
 ✅ Pronto para uso em produção
+
+
+## CORREÇÃO PDF - Formatação de Suspensão/Advertência (COMPLETO)
+
+### Problemas Reportados
+- [x] PDF desformatado - texto cortado na margem direita
+- [x] Dados da empresa sobrepostos no cabeçalho
+- [x] Datas em formato ISO (2026-04-30T00:00:00.000Z) em vez de DD/MM/YYYY
+- [x] Texto "Dessa forma..." com Art. 482 - deveria ter apenas datas de início e retorno
+- [x] PDF ocupava 2 páginas em vez de 1
+
+### Solução Implementada
+- [x] Migrar geração de PDF de jsPDF (client-side) para pdfkit (server-side)
+- [x] Reescrever pdfService.ts com formatação correta (margens 50pt, fonte 9pt, texto justificado)
+- [x] Atualizar WarningPDFGenerator.tsx para chamar endpoint server-side /api/auth/download-warning-pdf
+- [x] Remover WarningPDFWithHistory.tsx (não utilizado)
+- [x] Formatar datas ISO para DD/MM/YYYY automaticamente
+- [x] Parágrafo de suspensão com dias por extenso e datas de início/término/retorno (sem Art. 482)
+- [x] Testes vitest passando (5/5)
+
+### Status Final
+✅ PDF gerado em 1 página com formatação profissional
+✅ Datas em formato DD/MM/YYYY
+✅ Texto justificado sem overflow
+✅ Parágrafo de suspensão com datas corretas (sem Art. 482)
+✅ Frontend chama endpoint server-side (pdfkit) em vez de jsPDF

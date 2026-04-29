@@ -12,9 +12,9 @@ export interface WarningPDFData {
   description: string;
   penaltyType: string;
   penaltyDuration: string;
-  startDate: string; // DD/MM/YYYY or Date object
-  endDate: string; // DD/MM/YYYY or Date object
-  returnDate: string; // DD/MM/YYYY or Date object
+  startDate: string;
+  endDate: string;
+  returnDate: string;
   companyName?: string;
   companyAddress?: string;
   companyCNPJ?: string;
@@ -22,218 +22,231 @@ export interface WarningPDFData {
   signatureDate: string;
 }
 
-// Helper function to format date from ISO or DD/MM/YYYY to DD/MM/YYYY
-function formatDateToBR(dateInput: string | Date): string {
-  if (typeof dateInput === "string") {
-    // If already in DD/MM/YYYY format, return as is
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateInput)) {
-      return dateInput;
-    }
-    // If ISO format, convert
-    try {
-      const date = new Date(dateInput);
-      return date.toLocaleDateString("pt-BR");
-    } catch {
-      return dateInput;
-    }
+function formatDateBR(dateInput: string | Date): string {
+  if (!dateInput) return "";
+  const str = typeof dateInput === "string" ? dateInput : dateInput.toISOString();
+  // Already DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return str;
+  // ISO format
+  try {
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return str;
+    const dd = String(d.getUTCDate()).padStart(2, "0");
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const yyyy = d.getUTCFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  } catch {
+    return str;
   }
-  return dateInput.toLocaleDateString("pt-BR");
 }
 
-// Helper function to convert number to Portuguese text
-function numberToPortuguese(num: number): string {
-  const numbers: { [key: number]: string } = {
-    1: "um",
-    2: "dois",
-    3: "três",
-    4: "quatro",
-    5: "cinco",
-    6: "seis",
-    7: "sete",
-    8: "oito",
-    9: "nove",
-    10: "dez",
+function numPorExtenso(n: number): string {
+  const map: Record<number, string> = {
+    1: "um", 2: "dois", 3: "três", 4: "quatro", 5: "cinco",
+    6: "seis", 7: "sete", 8: "oito", 9: "nove", 10: "dez",
+    15: "quinze", 30: "trinta",
   };
-  return numbers[num] || num.toString();
+  return map[n] || String(n);
+}
+
+function calcDays(start: string, end: string): number {
+  try {
+    const s = new Date(start);
+    const e = new Date(end);
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return 1;
+    return Math.round(Math.abs(e.getTime() - s.getTime()) / 86400000) + 1;
+  } catch {
+    return 1;
+  }
 }
 
 export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
+      // Page setup: A4 with 50pt margins (matching reference)
+      const LEFT = 50;
+      const RIGHT = 50;
+      const PAGE_W = 595.28;
+      const CONTENT_W = PAGE_W - LEFT - RIGHT; // ~495pt
+
       const doc = new PDFDocument({
         size: "A4",
-        margin: 40,
+        margins: { top: 40, bottom: 40, left: LEFT, right: RIGHT },
       });
 
       const chunks: Buffer[] = [];
-
-      doc.on("data", (chunk: Buffer) => {
-        chunks.push(chunk);
-      });
-
-      doc.on("end", () => {
-        resolve(Buffer.concat(chunks));
-      });
-
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      // ===== TÍTULO =====
-      const titleText =
-        data.type === "suspensao"
-          ? "Suspensão Disciplinar"
-          : "Advertência Disciplinar";
+      const FONT_NORMAL = "Helvetica";
+      const FONT_BOLD = "Helvetica-Bold";
+      const BODY_SIZE = 9;
+      const TITLE_SIZE = 13;
+      const LABEL_X = LEFT;
+      const VALUE_X = LEFT + 70; // 120pt from left edge for values
 
-      doc.fontSize(12).font("Helvetica-Bold").text(titleText, { align: "center" });
-      doc.moveDown(0.4);
+      // ============================================================
+      // TÍTULO
+      // ============================================================
+      const title = data.type === "suspensao"
+        ? "Suspensão Disciplinar"
+        : "Advertência Disciplinar";
 
-      // ===== DADOS DA EMPRESA =====
-      doc.fontSize(9).font("Helvetica-Bold").text("Empresa:", 40, doc.y);
-      doc.font("Helvetica").fontSize(9);
-      doc.text(data.companyName || "TRANSPORTES FRAMENTO LTDA", 100, doc.y - 12);
-      doc.text(data.companyAddress || "Contorno da Petrobras, 107", 100, doc.y);
-      doc.text("32.669-500 - " + (data.companyCity || "CHAPECÓ"), 100, doc.y);
+      doc.font(FONT_BOLD).fontSize(TITLE_SIZE);
+      doc.text(title, LEFT, doc.y, { width: CONTENT_W, align: "center" });
+      doc.moveDown(0.8);
 
-      // MG alinhado à direita
-      doc.fontSize(9).font("Helvetica-Bold");
-      const mgY = doc.y - 36;
-      doc.text("MG", 450, mgY, { align: "right" });
+      // ============================================================
+      // DADOS DA EMPRESA
+      // ============================================================
+      const companyName = data.companyName || "TRANSPORTES FRAMENTO LTDA";
+      const companyAddress = data.companyAddress || "Contorno da Petrobras, 107";
+      const companyCNPJ = data.companyCNPJ || "00.766.315/0009-00";
+      const companyCity = data.companyCity || "CHAPECÓ";
 
-      doc.moveDown(0.1);
+      // Empresa: label + value
+      let y = doc.y;
+      doc.font(FONT_BOLD).fontSize(BODY_SIZE);
+      doc.text("Empresa:", LABEL_X, y);
+      doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+      doc.text(companyName, VALUE_X, y);
+
+      // Address line
+      y = doc.y;
+      doc.text(companyAddress, VALUE_X, y);
+
+      // City + State
+      y = doc.y;
+      doc.text(`32.669-500 - ${companyCity}`, VALUE_X, y);
+      // MG on same line, right-aligned
+      doc.text("MG", PAGE_W - RIGHT - 30, y);
 
       // CNPJ
-      doc.fontSize(9).font("Helvetica-Bold").text("CNPJ:", 40, doc.y);
-      doc.font("Helvetica").text(data.companyCNPJ || "00.766.315/0009-00", 100, doc.y - 12);
+      y = doc.y;
+      doc.font(FONT_BOLD).fontSize(BODY_SIZE);
+      doc.text("CNPJ:", LABEL_X, y);
+      doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+      doc.text(companyCNPJ, VALUE_X, y);
 
-      doc.moveDown(0.3);
+      doc.moveDown(0.5);
 
-      // ===== DADOS DO EMPREGADO =====
-      doc.fontSize(9).font("Helvetica-Bold").text("Empregado:", 40, doc.y);
-      doc.font("Helvetica").text(data.employeeName.toUpperCase(), 100, doc.y - 12);
+      // ============================================================
+      // DADOS DO EMPREGADO
+      // ============================================================
+      y = doc.y;
+      doc.font(FONT_BOLD).fontSize(BODY_SIZE);
+      doc.text("Empregado:", LABEL_X, y);
+      doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+      doc.text(data.employeeName.toUpperCase(), VALUE_X, y);
 
-      doc.moveDown(0.2);
+      // CPF
+      y = doc.y;
+      doc.font(FONT_BOLD).fontSize(BODY_SIZE);
+      doc.text("CPF:", LABEL_X, y);
+      doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+      doc.text(data.employeeCPF, VALUE_X, y);
 
-      // CPF e CTPS na mesma linha
-      const cpfCtpsY = doc.y;
-      doc.fontSize(9).font("Helvetica-Bold").text("CPF:", 40, cpfCtpsY);
-      doc.font("Helvetica").text(data.employeeCPF, 100, cpfCtpsY);
+      // CTPS on same line as CPF but to the right
+      doc.font(FONT_BOLD).fontSize(BODY_SIZE);
+      doc.text("CTPS:", LEFT + 250, y);
+      doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+      doc.text(data.employeeCTPS || "________    ____ - __", LEFT + 290, y);
 
-      doc.fontSize(9).font("Helvetica-Bold").text("CTPS:", 300, cpfCtpsY);
-      doc.font("Helvetica").text(data.employeeCTPS, 350, cpfCtpsY);
+      doc.moveDown(0.5);
 
+      // ============================================================
+      // PARÁGRAFO INTRODUTÓRIO
+      // ============================================================
+      const tipoTexto = data.type === "suspensao" ? "suspensão" : "advertência";
+      const introText = `Tem esta a finalidade de aplicar-lhe a pena de ${tipoTexto} disciplinar, em razão da(s) seguinte(s) ocorrência(a):`;
+
+      doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+      doc.text(introText, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
       doc.moveDown(0.4);
 
-      // ===== PARÁGRAFO INTRODUTÓRIO =====
-      const introText = `Tem esta a finalidade de aplicar-lhe a pena de ${
-        data.type === "suspensao" ? "suspensão" : "advertência"
-      } disciplinar, em razão da(s) seguinte(s) ocorrência(a):`;
-
-      doc.fontSize(9).font("Helvetica");
-      doc.text(introText, {
-        align: "justify",
-        width: 520,
-      });
-
-      doc.moveDown(0.3);
-
-      // ===== DESCRIÇÃO DO MOTIVO (Parágrafos separados) =====
-      doc.text(data.description, {
-        align: "justify",
-        width: 520,
-      });
-
-      doc.moveDown(0.3);
-
-      // ===== MOTIVO ESPECÍFICO =====
-      if (data.reason) {
-        doc.text(data.reason, {
-          align: "justify",
-          width: 520,
-        });
-        doc.moveDown(0.3);
+      // ============================================================
+      // DESCRIÇÃO (texto principal do motivo)
+      // ============================================================
+      if (data.description) {
+        doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+        doc.text(data.description, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
+        doc.moveDown(0.4);
       }
 
-      // ===== PERÍODO DE SUSPENSÃO/ADVERTÊNCIA =====
-      const startDateFormatted = formatDateToBR(data.startDate);
-      const endDateFormatted = formatDateToBR(data.endDate);
-      const returnDateFormatted = formatDateToBR(data.returnDate);
-
-      // Calculate days between start and end date
-      let daysCount = 1;
-      try {
-        const start = new Date(data.startDate);
-        const end = new Date(data.endDate);
-        const diffTime = Math.abs(end.getTime() - start.getTime());
-        daysCount = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      } catch {
-        daysCount = 1;
+      // ============================================================
+      // MOTIVO ESPECÍFICO
+      // ============================================================
+      if (data.reason && data.reason !== data.description) {
+        doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+        doc.text(data.reason, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
+        doc.moveDown(0.4);
       }
 
-      const daysText = numberToPortuguese(daysCount);
+      // ============================================================
+      // PERÍODO DE SUSPENSÃO (somente para suspensão)
+      // ============================================================
+      if (data.type === "suspensao") {
+        const startF = formatDateBR(data.startDate);
+        const endF = formatDateBR(data.endDate);
+        const returnF = formatDateBR(data.returnDate);
+        const days = calcDays(data.startDate, data.endDate);
+        const daysExt = numPorExtenso(days);
 
-      const periodText = `Dessa forma, comunicamos a aplicação de ${
-        data.type === "suspensao" ? "suspensão" : "advertência"
-      } disciplinar de ${daysCount} (${daysText}) dia(s), sem remuneração dos dias e do respectivo DSR, conforme previsto na legislação trabalhista e nas normas internas da empresa, com fundamento no Art. 482 da CLT, com início em ${startDateFormatted}, término em ${endDateFormatted} e retorno às atividades em ${returnDateFormatted}.`;
+        const suspText = `Dessa forma, comunicamos a aplicação de suspensão disciplinar de ${String(days).padStart(2, "0")} (${daysExt}) dia(s), sem remuneração dos dias e do respectivo DSR, conforme previsto na legislação trabalhista e nas normas internas da empresa, com início em ${startF}, término em ${endF} e retorno às atividades em ${returnF}.`;
 
-      doc.text(periodText, {
-        align: "justify",
-        width: 520,
-      });
+        doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+        doc.text(suspText, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
+        doc.moveDown(0.4);
+      }
 
-      doc.moveDown(0.3);
+      // ============================================================
+      // PARÁGRAFO DE RECEBIMENTO
+      // ============================================================
+      const receiptText = "Solicitamos que Vossa Senhoria assine o recebimento desta comunicação. Em caso de recusa, um representante da empresa e duas testemunhas assinarão para atestar o devido conhecimento da penalidade.";
 
-      // ===== PARÁGRAFO DE RECEBIMENTO =====
-      const receiptText = `Solicitamos que Vossa Senhoria assine o recebimento desta comunicação. Em caso de recusa, um representante da empresa e duas testemunhas assinarão para atestar o devido conhecimento da penalidade.`;
-
-      doc.text(receiptText, {
-        align: "justify",
-        width: 520,
-      });
-
-      doc.moveDown(0.3);
-
-      // ===== PARÁGRAFO FINAL =====
-      const finalText = `Esclarecemos, ainda, que a repetição de procedimentos como este(s) poderá ser considerada como ato falso, passível de dispensa por Justa Causa. Para que não tenhamos, no futuro, de tomar as medidas que nos facultam a legislação vigente, solicitamos-lhe que observe as normas reguladoras da relação de emprego.`;
-
-      doc.text(finalText, {
-        align: "justify",
-        width: 520,
-      });
-
+      doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+      doc.text(receiptText, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
       doc.moveDown(0.4);
 
-      // ===== LOCAL E DATA =====
-      doc.fontSize(9).font("Helvetica");
-      doc.text("Favor dar ciente na cópia desta.", 40, doc.y);
-      doc.moveDown(0.15);
-      doc.text(`${data.companyCity || "CHAPECÓ"}, ${data.signatureDate}.`, 40, doc.y);
+      // ============================================================
+      // PARÁGRAFO FINAL (ESCLARECIMENTO)
+      // ============================================================
+      const finalText = "Esclarecemos, ainda, que a repetição de procedimentos como este(s) poderá ser considerada como ato faltoso, passível de dispensa por Justa Causa. Para que não tenhamos, no futuro, de tomar as medidas que nos facultam a legislação vigente, solicitamos-lhe que observe as normas reguladoras da relação de emprego.";
 
-      doc.moveDown(0.4);
+      doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+      doc.text(finalText, LEFT, doc.y, { width: CONTENT_W, align: "justify" });
+      doc.moveDown(0.8);
 
-      // ===== LINHAS DE ASSINATURA =====
-      const lineY = doc.y;
-      const lineLength = 120;
-      const line1X = 40;
-      const line2X = 320;
+      // ============================================================
+      // LOCAL E DATA (alinhado à direita, como no modelo)
+      // ============================================================
+      doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
+      doc.text("Favor dar ciente na cópia desta.", LEFT, doc.y, { width: CONTENT_W, align: "right" });
+      doc.text(`${companyCity}, ${data.signatureDate}.`, LEFT, doc.y, { width: CONTENT_W, align: "right" });
+      doc.moveDown(1.2);
+
+      // ============================================================
+      // LINHAS DE ASSINATURA
+      // ============================================================
+      const sigY = doc.y;
+      const sigLineLen = 180;
+      const sig1X = LEFT;
+      const sig2X = PAGE_W - RIGHT - sigLineLen;
 
       doc.strokeColor("#000000").lineWidth(0.5);
-      doc.moveTo(line1X, lineY).lineTo(line1X + lineLength, lineY).stroke();
-      doc.moveTo(line2X, lineY).lineTo(line2X + lineLength, lineY).stroke();
+      doc.moveTo(sig1X, sigY).lineTo(sig1X + sigLineLen, sigY).stroke();
+      doc.moveTo(sig2X, sigY).lineTo(sig2X + sigLineLen, sigY).stroke();
 
-      doc.moveDown(0.15);
+      // Nomes abaixo das linhas
+      doc.font(FONT_NORMAL).fontSize(8);
+      doc.text("TRANSPORTES FRAMENTO", sig1X, sigY + 4, { width: sigLineLen, align: "center" });
+      doc.text("LTDA", sig1X, doc.y, { width: sigLineLen, align: "center" });
 
-      // Nomes das assinaturas
-      doc.fontSize(8).font("Helvetica");
-      doc.text("TRANSPORTES FRAMENTO LTDA", line1X, doc.y, {
-        width: lineLength,
-        align: "center",
-      });
+      doc.font(FONT_NORMAL).fontSize(8);
+      doc.text(data.employeeName.toUpperCase(), sig2X, sigY + 4, { width: sigLineLen, align: "center" });
 
-      doc.text(data.employeeName.toUpperCase(), line2X, doc.y - 12, {
-        width: lineLength,
-        align: "center",
-      });
-
-      // Finalizar o documento
+      // Finalizar
       doc.end();
     } catch (error) {
       reject(error);
