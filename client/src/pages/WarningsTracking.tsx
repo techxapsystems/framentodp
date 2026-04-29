@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { AlertCircle, CheckCircle2, Clock, TrendingUp, X, Download } from "lucide-react";
+import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -220,6 +221,91 @@ export default function WarningsTracking() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{(warningStats.taxaDevolucao || 0).toFixed(1)}%</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Gráficos */}
+      {!isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Gráfico 1: Não Assinadas por Tipo */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Não Assinadas por Tipo</CardTitle>
+              <CardDescription>Distribuição de advertências e suspensões não assinadas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-center">
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        {
+                          name: "Advertências",
+                          value: warningStats.warnings?.filter((w: any) => w.tipo === "advertencia" && !w.advertenciaAplicada).length || 0,
+                        },
+                        {
+                          name: "Suspensões",
+                          value: warningStats.warnings?.filter((w: any) => w.tipo === "suspensao" && !w.advertenciaAplicada).length || 0,
+                        },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value }) => `${name}: ${value}`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      <Cell fill="#fbbf24" />
+                      <Cell fill="#ef4444" />
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Gráfico 2: Total por Tipo */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Total por Tipo</CardTitle>
+              <CardDescription>Quantidade total de advertências e suspensões</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-center">
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        {
+                          name: "Advertências",
+                          value: warningStats.warnings?.filter((w: any) => w.tipo === "advertencia").length || 0,
+                        },
+                        {
+                          name: "Suspensões",
+                          value: warningStats.warnings?.filter((w: any) => w.tipo === "suspensao").length || 0,
+                        },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value }) => `${name}: ${value}`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      <Cell fill="#3b82f6" />
+                      <Cell fill="#8b5cf6" />
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
