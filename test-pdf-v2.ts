@@ -19,7 +19,7 @@ async function main() {
     returnDate: "2026-05-03T00:00:00.000Z",
     companyName: "TRANSPORTES FRAMENTO LTDA",
     companyAddress: "Ed. Vértice Office - R. Borges de Medeiros, 897 - E - sala 1201",
-    companyCNPJ: "00.766.315/0009-00",
+    companyCNPJ: "00.766.315/0001-44",
     companyCity: "Chapecó",
     signatureDate: "29 de abril de 2026",
   });
