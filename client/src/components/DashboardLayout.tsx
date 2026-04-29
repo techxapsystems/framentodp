@@ -84,7 +84,7 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
             <div className="flex items-center gap-4">
-              <img src="/framento-logo.png" alt="Framento" className="h-12 w-auto" />
+              <img src="/framento-logo.webp" alt="Framento" className="h-12 w-auto" />
             </div>
             <div className="text-center">
               <h1 className="text-2xl font-semibold tracking-tight text-white">
@@ -253,7 +253,7 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <img src="/framento-logo.png" alt="Framento" className="h-8 w-auto" />
+                  <img src="/framento-logo.webp" alt="Framento" className="h-8 w-auto" />
                   <div className="flex flex-col">
                     <span className="font-bold tracking-tight truncate text-white text-sm leading-tight">
                       Framento

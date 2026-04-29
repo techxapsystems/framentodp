@@ -1,8 +1,8 @@
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
-// Sistema de Gestão Branding
-export const TECHXAP_LOGO = "/framento-logo.png";
-export const APP_NAME = "Sistema de Gestão";
+// Framento Branding
+export const TECHXAP_LOGO = "/framento-logo.webp";
+export const APP_NAME = "Framento";
 export const APP_TAGLINE = "Gestão de Motoristas";
 
 // Generate login URL at runtime so redirect URI reflects the current origin.

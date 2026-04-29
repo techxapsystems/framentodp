@@ -67,7 +67,7 @@ export default function Login() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <img
-              src="/framento-logo.png"
+              src="/framento-logo.webp"
               alt="Framento"
               className="h-12"
               onError={(e) => {
