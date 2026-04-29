@@ -12,14 +12,49 @@ export interface WarningPDFData {
   description: string;
   penaltyType: string;
   penaltyDuration: string;
-  startDate: string;
-  endDate: string;
-  returnDate: string;
+  startDate: string; // DD/MM/YYYY or Date object
+  endDate: string; // DD/MM/YYYY or Date object
+  returnDate: string; // DD/MM/YYYY or Date object
   companyName?: string;
   companyAddress?: string;
   companyCNPJ?: string;
   companyCity?: string;
   signatureDate: string;
+}
+
+// Helper function to format date from ISO or DD/MM/YYYY to DD/MM/YYYY
+function formatDateToBR(dateInput: string | Date): string {
+  if (typeof dateInput === "string") {
+    // If already in DD/MM/YYYY format, return as is
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateInput)) {
+      return dateInput;
+    }
+    // If ISO format, convert
+    try {
+      const date = new Date(dateInput);
+      return date.toLocaleDateString("pt-BR");
+    } catch {
+      return dateInput;
+    }
+  }
+  return dateInput.toLocaleDateString("pt-BR");
+}
+
+// Helper function to convert number to Portuguese text
+function numberToPortuguese(num: number): string {
+  const numbers: { [key: number]: string } = {
+    1: "um",
+    2: "dois",
+    3: "três",
+    4: "quatro",
+    5: "cinco",
+    6: "seis",
+    7: "sete",
+    8: "oito",
+    9: "nove",
+    10: "dez",
+  };
+  return numbers[num] || num.toString();
 }
 
 export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> {
@@ -48,8 +83,8 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
           ? "Suspensão Disciplinar"
           : "Advertência Disciplinar";
 
-      doc.fontSize(14).font("Helvetica-Bold").text(titleText, { align: "center" });
-      doc.moveDown(0.3);
+      doc.fontSize(12).font("Helvetica-Bold").text(titleText, { align: "center" });
+      doc.moveDown(0.4);
 
       // ===== DADOS DA EMPRESA =====
       doc.fontSize(9).font("Helvetica-Bold").text("Empresa:", 40, doc.y);
@@ -63,7 +98,7 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
       const mgY = doc.y - 36;
       doc.text("MG", 450, mgY, { align: "right" });
 
-      doc.moveDown(0.2);
+      doc.moveDown(0.1);
 
       // CNPJ
       doc.fontSize(9).font("Helvetica-Bold").text("CNPJ:", 40, doc.y);
@@ -98,15 +133,15 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
         width: 520,
       });
 
-      doc.moveDown(0.15);
+      doc.moveDown(0.3);
 
-      // ===== DESCRIÇÃO DO MOTIVO =====
+      // ===== DESCRIÇÃO DO MOTIVO (Parágrafos separados) =====
       doc.text(data.description, {
         align: "justify",
         width: 520,
       });
 
-      doc.moveDown(0.15);
+      doc.moveDown(0.3);
 
       // ===== MOTIVO ESPECÍFICO =====
       if (data.reason) {
@@ -114,44 +149,57 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
           align: "justify",
           width: 520,
         });
-        doc.moveDown(0.15);
+        doc.moveDown(0.3);
       }
 
-      // ===== PARÁGRAFO DE PENALIDADE =====
-      const penaltyText = `Considerando o princípio da imediatidade na aplicação da medida disciplinar, a empresa delibera pela aplicação da ${
-        data.type === "suspensao" ? "suspensão" : "advertência"
-      } disciplinar pelo período acima mencionado.`;
-
-      doc.text(penaltyText, {
-        align: "justify",
-        width: 520,
-      });
-
-      doc.moveDown(0.15);
-
       // ===== PERÍODO DE SUSPENSÃO/ADVERTÊNCIA =====
+      const startDateFormatted = formatDateToBR(data.startDate);
+      const endDateFormatted = formatDateToBR(data.endDate);
+      const returnDateFormatted = formatDateToBR(data.returnDate);
+
+      // Calculate days between start and end date
+      let daysCount = 1;
+      try {
+        const start = new Date(data.startDate);
+        const end = new Date(data.endDate);
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        daysCount = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      } catch {
+        daysCount = 1;
+      }
+
+      const daysText = numberToPortuguese(daysCount);
+
       const periodText = `Dessa forma, comunicamos a aplicação de ${
         data.type === "suspensao" ? "suspensão" : "advertência"
-      } disciplinar, sem remuneração dos dias e do respectivo DSR, conforme previsto na legislação trabalhista e empresa, com fundamento no Art. 482 da CLT, com início em ${data.startDate} e retorno às atividades em ${data.returnDate}.`;
+      } disciplinar de ${daysCount} (${daysText}) dia(s), sem remuneração dos dias e do respectivo DSR, conforme previsto na legislação trabalhista e nas normas internas da empresa, com fundamento no Art. 482 da CLT, com início em ${startDateFormatted}, término em ${endDateFormatted} e retorno às atividades em ${returnDateFormatted}.`;
 
       doc.text(periodText, {
         align: "justify",
         width: 520,
       });
 
-      doc.moveDown(0.15);
+      doc.moveDown(0.3);
+
+      // ===== PARÁGRAFO DE RECEBIMENTO =====
+      const receiptText = `Solicitamos que Vossa Senhoria assine o recebimento desta comunicação. Em caso de recusa, um representante da empresa e duas testemunhas assinarão para atestar o devido conhecimento da penalidade.`;
+
+      doc.text(receiptText, {
+        align: "justify",
+        width: 520,
+      });
+
+      doc.moveDown(0.3);
 
       // ===== PARÁGRAFO FINAL =====
-      const finalText = `Solicitamos que Vossa Senhoria assine o recebimento desta comunicação. Em caso de recusa, um representante da empresa e duas testemunhas assinarão para atestar o devido conhecimento da penalidade.
-
-Esclarecemos, ainda, que a repetição de procedimentos como este(s) poderá ser considerada como ato faltoso, passível de dispensa por Justa Causa. Para que não tenhamos, no futuro, de tomar as medidas que nos facultam a legislação vigente, solicitamos-lhe que observe as normas reguladoras da relação de emprego.`;
+      const finalText = `Esclarecemos, ainda, que a repetição de procedimentos como este(s) poderá ser considerada como ato falso, passível de dispensa por Justa Causa. Para que não tenhamos, no futuro, de tomar as medidas que nos facultam a legislação vigente, solicitamos-lhe que observe as normas reguladoras da relação de emprego.`;
 
       doc.text(finalText, {
         align: "justify",
         width: 520,
       });
 
-      doc.moveDown(0.25);
+      doc.moveDown(0.4);
 
       // ===== LOCAL E DATA =====
       doc.fontSize(9).font("Helvetica");
