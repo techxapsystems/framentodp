@@ -169,8 +169,26 @@ export function generateWarningPDF(data: WarningPDFProps) {
   if (safeData.warningType === "suspensao" && (data.dataInicio || data.dataFim || data.dataRetorno)) {
     checkPageBreak(25);
     
-    // Parágrafo sobre suspensão
-    const suspensionText = `Dessa forma, comunicamos a aplicação de suspensão disciplinar de 02 (dois) dias, sem remuneração dos dias e do respectivo DSR, conforme previsto na legislação trabalhista e empresa, com fundamento no Art. 482, alíneas "b" (mau procedimento) e "j" (ato lesivo da honra ou da boa fama praticado no serviço), da CLT, com início em ${data.dataInicio}, término em ${data.dataFim} e retorno às atividades em ${data.dataRetorno}.`;
+    // Calcular número de dias entre dataInicio e dataFim
+    const calcularDias = () => {
+      if (!data.dataInicio || !data.dataFim) return 1;
+      try {
+        const [diaInicio, mesInicio, anoInicio] = data.dataInicio.split("/").map(Number);
+        const [diaFim, mesFim, anoFim] = data.dataFim.split("/").map(Number);
+        const inicio = new Date(anoInicio, mesInicio - 1, diaInicio);
+        const fim = new Date(anoFim, mesFim - 1, diaFim);
+        const dias = Math.ceil((fim.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
+        return dias > 0 ? dias : 1;
+      } catch {
+        return 1;
+      }
+    };
+    
+    const numeroDias = calcularDias();
+    const diasPorExtenso = numeroDias === 1 ? "um" : numeroDias === 2 ? "dois" : numeroDias === 3 ? "três" : numeroDias.toString();
+    
+    // Parágrafo sobre suspensão com dados dinâmicos
+    const suspensionText = `A suspensão disciplinar será aplicada por ${numeroDias} (${diasPorExtenso}) dia(s), sem remuneração dos dias e do respectivo DSR, conforme previsto na legislação trabalhista, com fundamento no Art. 482 da CLT, com início em ${data.dataInicio}, término em ${data.dataFim} e retorno às atividades em ${data.dataRetorno}.`;
     
     const suspensionLines = doc.splitTextToSize(suspensionText, contentWidth);
     suspensionLines.forEach((line: string) => {
