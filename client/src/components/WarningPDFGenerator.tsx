@@ -184,11 +184,10 @@ export function generateWarningPDF(data: WarningPDFProps) {
       }
     };
     
-    const numeroDias = calcularDias();
-    const diasPorExtenso = numeroDias === 1 ? "um" : numeroDias === 2 ? "dois" : numeroDias === 3 ? "três" : numeroDias.toString();
+    // Calcular dias não é mais necessário, mas mantém a função para referência futura
     
     // Parágrafo sobre suspensão com dados dinâmicos
-    const suspensionText = `A suspensão disciplinar será aplicada por ${numeroDias} (${diasPorExtenso}) dia(s), sem remuneração dos dias e do respectivo DSR, conforme previsto na legislação trabalhista, com fundamento no Art. 482 da CLT, com início em ${data.dataInicio}, término em ${data.dataFim} e retorno às atividades em ${data.dataRetorno}.`;
+    const suspensionText = `A suspensão disciplinar será aplicada com início em ${data.dataInicio} e retorno às atividades em ${data.dataRetorno}.`;
     
     const suspensionLines = doc.splitTextToSize(suspensionText, contentWidth);
     suspensionLines.forEach((line: string) => {
