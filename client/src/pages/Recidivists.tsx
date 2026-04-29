@@ -82,6 +82,9 @@ export default function Recidivists() {
       utils.dashboard.getWarningsStatsByDriver.invalidate();
       utils.dashboard.getWarningsStatsByOperation.invalidate();
       utils.dashboard.getWarningsReport.invalidate();
+      
+      // Disparar evento para o dashboard se atualizar automaticamente
+      window.dispatchEvent(new CustomEvent('dashboardRefresh'));
       // Limpar formulário
       setSelectedConductor("");
       setWarningType("advertencia");

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { AlertCircle, CheckCircle2, Clock, TrendingUp, X, Download, FileText, CheckCheck, XCircle, Percent } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, TrendingUp, X, Download, FileText, CheckCheck, XCircle, Percent, RefreshCw } from "lucide-react";
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,8 +20,9 @@ export default function WarningsTracking() {
   const [showPendingDialog, setShowPendingDialog] = useState(false);
   const [pendingWarnings, setPendingWarnings] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
-  const [byOperation, setByOperation] = useState<any[]>([]);
+  const [byOperation, setByOperation] = useState<any>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Buscar operações disponíveis
   const { data: operations = [] } = trpc.dashboard.getAllOperations.useQuery();
@@ -35,6 +36,26 @@ export default function WarningsTracking() {
       endDateRef.current.value = endDate;
       loadData();
     }
+  }, []);
+
+  // Polling automático a cada 60 segundos
+  useEffect(() => {
+    const pollingInterval = setInterval(() => {
+      loadData();
+    }, 60000); // 60 segundos
+
+    return () => clearInterval(pollingInterval);
+  }, [selectedOperation]);
+
+  // Listener para invalidação de cache de outras telas
+  useEffect(() => {
+    const handleDashboardRefresh = () => {
+      console.log('[Dashboard] Refetch triggered by external action');
+      loadData();
+    };
+
+    window.addEventListener('dashboardRefresh', handleDashboardRefresh);
+    return () => window.removeEventListener('dashboardRefresh', handleDashboardRefresh);
   }, []);
 
   const loadData = async () => {
@@ -57,6 +78,9 @@ export default function WarningsTracking() {
       const response2 = await fetch(`/api/auth/warnings-stats-by-operation?${params.toString()}`);
       const result2 = await response2.json();
       setByOperation(result2.result?.data?.json || []);
+      
+      // Atualizar timestamp de última atualização
+      setLastUpdated(new Date());
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados");
@@ -66,6 +90,11 @@ export default function WarningsTracking() {
   };
 
   const warningStats = stats || { total: 0, assinadas: 0, naoAssinadas: 0, taxaDevolucao: 0, warnings: [] };
+
+  const formatLastUpdated = (date: Date | null) => {
+    if (!date) return '';
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  };
 
   const handleExportPDF = async () => {
     try {
@@ -107,6 +136,12 @@ export default function WarningsTracking() {
         <p className="text-muted-foreground mt-2">
           Monitore o status das advertências enviadas aos motoristas
         </p>
+        {lastUpdated && (
+          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+            <RefreshCw size={12} />
+            Atualizado às {formatLastUpdated(lastUpdated)}
+          </p>
+        )}
       </div>
 
       {/* Filtros */}

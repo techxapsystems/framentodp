@@ -50,6 +50,8 @@ export function MarkWarningAppliedDialog({
       toast.success("Advertência marcada como aplicada com sucesso!");
       onOpenChange(false);
       onSuccess?.();
+      // Disparar evento para o dashboard se atualizar automaticamente
+      window.dispatchEvent(new CustomEvent('dashboardRefresh'));
     },
     onError: (error) => {
       toast.error(`Erro: ${error.message}`);
