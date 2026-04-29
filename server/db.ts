@@ -858,6 +858,7 @@ export async function getWarningsStatsByOperation(params?: {
           total: 0,
           assinadas: 0,
           naoAssinadas: 0,
+          warnings: [], // Array com detalhes de cada aviso
         };
       }
       grouped[operacao].total++;
@@ -866,7 +867,17 @@ export async function getWarningsStatsByOperation(params?: {
       } else {
         grouped[operacao].naoAssinadas++;
       }
+      // Adicionar warning com tipo e status
+      grouped[operacao].warnings.push({
+        tipo: warning.tipo, // 'advertencia' ou 'suspensao'
+        advertenciaAplicada: warning.advertenciaAplicada,
+        conductorName: warning.conductorName,
+      });
     });
+
+    // Debug: imprimir dados agrupados
+    const result = Object.values(grouped);
+    console.log('[DEBUG] Warnings grouped by operation:', JSON.stringify(result, null, 2));
 
     return Object.values(grouped);
   } catch (error) {

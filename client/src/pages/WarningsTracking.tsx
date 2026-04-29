@@ -296,7 +296,8 @@ export default function WarningsTracking() {
                   data={byOperation
                     .map((op: any) => {
                       const advCount = op.warnings?.filter((w: any) => w.tipo === 'advertencia').length || 0;
-                      const suspCount = op.total - advCount;
+                      const suspCount = op.warnings?.filter((w: any) => w.tipo === 'suspensao').length || 0;
+                      console.log(`[CHART 1] ${op.operacao}: Adv=${advCount}, Susp=${suspCount}, Total=${op.total}, Warnings=${op.warnings?.length || 0}`);
                       return {
                         operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
                         Advertências: advCount,
@@ -332,7 +333,8 @@ export default function WarningsTracking() {
                   data={byOperation
                     .map((op: any) => {
                       const advNaoAssinadas = op.warnings?.filter((w: any) => w.tipo === 'advertencia' && !w.advertenciaAplicada).length || 0;
-                      const suspNaoAssinadas = op.naoAssinadas - advNaoAssinadas;
+                      const suspNaoAssinadas = op.warnings?.filter((w: any) => w.tipo === 'suspensao' && !w.advertenciaAplicada).length || 0;
+                      console.log(`[CHART 2] ${op.operacao}: AdvNA=${advNaoAssinadas}, SuspNA=${suspNaoAssinadas}, Total NA=${op.naoAssinadas}, Warnings=${op.warnings?.length || 0}`);
                       return {
                         operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
                         Advertências: advNaoAssinadas,
