@@ -677,44 +677,88 @@ authRestRouter.get("/warnings-report-pdf", async (req, res) => {
     doc.text(`Taxa de Devolução: ${(stats.taxaDevolucao || 0).toFixed(1)}%`);
     doc.moveDown(1);
 
-    // Tabela de advertências
-    if (stats.warnings && stats.warnings.length > 0) {
-      doc.fontSize(14).font("Helvetica-Bold").text("Detalhes das Advertências");
-      doc.moveDown(0.5);
+    // Se filtrado por operação: mostrar detalhes por motorista
+    // Se apenas por data: mostrar tabela de operações
+    if (operacao) {
+      // Filtrado por operação: mostrar detalhes dos motoristas
+      if (stats.warnings && stats.warnings.length > 0) {
+        doc.fontSize(14).font("Helvetica-Bold").text("Detalhes das Advertências");
+        doc.moveDown(0.5);
 
-      // Cabeçalho da tabela
-      const tableTop = doc.y;
-      const col1 = 50;
-      const col2 = 200;
-      const col3 = 350;
-      const col4 = 480;
-      const rowHeight = 20;
+        const tableTop = doc.y;
+        const col1 = 50;
+        const col2 = 200;
+        const col3 = 350;
+        const col4 = 480;
 
-      doc.fontSize(10).font("Helvetica-Bold");
-      doc.text("Motorista", col1, tableTop);
-      doc.text("Data", col2, tableTop);
-      doc.text("Tipo", col3, tableTop);
-      doc.text("Status", col4, tableTop);
+        doc.fontSize(10).font("Helvetica-Bold");
+        doc.text("Motorista", col1, tableTop);
+        doc.text("Data", col2, tableTop);
+        doc.text("Tipo", col3, tableTop);
+        doc.text("Status", col4, tableTop);
 
-      doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
-      doc.moveDown(1);
+        doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+        doc.moveDown(1);
 
-      // Linhas da tabela
-      doc.fontSize(9).font("Helvetica");
-      stats.warnings.forEach((warning: any) => {
-        const y = doc.y;
-        const date = warning.criadoEm ? new Date(warning.criadoEm).toLocaleDateString("pt-BR") : "N/A";
-        const type = warning.tipo === "advertencia" ? "Advertência" : "Suspensão";
-        const status = warning.advertenciaAplicada ? "Assinada" : "Pendente";
+        doc.fontSize(9).font("Helvetica");
+        stats.warnings.forEach((warning: any) => {
+          const y = doc.y;
+          const date = warning.criadoEm ? new Date(warning.criadoEm).toLocaleDateString("pt-BR") : "N/A";
+          const type = warning.tipo === "advertencia" ? "Advertência" : "Suspensão";
+          const status = warning.advertenciaAplicada ? "Assinada" : "Pendente";
 
-        doc.text(warning.conductorName || "N/A", col1, y, { width: 140 });
-        doc.text(date, col2, y, { width: 140 });
-        doc.text(type, col3, y, { width: 120 });
-        doc.text(status, col4, y, { width: 60 });
+          doc.text(warning.conductorName || "N/A", col1, y, { width: 140 });
+          doc.text(date, col2, y, { width: 140 });
+          doc.text(type, col3, y, { width: 120 });
+          doc.text(status, col4, y, { width: 60 });
 
-        doc.moveTo(50, y + 15).lineTo(550, y + 15).stroke("gray");
-        doc.moveDown(1.2);
+          doc.moveTo(50, y + 15).lineTo(550, y + 15).stroke("gray");
+          doc.moveDown(1.2);
+        });
+      }
+    } else {
+      // Filtrado apenas por data: mostrar tabela de operações
+      const statsOp = await db.getWarningsStatsByOperation({
+        startDate,
+        endDate,
       });
+
+      if (statsOp && statsOp.length > 0) {
+        doc.fontSize(14).font("Helvetica-Bold").text("Advertências por Operação");
+        doc.moveDown(0.5);
+
+        const tableTop = doc.y;
+        const col1 = 50;
+        const col2 = 180;
+        const col3 = 280;
+        const col4 = 380;
+        const col5 = 480;
+
+        doc.fontSize(10).font("Helvetica-Bold");
+        doc.text("Operação", col1, tableTop);
+        doc.text("Total", col2, tableTop);
+        doc.text("Assinadas", col3, tableTop);
+        doc.text("Não Assinadas", col4, tableTop);
+        doc.text("Taxa (%)", col5, tableTop);
+
+        doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+        doc.moveDown(1);
+
+        doc.fontSize(9).font("Helvetica");
+        statsOp.forEach((item: any) => {
+          const y = doc.y;
+          const taxa = ((item.assinadas / item.total) * 100).toFixed(1);
+
+          doc.text(item.operacao || "N/A", col1, y, { width: 120 });
+          doc.text(String(item.total), col2, y);
+          doc.text(String(item.assinadas), col3, y);
+          doc.text(String(item.naoAssinadas), col4, y);
+          doc.text(`${taxa}%`, col5, y);
+
+          doc.moveTo(50, y + 15).lineTo(550, y + 15).stroke("gray");
+          doc.moveDown(1.2);
+        });
+      }
     }
 
     doc.moveDown(1);

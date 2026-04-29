@@ -252,7 +252,7 @@ export default function WarningsTracking() {
                       <TableCell>{item.total}</TableCell>
                       <TableCell className="text-green-600">{item.assinadas}</TableCell>
                       <TableCell className="text-red-600">{item.naoAssinadas}</TableCell>
-                      <TableCell>{((item.naoAssinadas / item.total) * 100).toFixed(1)}%</TableCell>
+                      <TableCell>{((item.assinadas / item.total) * 100).toFixed(1)}%</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
