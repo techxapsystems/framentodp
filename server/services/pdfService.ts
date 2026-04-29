@@ -100,9 +100,11 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
       // DADOS DA EMPRESA
       // ============================================================
       const companyName = data.companyName || "TRANSPORTES FRAMENTO LTDA";
-      const companyAddress = data.companyAddress || "Contorno da Petrobras, 107";
+      const companyAddress = data.companyAddress || "Ed. Vértice Office - R. Borges de Medeiros, 897 - E - sala 1201";
       const companyCNPJ = data.companyCNPJ || "00.766.315/0009-00";
-      const companyCity = data.companyCity || "CHAPECÓ";
+      const companyCity = data.companyCity || "Chapecó";
+      const companyState = "SC";
+      const companyZip = "89801-161";
 
       // Empresa: label + value
       let y = doc.y;
@@ -115,9 +117,11 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
       y = doc.y;
       doc.text(companyAddress, VALUE_X, y);
 
-      // City + State
+      // City + State + Zip
       y = doc.y;
-      doc.text(`32.669-500 - ${companyCity}`, VALUE_X, y);
+      doc.text(`${companyZip} - ${companyCity}`, VALUE_X, y);
+      // State on same line, right-aligned
+      doc.text(companyState, PAGE_W - RIGHT - 30, y);
 
       // CNPJ
       y = doc.y;
@@ -214,7 +218,8 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
       // ============================================================
       doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
       doc.text("Favor dar ciente na cópia desta.", LEFT, doc.y, { width: CONTENT_W, align: "right" });
-      doc.text(`${companyCity}, ${data.signatureDate}.`, LEFT, doc.y, { width: CONTENT_W, align: "right" });
+      const displayDate = data.type === "suspensao" ? formatDateBR(data.startDate) : data.signatureDate;
+      doc.text(`${companyCity}, ${displayDate}.`, LEFT, doc.y, { width: CONTENT_W, align: "right" });
       doc.moveDown(2.5);
 
       // ============================================================
