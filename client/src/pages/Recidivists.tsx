@@ -309,9 +309,12 @@ export default function Recidivists() {
                     <input
                       type="text"
                       value={licensePlate}
-                      readOnly
-                      placeholder="Preenchida automaticamente"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50"
+                      onChange={(e) => setLicensePlate(e.target.value)}
+                      readOnly={licensePlate !== "" && selectedConductorData?.placa}
+                      placeholder={licensePlate ? "Preenchida automaticamente" : "Digite a placa do veículo"}
+                      className={`w-full px-3 py-2 border border-slate-300 rounded-lg ${
+                        licensePlate && selectedConductorData?.placa ? "bg-slate-50" : "bg-white"
+                      }`}
                     />
                   </div>
 
