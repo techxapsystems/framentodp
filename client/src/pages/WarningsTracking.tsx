@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { AlertCircle, CheckCircle2, Clock, TrendingUp, X, Download } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, TrendingUp, X, Download, FileText, CheckCheck, XCircle, Percent } from "lucide-react";
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -161,10 +161,10 @@ export default function WarningsTracking() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={loadData} className="flex-1">
+            <Button onClick={loadData} className="w-auto px-6">
               Aplicar Filtros
             </Button>
-            <Button onClick={handleExportPDF} variant="outline" className="flex-1 gap-2">
+            <Button onClick={handleExportPDF} variant="outline" className="w-auto px-6 gap-2">
               <Download className="h-4 w-4" />
               Exportar PDF
             </Button>
@@ -182,7 +182,10 @@ export default function WarningsTracking() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Total de Advertências</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{warningStats.total || 0}</div>
+              <div className="flex items-center gap-3">
+                <FileText className="h-8 w-8 text-blue-500" />
+                <div className="text-2xl font-bold">{warningStats.total || 0}</div>
+              </div>
             </CardContent>
           </Card>
 
@@ -191,7 +194,10 @@ export default function WarningsTracking() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Assinadas</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{warningStats.assinadas || 0}</div>
+              <div className="flex items-center gap-3">
+                <CheckCheck className="h-8 w-8 text-green-600" />
+                <div className="text-2xl font-bold text-green-600">{warningStats.assinadas || 0}</div>
+              </div>
             </CardContent>
           </Card>
 
@@ -200,7 +206,10 @@ export default function WarningsTracking() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Não Assinadas</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{warningStats.naoAssinadas || 0}</div>
+              <div className="flex items-center gap-3">
+                <XCircle className="h-8 w-8 text-red-600" />
+                <div className="text-2xl font-bold text-red-600">{warningStats.naoAssinadas || 0}</div>
+              </div>
               <Button
                 variant="link"
                 size="sm"
@@ -220,100 +229,61 @@ export default function WarningsTracking() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Devolução</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{(warningStats.taxaDevolucao || 0).toFixed(1)}%</div>
+              <div className="flex items-center gap-3">
+                <Percent className="h-8 w-8 text-amber-500" />
+                <div className="text-2xl font-bold">{(warningStats.taxaDevolucao || 0).toFixed(1)}%</div>
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Gráficos */}
+      {/* Gráfico Unificado - Donut Chart */}
       {!isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Gráfico 1: Não Assinadas por Tipo */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Não Assinadas por Tipo</CardTitle>
-              <CardDescription>Distribuição de advertências e suspensões não assinadas</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center">
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        {
-                          name: "Advertências",
-                          value: warningStats.warnings?.filter((w: any) => w.tipo === "advertencia" && !w.advertenciaAplicada).length || 0,
-                        },
-                        {
-                          name: "Suspensões",
-                          value: warningStats.warnings?.filter((w: any) => w.tipo === "suspensao" && !w.advertenciaAplicada).length || 0,
-                        },
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      <Cell fill="#fbbf24" />
-                      <Cell fill="#ef4444" />
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Gráfico 2: Total por Tipo */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Total por Tipo</CardTitle>
-              <CardDescription>Quantidade total de advertências e suspensões</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center">
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        {
-                          name: "Advertências",
-                          value: warningStats.warnings?.filter((w: any) => w.tipo === "advertencia").length || 0,
-                        },
-                        {
-                          name: "Suspensões",
-                          value: warningStats.warnings?.filter((w: any) => w.tipo === "suspensao").length || 0,
-                        },
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      <Cell fill="#3b82f6" />
-                      <Cell fill="#8b5cf6" />
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Resumo por Tipo</CardTitle>
+            <CardDescription>Distribuição total de advertências e suspensões</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      {
+                        name: "Advertências",
+                        value: warningStats.warnings?.filter((w: any) => w.tipo === "advertencia").length || 0,
+                      },
+                      {
+                        name: "Suspensões",
+                        value: warningStats.warnings?.filter((w: any) => w.tipo === "suspensao").length || 0,
+                      },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    <Cell fill="#3b82f6" />
+                    <Cell fill="#8b5cf6" />
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Gráficos por Operação - Barras Horizontais */}
+      {/* Gráficos por Operação      {/* Gráficos por Operação - Barras Horizontais */}
       {!isLoading && byOperation.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {/* Gráfico 3: Total por Operação */}
           <Card>
             <CardHeader>
@@ -370,8 +340,8 @@ export default function WarningsTracking() {
                   <YAxis dataKey="operacao" type="category" width={145} tick={{ fontSize: 12 }} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="Advertências" stackId="a" fill="#fbbf24" />
-                  <Bar dataKey="Suspensões" stackId="a" fill="#ef4444" />
+                  <Bar dataKey="Advertências" stackId="a" fill="#ef4444" />
+                  <Bar dataKey="Suspensões" stackId="a" fill="#f97316" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -400,15 +370,29 @@ export default function WarningsTracking() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {byOperation.map((item: any) => (
-                    <TableRow key={item.operacao}>
-                      <TableCell className="font-medium">{item.operacao}</TableCell>
-                      <TableCell>{item.total}</TableCell>
-                      <TableCell className="text-green-600">{item.assinadas}</TableCell>
-                      <TableCell className="text-red-600">{item.naoAssinadas}</TableCell>
-                      <TableCell>{((item.assinadas / item.total) * 100).toFixed(1)}%</TableCell>
-                    </TableRow>
-                  ))}
+                  {byOperation.map((item: any) => {
+                    const taxa = ((item.assinadas / item.total) * 100).toFixed(1);
+                    const taxaNum = parseFloat(taxa);
+                    return (
+                      <TableRow key={item.operacao}>
+                        <TableCell className="font-medium">{item.operacao}</TableCell>
+                        <TableCell>{item.total}</TableCell>
+                        <TableCell className="text-green-600">{item.assinadas}</TableCell>
+                        <TableCell className="text-red-600">{item.naoAssinadas}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-xs">
+                              <div
+                                className="bg-green-500 h-2 rounded-full transition-all"
+                                style={{ width: `${taxaNum}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium min-w-fit">{taxa}%</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
