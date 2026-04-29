@@ -416,38 +416,41 @@ authRestRouter.post("/generate-report-pdf", express.json(), async (req, res) => 
 // POST /api/auth/download-warning-pdf - Download individual warning PDF
 authRestRouter.post("/download-warning-pdf", express.json(), async (req, res) => {
   try {
-    const { warningId, conductorName, conductorCPF, warningDate, warningType, warningLevel } = req.body;
+    const { warningId, conductorName, conductorCPF, warningDate, warningType, warningLevel, startDate, endDate, returnDate, reason, description } = req.body;
     
     if (!warningId || !conductorName) {
       return res.status(400).json({ error: "ID da advertência e nome do motorista são obrigatórios" });
     }
 
-    const { generateWarningPDF } = await import("./generateWarningPDF");
+    const { generateWarningPDF } = await import("./services/pdfService");
     
-    // Dados da empresa (você pode configurar isso em variáveis de ambiente)
-    const companyData = {
-      companyName: "TRANSPORTESFRAMENTOLTDA",
-      companyAddress: "Contorno da Petrobras, 107",
-      companyCity: "BETIM",
-      companyState: "MG",
-      companyZipCode: "32.669-500",
-      companyCNPJ: "00.766.315/0009-00",
+    // Dados para o PDF
+    const pdfData = {
+      type: (warningType === "suspensao" ? "suspensao" : "advertencia") as "suspensao" | "advertencia",
       employeeName: conductorName,
       employeeCPF: conductorCPF || "000.000.000-00",
-      employeeCTPS: "001013879",
-      employeeMatricula: "6602",
-      warningDate: warningDate || new Date().toLocaleDateString("pt-BR"),
-      warningLocation: "BETIM",
-      warningReason: warningType || "Descumprimento de responsabilidades",
-      warningDescription: `Advertência disciplinar referente a ${warningType || "irregularidade"} - Nível ${warningLevel || 1}`,
-      warningType: warningType || "Outro",
-      warningLevel: warningLevel || 1,
+      employeeCTPS: "001013879    5626 - MG",
+      licensePlate: "",
+      operation: "",
+      infringementDate: warningDate || new Date().toLocaleDateString("pt-BR"),
+      reason: reason || warningType || "Descumprimento de responsabilidades",
+      description: description || `Advertência disciplinar referente a ${warningType || "irregularidade"} - Nível ${warningLevel || 1}`,
+      penaltyType: warningType || "Outro",
+      penaltyDuration: "",
+      startDate: startDate || new Date().toLocaleDateString("pt-BR"),
+      endDate: endDate || new Date().toLocaleDateString("pt-BR"),
+      returnDate: returnDate || new Date().toLocaleDateString("pt-BR"),
+      companyName: "TRANSPORTES FRAMENTO LTDA",
+      companyAddress: "Contorno da Petrobras, 107",
+      companyCNPJ: "00.766.315/0009-00",
+      companyCity: "CHAPECÓ",
+      signatureDate: new Date().toLocaleDateString("pt-BR"),
     };
 
-    const pdfBuffer = await generateWarningPDF(companyData);
+    const pdfBuffer = await generateWarningPDF(pdfData as any);
     
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="Advertencia_${conductorName.replace(/\s+/g, "_")}_${new Date().getTime()}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${warningType === "suspensao" ? "Suspensao" : "Advertencia"}_${conductorName.replace(/\s+/g, "_")}_${new Date().getTime()}.pdf"`);
     res.send(pdfBuffer);
   } catch (error) {
     console.error("[API] Error downloading warning PDF:", error);
