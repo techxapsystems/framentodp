@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { AlertCircle, CheckCircle2, Clock, TrendingUp, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, TrendingUp, X, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +65,38 @@ export default function WarningsTracking() {
   };
 
   const warningStats = stats || { total: 0, assinadas: 0, naoAssinadas: 0, taxaDevolucao: 0, warnings: [] };
+
+  const handleExportPDF = async () => {
+    try {
+      const startDate = startDateRef.current?.value;
+      const endDate = endDateRef.current?.value;
+
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (selectedOperation && selectedOperation !== 'all') params.append('operacao', selectedOperation);
+
+      const response = await fetch(`/api/auth/warnings-report-pdf?${params.toString()}`);
+      if (!response.ok) {
+        toast.error('Erro ao gerar PDF');
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio-advertencias-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('PDF exportado com sucesso');
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      toast.error('Erro ao exportar PDF');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -127,9 +159,15 @@ export default function WarningsTracking() {
               </Select>
             </div>
           </div>
-          <Button onClick={loadData} className="w-full">
-            Aplicar Filtros
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={loadData} className="flex-1">
+              Aplicar Filtros
+            </Button>
+            <Button onClick={handleExportPDF} variant="outline" className="flex-1 gap-2">
+              <Download className="h-4 w-4" />
+              Exportar PDF
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

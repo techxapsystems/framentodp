@@ -625,3 +625,104 @@ authRestRouter.get("/warnings-audit-log", async (req, res) => {
   }
 });
 
+
+// Endpoint para exportar relatório de advertências em PDF
+authRestRouter.get("/warnings-report-pdf", async (req, res) => {
+  try {
+    const startDateStr = req.query.startDate as string;
+    const endDateStr = req.query.endDate as string;
+    const operacao = req.query.operacao as string;
+
+    const startDate = startDateStr ? new Date(startDateStr) : undefined;
+    const endDate = endDateStr ? new Date(endDateStr) : undefined;
+
+    // Buscar dados com filtros
+    const stats = await db.getWarningsStats({
+      startDate,
+      endDate,
+      operacao,
+    });
+
+    if (!stats) {
+      return res.status(500).json({ error: "Erro ao buscar dados" });
+    }
+
+    // Criar PDF
+    const doc = new PDFDocument();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="relatorio-advertencias-${new Date().toISOString().split('T')[0]}.pdf"`);
+
+    doc.pipe(res);
+
+    // Título
+    doc.fontSize(20).font("Helvetica-Bold").text("Relatório de Advertências e Suspensões", { align: "center" });
+    doc.moveDown(0.5);
+
+    // Período
+    const startFormatted = startDate ? startDate.toLocaleDateString("pt-BR") : "N/A";
+    const endFormatted = endDate ? endDate.toLocaleDateString("pt-BR") : "N/A";
+    doc.fontSize(12).font("Helvetica").text(`Período: ${startFormatted} a ${endFormatted}`, { align: "center" });
+    if (operacao) {
+      doc.text(`Operação: ${operacao}`, { align: "center" });
+    }
+    doc.moveDown(1);
+
+    // Resumo
+    doc.fontSize(14).font("Helvetica-Bold").text("Resumo");
+    doc.moveDown(0.3);
+    doc.fontSize(11).font("Helvetica");
+    doc.text(`Total de Advertências: ${stats.total || 0}`);
+    doc.text(`Assinadas: ${stats.assinadas || 0}`);
+    doc.text(`Não Assinadas: ${stats.naoAssinadas || 0}`);
+    doc.text(`Taxa de Devolução: ${(stats.taxaDevolucao || 0).toFixed(1)}%`);
+    doc.moveDown(1);
+
+    // Tabela de advertências
+    if (stats.warnings && stats.warnings.length > 0) {
+      doc.fontSize(14).font("Helvetica-Bold").text("Detalhes das Advertências");
+      doc.moveDown(0.5);
+
+      // Cabeçalho da tabela
+      const tableTop = doc.y;
+      const col1 = 50;
+      const col2 = 200;
+      const col3 = 350;
+      const col4 = 480;
+      const rowHeight = 20;
+
+      doc.fontSize(10).font("Helvetica-Bold");
+      doc.text("Motorista", col1, tableTop);
+      doc.text("Data", col2, tableTop);
+      doc.text("Tipo", col3, tableTop);
+      doc.text("Status", col4, tableTop);
+
+      doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+      doc.moveDown(1);
+
+      // Linhas da tabela
+      doc.fontSize(9).font("Helvetica");
+      stats.warnings.forEach((warning: any) => {
+        const y = doc.y;
+        const date = warning.criadoEm ? new Date(warning.criadoEm).toLocaleDateString("pt-BR") : "N/A";
+        const type = warning.tipo === "advertencia" ? "Advertência" : "Suspensão";
+        const status = warning.advertenciaAplicada ? "Assinada" : "Pendente";
+
+        doc.text(warning.conductorName || "N/A", col1, y, { width: 140 });
+        doc.text(date, col2, y, { width: 140 });
+        doc.text(type, col3, y, { width: 120 });
+        doc.text(status, col4, y, { width: 60 });
+
+        doc.moveTo(50, y + 15).lineTo(550, y + 15).stroke("gray");
+        doc.moveDown(1.2);
+      });
+    }
+
+    doc.moveDown(1);
+    doc.fontSize(10).font("Helvetica").text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, { align: "right" });
+
+    doc.end();
+  } catch (error) {
+    console.error("[API] Error generating warnings report PDF:", error);
+    return res.status(500).json({ error: "Erro ao gerar relatório: " + (error instanceof Error ? error.message : String(error)) });
+  }
+});

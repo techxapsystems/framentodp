@@ -841,31 +841,30 @@ export async function getWarningsStatsByOperation(params?: {
     const conductorsList = await db.select().from(conductors);
     const conductorMap = new Map(conductorsList.map((c: any) => [c.nome, c]));
 
-    // Filtrar por operação se fornecido e agrupar por tipo de advertência
+    // Agrupar por operação real (não por tipo de advertência)
     const grouped: Record<string, any> = {};
     allWarnings.forEach((warning: any) => {
+      const conductor = conductorMap.get(warning.conductorName);
+      const operacao = conductor?.operacao || "Sem Operação";
+
       // Se operacao foi especificada, filtrar por ela
-      if (params?.operacao) {
-        const conductor = conductorMap.get(warning.conductorName);
-        if (!conductor || conductor.operacao !== params.operacao) {
-          return; // Pular se não corresponder à operação
-        }
+      if (params?.operacao && operacao !== params.operacao) {
+        return; // Pular se não corresponder à operação
       }
 
-      const tipo = warning.tipo || "Desconhecido";
-      if (!grouped[tipo]) {
-        grouped[tipo] = {
-          operacao: tipo,
+      if (!grouped[operacao]) {
+        grouped[operacao] = {
+          operacao: operacao,
           total: 0,
           assinadas: 0,
           naoAssinadas: 0,
         };
       }
-      grouped[tipo].total++;
+      grouped[operacao].total++;
       if (warning.advertenciaAplicada) {
-        grouped[tipo].assinadas++;
+        grouped[operacao].assinadas++;
       } else {
-        grouped[tipo].naoAssinadas++;
+        grouped[operacao].naoAssinadas++;
       }
     });
 
