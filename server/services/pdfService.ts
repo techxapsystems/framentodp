@@ -4,7 +4,6 @@ export interface WarningPDFData {
   type: "advertencia" | "suspensao";
   employeeName: string;
   employeeCPF: string;
-  employeeCTPS: string;
   licensePlate: string;
   operation: string;
   infringementDate: string;
@@ -119,8 +118,6 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
       // City + State
       y = doc.y;
       doc.text(`32.669-500 - ${companyCity}`, VALUE_X, y);
-      // MG on same line, right-aligned
-      doc.text("MG", PAGE_W - RIGHT - 30, y);
 
       // CNPJ
       y = doc.y;
@@ -146,12 +143,6 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
       doc.text("CPF:", LABEL_X, y);
       doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
       doc.text(data.employeeCPF, VALUE_X, y);
-
-      // CTPS on same line as CPF but to the right
-      doc.font(FONT_BOLD).fontSize(BODY_SIZE);
-      doc.text("CTPS:", LEFT + 250, y);
-      doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
-      doc.text(data.employeeCTPS || "________    ____ - __", LEFT + 290, y);
 
       doc.moveDown(0.5);
 
@@ -224,7 +215,7 @@ export async function generateWarningPDF(data: WarningPDFData): Promise<Buffer> 
       doc.font(FONT_NORMAL).fontSize(BODY_SIZE);
       doc.text("Favor dar ciente na cópia desta.", LEFT, doc.y, { width: CONTENT_W, align: "right" });
       doc.text(`${companyCity}, ${data.signatureDate}.`, LEFT, doc.y, { width: CONTENT_W, align: "right" });
-      doc.moveDown(1.2);
+      doc.moveDown(2.5);
 
       // ============================================================
       // LINHAS DE ASSINATURA
