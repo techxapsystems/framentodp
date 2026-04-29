@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { AlertCircle, CheckCircle2, Clock, TrendingUp, X, Download } from "lucide-react";
-import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -311,41 +311,36 @@ export default function WarningsTracking() {
         </div>
       )}
 
-      {/* Gráficos por Operação */}
+      {/* Gráficos por Operação - Barras Horizontais */}
       {!isLoading && byOperation.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Gráfico 3: Total por Operação */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Total por Operação</CardTitle>
-              <CardDescription>Quantidade total de advertências e suspensões por operação</CardDescription>
+              <CardDescription>Quantidade total de advertências e suspensões</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-center">
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={byOperation.map((op: any) => ({
-                        name: op.operacao,
-                        value: op.total,
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {byOperation.map((_, index: number) => (
-                        <Cell key={`cell-${index}`} fill={['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#6366f1', '#f97316'][index % 8]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={byOperation.map((op: any) => ({
+                    operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
+                    Advertências: op.total - (op.total - op.assinadas - op.naoAssinadas + op.assinadas),
+                    Suspensões: op.naoAssinadas,
+                    Total: op.total,
+                  }))}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="operacao" type="category" width={145} tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Advertências" stackId="a" fill="#3b82f6" />
+                  <Bar dataKey="Suspensões" stackId="a" fill="#8b5cf6" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
 
@@ -353,34 +348,32 @@ export default function WarningsTracking() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Não Assinadas por Operação</CardTitle>
-              <CardDescription>Quantidade de advertências e suspensões não assinadas por operação</CardDescription>
+              <CardDescription>Advertências e suspensões não assinadas</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-center">
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={byOperation.map((op: any) => ({
-                        name: op.operacao,
-                        value: op.naoAssinadas,
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {byOperation.map((_, index: number) => (
-                        <Cell key={`cell-${index}`} fill={['#ef4444', '#f97316', '#fbbf24', '#84cc16', '#22c55e', '#06b6d4', '#0ea5e9', '#6366f1'][index % 8]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={byOperation.map((op: any) => {
+                    const advNaoAssinadas = op.warnings?.filter((w: any) => w.tipo === 'advertencia' && !w.advertenciaAplicada).length || 0;
+                    const suspNaoAssinadas = op.naoAssinadas - advNaoAssinadas;
+                    return {
+                      operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
+                      Advertências: advNaoAssinadas,
+                      Suspensões: suspNaoAssinadas,
+                    };
+                  })}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="operacao" type="category" width={145} tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Advertências" stackId="a" fill="#fbbf24" />
+                  <Bar dataKey="Suspensões" stackId="a" fill="#ef4444" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
