@@ -703,12 +703,13 @@ export async function getWarningsStats(params: {
       });
     }
 
-    // Enriquecer com dados de CPF e CTPS
+    // Enriquecer com dados de CPF, CTPS e OPERACAO
     const enrichedWarnings = await Promise.all(
       filteredWarnings.map(async (warning: any) => {
         // Buscar dados do motorista ou administrativo
         let cpf = null;
         let ctps = null;
+        let operacao = null;
 
         // Tentar buscar em conductors
         const conductor = await db
@@ -720,6 +721,7 @@ export async function getWarningsStats(params: {
         if (conductor && conductor.length > 0) {
           cpf = conductor[0].cpf;
           ctps = conductor[0].ctps;
+          operacao = conductor[0].operacao;
         } else {
           // Tentar buscar em administrativeEmployees
           const admin = await db
@@ -730,7 +732,8 @@ export async function getWarningsStats(params: {
 
           if (admin && admin.length > 0) {
             cpf = admin[0].cpf;
-            ctps = null; // Administrativos não tém CTPS
+            ctps = null; // Administrativos nao tem CTPS
+            operacao = null; // Administrativos nao tem operacao
           }
         }
 
@@ -738,6 +741,7 @@ export async function getWarningsStats(params: {
           ...warning,
           cpf,
           ctps,
+          operacao,
         };
       })
     );
