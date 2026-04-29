@@ -281,7 +281,7 @@ export default function WarningsTracking() {
         </Card>
       )}
 
-      {/* Gráficos por Operação      {/* Gráficos por Operação - Barras Horizontais */}
+      {/* Gráficos por Operação - Barras Agrupadas */}
       {!isLoading && byOperation.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {/* Gráfico 3: Total por Operação */}
@@ -293,22 +293,28 @@ export default function WarningsTracking() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart
-                  data={byOperation.map((op: any) => ({
-                    operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
-                    Advertências: op.total - (op.total - op.assinadas - op.naoAssinadas + op.assinadas),
-                    Suspensões: op.naoAssinadas,
-                    Total: op.total,
-                  }))}
+                  data={byOperation
+                    .map((op: any) => {
+                      const advCount = op.warnings?.filter((w: any) => w.tipo === 'advertencia').length || 0;
+                      const suspCount = op.total - advCount;
+                      return {
+                        operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
+                        Advertências: advCount,
+                        Suspensões: suspCount,
+                        total: op.total,
+                      };
+                    })
+                    .sort((a: any, b: any) => b.total - a.total)}
                   layout="vertical"
-                  margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
+                  margin={{ top: 5, right: 60, left: 150, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis dataKey="operacao" type="category" width={145} tick={{ fontSize: 12 }} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="Advertências" stackId="a" fill="#3b82f6" />
-                  <Bar dataKey="Suspensões" stackId="a" fill="#8b5cf6" />
+                  <Bar dataKey="Advertências" fill="#3B82F6" label={{ position: 'right', fontSize: 12 }} />
+                  <Bar dataKey="Suspensões" fill="#EF4444" label={{ position: 'right', fontSize: 12 }} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -323,25 +329,28 @@ export default function WarningsTracking() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart
-                  data={byOperation.map((op: any) => {
-                    const advNaoAssinadas = op.warnings?.filter((w: any) => w.tipo === 'advertencia' && !w.advertenciaAplicada).length || 0;
-                    const suspNaoAssinadas = op.naoAssinadas - advNaoAssinadas;
-                    return {
-                      operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
-                      Advertências: advNaoAssinadas,
-                      Suspensões: suspNaoAssinadas,
-                    };
-                  })}
+                  data={byOperation
+                    .map((op: any) => {
+                      const advNaoAssinadas = op.warnings?.filter((w: any) => w.tipo === 'advertencia' && !w.advertenciaAplicada).length || 0;
+                      const suspNaoAssinadas = op.naoAssinadas - advNaoAssinadas;
+                      return {
+                        operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
+                        Advertências: advNaoAssinadas,
+                        Suspensões: suspNaoAssinadas,
+                        totalNaoAssinadas: op.naoAssinadas,
+                      };
+                    })
+                    .sort((a: any, b: any) => b.totalNaoAssinadas - a.totalNaoAssinadas)}
                   layout="vertical"
-                  margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
+                  margin={{ top: 5, right: 60, left: 150, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis dataKey="operacao" type="category" width={145} tick={{ fontSize: 12 }} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="Advertências" stackId="a" fill="#ef4444" />
-                  <Bar dataKey="Suspensões" stackId="a" fill="#f97316" />
+                  <Bar dataKey="Advertências" fill="#EAB308" label={{ position: 'right', fontSize: 12 }} />
+                  <Bar dataKey="Suspensões" fill="#EF4444" label={{ position: 'right', fontSize: 12 }} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
