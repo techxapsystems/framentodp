@@ -157,6 +157,11 @@ function Router() {
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
+  useEffect(() => {
+    // Force update document title to ensure it's not cached by browser
+    document.title = "Framento Gestão de Motoristas";
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider
