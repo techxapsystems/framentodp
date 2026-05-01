@@ -24,25 +24,21 @@ export default function DataRetention() {
   const [editingResource, setEditingResource] = useState<string | null>(null);
   const [editingDays, setEditingDays] = useState<number>(90);
 
-  // Verificar se é admin
-  if (user?.role !== "admin") {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Acesso Negado</CardTitle>
-            <CardDescription>
-              Apenas administradores podem gerenciar políticas de retenção.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  const isAdmin = user?.role === "admin";
 
-  const { data: policies, isLoading: policiesLoading, refetch: refetchPolicies } = trpc.retention.getPolicies.useQuery();
-  const { data: stats } = trpc.retention.getStats.useQuery(undefined);
-  const { data: cleanupHistory } = trpc.retention.getCleanupHistory.useQuery({ limit: 10 });
+  // Hooks MUST be called unconditionally (before any early return)
+  const { data: policies, isLoading: policiesLoading, refetch: refetchPolicies } = trpc.retention.getPolicies.useQuery(
+    undefined,
+    { enabled: isAdmin }
+  );
+  const { data: stats } = trpc.retention.getStats.useQuery(
+    undefined,
+    { enabled: isAdmin }
+  );
+  const { data: cleanupHistory } = trpc.retention.getCleanupHistory.useQuery(
+    { limit: 10 },
+    { enabled: isAdmin }
+  );
 
   const executeCleanupMutation = trpc.retention.executeCleanup.useMutation({
     onSuccess: (data) => {
@@ -71,6 +67,22 @@ export default function DataRetention() {
       retentionDays: editingDays,
     });
   };
+
+  // Early return AFTER all hooks have been called
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Acesso Negado</CardTitle>
+            <CardDescription>
+              Apenas administradores podem gerenciar políticas de retenção.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-6 p-6">

@@ -66,6 +66,11 @@
 - [ ] Otimização de performance
 - [ ] Documentação de deploy
 
+## Fix React Error #310 - Hooks Condicionais
+- [x] Fix React error #310 in Audit.tsx (hooks chamados após early return)
+- [x] Fix React error #310 in WarningAuditLog.tsx (hooks chamados após early return)
+- [x] Fix React error #310 in DataRetention.tsx (hooks chamados após early return)
+
 ## Bugs & Melhorias Urgentes
 - [x] Renomear dashboard para "STATUS DE OCIOSIDADE BRF PRIMÁRIA"
 - [x] Otimizar performance da importação (reduzir de 5min para <30s)

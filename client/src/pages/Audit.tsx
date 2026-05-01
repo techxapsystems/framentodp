@@ -69,30 +69,23 @@ export default function Audit() {
   const [page, setPage] = useState(0);
   const pageSize = 20;
 
-  // Verificar se é admin
-  if (user?.role !== "admin") {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Acesso Negado</CardTitle>
-            <CardDescription>
-              Apenas administradores podem acessar os logs de auditoria.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  const isAdmin = user?.role === "admin";
 
-  const { data: logsData, isLoading } = trpc.audit.getLogs.useQuery({
-    action: filters.action || undefined,
-    resource: filters.resource || undefined,
-    limit: pageSize,
-    offset: page * pageSize,
-  });
+  // Hooks MUST be called unconditionally (before any early return)
+  const { data: logsData, isLoading } = trpc.audit.getLogs.useQuery(
+    {
+      action: filters.action || undefined,
+      resource: filters.resource || undefined,
+      limit: pageSize,
+      offset: page * pageSize,
+    },
+    { enabled: isAdmin }
+  );
 
-  const { data: stats } = trpc.audit.getStats.useQuery({});
+  const { data: stats } = trpc.audit.getStats.useQuery(
+    {},
+    { enabled: isAdmin }
+  );
 
   const filteredLogs = useMemo(() => {
     if (!logsData?.logs) return [];
@@ -130,6 +123,22 @@ export default function Audit() {
     a.click();
     window.URL.revokeObjectURL(url);
   };
+
+  // Early return AFTER all hooks have been called
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Acesso Negado</CardTitle>
+            <CardDescription>
+              Apenas administradores podem acessar os logs de auditoria.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-6 p-6">

@@ -33,27 +33,13 @@ export default function WarningAuditLog() {
   const [selectedAction, setSelectedAction] = useState("all");
   const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>([]);
 
-  // Verificar se é admin
-  if (!user || user.role !== "admin") {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              Acesso Negado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Você não tem permissão para acessar esta página.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const isAdmin = user?.role === "admin";
 
+  // Hooks MUST be called unconditionally (before any early return)
   // Carregar dados de auditoria
   useEffect(() => {
+    if (!isAdmin) return;
+
     const loadAuditLogs = async () => {
       try {
         setLoading(true);
@@ -70,7 +56,7 @@ export default function WarningAuditLog() {
     };
 
     loadAuditLogs();
-  }, []);
+  }, [isAdmin]);
 
   // Filtrar logs
   useEffect(() => {
@@ -88,6 +74,25 @@ export default function WarningAuditLog() {
 
     setFilteredLogs(filtered);
   }, [logs, searchConductor, selectedAction]);
+
+  // Early return AFTER all hooks have been called
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Você não tem permissão para acessar esta página.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Obter ações únicas
   const actions = Array.from(new Set(logs.map((log) => log.acao)));
