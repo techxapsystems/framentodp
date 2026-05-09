@@ -71,6 +71,15 @@
 - [x] Fix React error #310 in WarningAuditLog.tsx (hooks chamados após early return)
 - [x] Fix React error #310 in DataRetention.tsx (hooks chamados após early return)
 
+## Implementação de Audit Logging
+- [x] Adicionar createAuditLog ao login endpoint
+- [x] Adicionar createAuditLog ao delete warning endpoint
+- [x] Adicionar createAuditLog ao edit warning endpoint
+- [x] Adicionar createAuditLog ao create user mutation
+- [x] Adicionar createAuditLog ao edit user mutation
+- [x] Adicionar createAuditLog ao delete user mutation
+- [x] Adicionar createAuditLog ao config update mutation
+
 ## Bugs & Melhorias Urgentes
 - [x] Renomear dashboard para "STATUS DE OCIOSIDADE BRF PRIMÁRIA"
 - [x] Otimizar performance da importação (reduzir de 5min para <30s)

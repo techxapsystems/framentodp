@@ -5,6 +5,7 @@ import { sdk } from "./_core/sdk";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import PDFDocument from "pdfkit";
+import { createAuditLog } from "./services/auditLogService";
 
 export const authRestRouter = express.Router();
 
@@ -58,6 +59,19 @@ authRestRouter.post("/login", express.json(), async (req, res) => {
     // Setar o cookie de sessão (mesmo que o OAuth faz)
     const cookieOptions = getSessionCookieOptions(req);
     res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+    // Registrar login no audit log
+    await createAuditLog({
+      userId: user.id,
+      userName: user.name || user.email,
+      userEmail: user.email,
+      action: "login",
+      resource: "system",
+      description: `Usuário ${user.name || user.email} fez login no sistema`,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+      status: "success",
+    });
 
     return res.json({
       success: true,
@@ -481,6 +495,25 @@ authRestRouter.delete("/warnings/:id", express.json(), async (req, res) => {
       const userName = (req as any).user?.name || "Sistema";
       const userRole = (req as any).user?.role || "user";
       
+      // Registrar no audit log geral
+      await createAuditLog({
+        userId,
+        userName,
+        userEmail,
+        action: "delete_warning",
+        resource: "warnings",
+        resourceId: warningId,
+        description: `Advertência deletada para motorista ${warning.conductorName}`,
+        details: {
+          conductorName: warning.conductorName,
+          nivel: warning.nivelAdvertencia,
+          motivo: warning.motivo,
+        },
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        status: "success",
+      });
+      
       // Apenas registrar se for admin
       if (userRole === "admin") {
         await db.logWarningAudit(
@@ -534,6 +567,34 @@ authRestRouter.put("/warnings/:id", express.json(), async (req, res) => {
     const userEmail = (req as any).user?.email || "sistema";
     const userName = (req as any).user?.name || "Sistema";
     const userRole = (req as any).user?.role || "user";
+    
+      // Registrar no audit log geral
+    if (warningBefore) {
+      const camposAlterados = [];
+      if (motivo && motivo !== warningBefore.motivo) camposAlterados.push("motivo");
+      if (observacao && observacao !== warningBefore.observacao) camposAlterados.push("observacao");
+      if (dataInicio && dataInicio !== warningBefore.dataInicio?.toString()) camposAlterados.push("dataInicio");
+      if (dataFim && dataFim !== warningBefore.dataFim?.toString()) camposAlterados.push("dataFim");
+      
+      if (camposAlterados.length > 0) {
+        await createAuditLog({
+          userId,
+          userName,
+          userEmail,
+          action: "edit_warning",
+          resource: "warnings",
+          resourceId: warningId,
+          description: `Advertência editada para motorista ${warningBefore.conductorName} - Campos alterados: ${camposAlterados.join(", ")}`,
+          details: {
+            conductorName: warningBefore.conductorName,
+            camposAlterados,
+          },
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          status: "success",
+        });
+      }
+    }
     
     if (userRole === "admin" && warningBefore) {
       // Identificar quais campos foram alterados

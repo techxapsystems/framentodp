@@ -1,6 +1,7 @@
-import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { getConfigurations, updateConfiguration } from "../db";
+import { createAuditLog } from "../services/auditLogService";
+import { protectedProcedure, router } from "../_core/trpc";
 
 export const configRouter = router({
   /**
@@ -36,14 +37,31 @@ export const configRouter = router({
         thresholdHe30d: z.number().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       try {
         // Update each configuration field
+        const camposAlterados = [];
         for (const [key, value] of Object.entries(input)) {
           if (value !== undefined) {
             await updateConfiguration(key, String(value));
+            camposAlterados.push(key);
           }
         }
+
+        // Registrar no audit log
+        if (camposAlterados.length > 0) {
+          await createAuditLog({
+            userId: ctx.user.id,
+            userName: ctx.user.name || ctx.user.email,
+            userEmail: ctx.user.email,
+            action: "change_settings",
+            resource: "settings",
+            description: `Configurações alteradas - Campos: ${camposAlterados.join(", ")}`,
+            details: input,
+            status: "success",
+          });
+        }
+
         const result = await getConfigurations();
         return {
           success: true,

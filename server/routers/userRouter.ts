@@ -5,6 +5,7 @@ import { users } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { hashPassword } from "../auth";
+import { createAuditLog } from "../services/auditLogService";
 
 export const userRouter = router({
   /**
@@ -137,6 +138,23 @@ export const userRouter = router({
           loginMethod: 'manual',
         });
 
+        // Registrar no audit log
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email,
+          userEmail: ctx.user.email,
+          action: "create_user",
+          resource: "users",
+          description: `Novo usuário criado: ${input.name} (${input.email}) - Role: ${input.role}`,
+          details: {
+            name: input.name,
+            email: input.email,
+            role: input.role,
+            department: input.department,
+          },
+          status: "success",
+        });
+
         return {
           success: true,
           message: 'Usuário criado com sucesso',
@@ -192,6 +210,22 @@ export const userRouter = router({
           .set(updateData)
           .where(eq(users.id, Number(input.id)));
 
+        // Registrar no audit log
+        const camposAlterados = Object.keys(updateData);
+        if (camposAlterados.length > 0) {
+          await createAuditLog({
+            userId: ctx.user.id,
+            userName: ctx.user.name || ctx.user.email,
+            userEmail: ctx.user.email,
+            action: "edit_user",
+            resource: "users",
+            resourceId: Number(input.id),
+            description: `Usuário atualizado - Campos alterados: ${camposAlterados.join(", ")}`,
+            details: updateData,
+            status: "success",
+          });
+        }
+
         return {
           success: true,
           message: 'Usuário atualizado com sucesso',
@@ -226,9 +260,31 @@ export const userRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
+        // Buscar dados do usuário antes de deletar
+        const userToDelete = await db.select().from(users).where(eq(users.id, input.id)).limit(1);
+
         await db
           .delete(users)
           .where(eq(users.id, input.id));
+
+        // Registrar no audit log
+        if (userToDelete.length > 0) {
+          await createAuditLog({
+            userId: ctx.user.id,
+            userName: ctx.user.name || ctx.user.email,
+            userEmail: ctx.user.email,
+            action: "delete_user",
+            resource: "users",
+            resourceId: input.id,
+            description: `Usuário deletado: ${userToDelete[0].name} (${userToDelete[0].email})`,
+            details: {
+              name: userToDelete[0].name,
+              email: userToDelete[0].email,
+              role: userToDelete[0].role,
+            },
+            status: "success",
+          });
+        }
 
         return {
           success: true,
