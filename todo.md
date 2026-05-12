@@ -1194,3 +1194,7 @@
 ✅ Texto justificado sem overflow
 ✅ Parágrafo de suspensão com datas corretas (sem Art. 482)
 ✅ Frontend chama endpoint server-side (pdfkit) em vez de jsPDF
+
+## Correção de Campos Obrigatórios - Advertências
+- [x] Tornar campo "operacao" opcional no cadastro de advertência
+- [x] Tornar campo "placa" opcional no cadastro de advertência

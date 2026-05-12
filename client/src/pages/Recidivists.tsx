@@ -159,7 +159,7 @@ export default function Recidivists() {
   };
 
   const handleCreateWarning = () => {
-    if (!selectedConductor || !operacao || !infrationDate || !warningContent) {
+    if (!selectedConductor || !infrationDate || !warningContent) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
