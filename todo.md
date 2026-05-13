@@ -1198,3 +1198,5 @@
 ## Correção de Campos Obrigatórios - Advertências
 - [x] Tornar campo "operacao" opcional no cadastro de advertência
 - [x] Tornar campo "placa" opcional no cadastro de advertência
+- [x] Permitir edição de operacao e placa (remover readOnly)
+- [x] Manter auto-preenchimento quando dados do motorista estão disponíveis
