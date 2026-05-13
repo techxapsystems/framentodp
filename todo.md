@@ -1200,3 +1200,4 @@
 - [x] Tornar campo "placa" opcional no cadastro de advertência
 - [x] Permitir edição de operacao e placa (remover readOnly)
 - [x] Manter auto-preenchimento quando dados do motorista estão disponíveis
+- [x] Implementar Combobox com autocomplete para campo operacao

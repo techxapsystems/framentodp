@@ -21,6 +21,7 @@ import { BookOpen, ExternalLink, Search, X } from "lucide-react";
 import { WarningPDFButton } from "@/components/WarningPDFGenerator";
 import { toast } from "sonner";
 import { DateMaskInput } from "@/components/DateMaskInput";
+import { OperacaoCombobox } from "@/components/OperacaoCombobox";
 
 export default function Recidivists() {
   const [selectedConductor, setSelectedConductor] = useState<string>("");
@@ -323,12 +324,11 @@ export default function Recidivists() {
                     <label className="text-sm font-medium text-slate-700 block mb-2">
                       Operação:
                     </label>
-                    <input
-                      type="text"
+                    <OperacaoCombobox
                       value={operacao}
-                      onChange={(e) => setOperacao(e.target.value)}
-                      placeholder={operacao ? "Preenchida automaticamente" : "Digite a operação"}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                      onChange={setOperacao}
+                      operacoes={operacoes}
+                      placeholder="Selecione ou digite uma operação..."
                     />
                   </div>
 
