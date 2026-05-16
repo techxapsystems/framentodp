@@ -17,27 +17,6 @@ export default function Import() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
 
-  // TODO: Implementar router de importação
-  // const importMutation = trpc.import.importFile.useMutation({
-  //   onSuccess: (result: any) => {
-  //     setImportResult(result);
-  //     if (result.success) {
-  //       toast.success(result.message);
-  //       refetchHistory();
-  //     } else {
-  //       toast.error(result.message);
-  //     }
-  //     setIsProcessing(false);
-  //   },
-  //   onError: (error: any) => {
-  //     toast.error(`Erro: ${error.message}`);
-  //     setIsProcessing(false);
-  //   },
-  // });
-
-  // const { data: history, refetch: refetchHistory } =
-  //   trpc.import.getHistory.useQuery({ limit: 20 });
-  
   const refetchHistory = () => {};
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,11 +38,7 @@ export default function Import() {
       }
       const base64String = btoa(base64);
 
-      // TODO: Implementar router de importação
-      // importMutation.mutate({
-      //   fileName: file.name,
-      //   fileBuffer: base64String,
-      // });
+
       toast.info("Funcionalidade de importação ainda não implementada");
       setIsProcessing(false);
     } catch (error) {
