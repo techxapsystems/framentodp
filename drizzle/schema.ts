@@ -720,3 +720,90 @@ export const warningAuditLog = mysqlTable(
 
 export type WarningAuditLog = typeof warningAuditLog.$inferSelect;
 export type InsertWarningAuditLog = typeof warningAuditLog.$inferInsert;
+
+
+/**
+ * Filiais/Branches - Mapeamento de operacoes para CNPJ, endereco, cidade
+ * Suporta multiplas filiais para importacao em massa de advertencias
+ */
+export const branches = mysqlTable(
+  "branches",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    nome: varchar("nome", { length: 255 }).notNull(),
+    operacaoNome: varchar("operacaoNome", { length: 255 }).notNull().unique(),
+    cnpj: varchar("cnpj", { length: 20 }).notNull(),
+    endereco: varchar("endereco", { length: 255 }).notNull(),
+    cidade: varchar("cidade", { length: 100 }).notNull(),
+    uf: varchar("uf", { length: 2 }).notNull(),
+    cep: varchar("cep", { length: 20 }).notNull(),
+    ativo: boolean("ativo").notNull().default(true),
+    criadoEm: timestamp("criadoEm").defaultNow().notNull(),
+    atualizadoEm: timestamp("atualizadoEm").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [
+    index("idx_operacaoNome").on(table.operacaoNome),
+    index("idx_cnpj").on(table.cnpj),
+  ]
+);
+
+export type Branch = typeof branches.$inferSelect;
+export type InsertBranch = typeof branches.$inferInsert;
+
+/**
+ * Lotes de Importacao - Rastreia cada importacao em massa de advertencias
+ */
+export const importBatches = mysqlTable(
+  "import_batches",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    nomeArquivo: varchar("nomeArquivo", { length: 255 }).notNull(),
+    hashArquivo: varchar("hashArquivo", { length: 64 }).notNull(),
+    totalLinhas: int("totalLinhas").notNull(),
+    totalMotoristas: int("totalMotoristas").notNull(),
+    totalAdvertenciasGeradas: int("totalAdvertenciasGeradas").notNull().default(0),
+    totalErros: int("totalErros").notNull().default(0),
+    totalSemInfracao: int("totalSemInfracao").notNull().default(0),
+    status: mysqlEnum("status", ["processando", "concluido", "erro"]).notNull().default("processando"),
+    mensagemErro: text("mensagemErro"),
+    importadoPor: varchar("importadoPor", { length: 320 }).notNull(),
+    criadoEm: timestamp("criadoEm").defaultNow().notNull(),
+    concluidoEm: timestamp("concluidoEm"),
+  },
+  (table) => [
+    index("idx_status").on(table.status),
+    index("idx_criadoEm").on(table.criadoEm),
+    index("idx_importadoPor").on(table.importadoPor),
+  ]
+);
+
+export type ImportBatch = typeof importBatches.$inferSelect;
+export type InsertImportBatch = typeof importBatches.$inferInsert;
+
+/**
+ * Detalhes de Importacao - Rastreia cada motorista/advertencia gerada em um lote
+ */
+export const importBatchDetails = mysqlTable(
+  "import_batch_details",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    batchId: int("batchId").notNull(),
+    warningId: int("warningId"),
+    cpf: varchar("cpf", { length: 20 }).notNull(),
+    nomeConductor: varchar("nomeConductor", { length: 255 }).notNull(),
+    operacao: varchar("operacao", { length: 255 }).notNull(),
+    totalOcorrencias: int("totalOcorrencias").notNull(),
+    infracoesDetectadas: text("infracoesDetectadas"),
+    status: mysqlEnum("status", ["sucesso", "erro", "sem_infracao"]).notNull(),
+    mensagemErro: text("mensagemErro"),
+    criadoEm: timestamp("criadoEm").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_batchId").on(table.batchId),
+    index("idx_warningId").on(table.warningId),
+    index("idx_cpf").on(table.cpf),
+  ]
+);
+
+export type ImportBatchDetail = typeof importBatchDetails.$inferSelect;
+export type InsertImportBatchDetail = typeof importBatchDetails.$inferInsert;

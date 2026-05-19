@@ -26,6 +26,7 @@ import WarningAuditLog from "./pages/WarningAuditLog";
 import AnaliseGifBrf from "./pages/AnaliseGifBrf";
 import ComparisonReport from "./pages/ComparisonReport";
 import ImportAdministrative from "./pages/ImportAdministrative";
+import { BulkImportWarnings } from "./pages/BulkImportWarnings";
 
 
 function Router() {
@@ -142,6 +143,11 @@ function Router() {
         <Route path="/relatorio-comparativo" component={() => (
           <ProtectedRoute requiredModules={["analise_gif_brf"]}>
             <ComparisonReport />
+          </ProtectedRoute>
+        )} />
+        <Route path="/importacao-advertencias" component={() => (
+          <ProtectedRoute requiredRole="admin">
+            <BulkImportWarnings />
           </ProtectedRoute>
         )} />
         <Route path="/404" component={NotFound} />

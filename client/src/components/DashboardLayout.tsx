@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl, TECHXAP_LOGO, APP_NAME } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { BarChart3, LogOut, PanelLeft, Upload, Settings, Home, AlertTriangle, AlertCircle, FileText, TrendingUp, Shield, Trash2, BookOpen, Users, Thermometer, CheckCircle2 } from "lucide-react";
+import { BarChart3, LogOut, PanelLeft, Upload, Settings, Home, AlertTriangle, AlertCircle, FileText, TrendingUp, Shield, Trash2, BookOpen, Users, Thermometer, CheckCircle2, FileUp } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -42,6 +42,7 @@ const menuItems: MenuItem[] = [
   { icon: CheckCircle2, label: "Baixa de Advertências", path: "/baixa-advertencias", module: "controle_de_advertencias" },
   { icon: FileText, label: "Relatórios", path: "/relatorios", module: "controle_de_advertencias" },
   { icon: BookOpen, label: "Biblioteca de Modelos", path: "/biblioteca-modelos", module: "controle_de_advertencias" },
+  { icon: FileUp, label: "Importação em Massa", path: "/importacao-advertencias" },
   { icon: Thermometer, label: "Análise GIF BRF", path: "/analise-gif-brf", module: "analise_gif_brf" },
   { icon: BarChart3, label: "Relatório Comparativo", path: "/relatorio-comparativo", module: "analise_gif_brf" },
   
