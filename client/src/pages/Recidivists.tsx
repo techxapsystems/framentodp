@@ -202,7 +202,7 @@ export default function Recidivists() {
                 </div>
                 {selectedConductor && (
                   <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
-                    ✓ Motorista selecionado: {allConductors.find((c: any) => c.id === selectedConductor)?.name}
+                    ✓ Motorista selecionado: {allConductors.find((c: any) => c.id === selectedConductor)?.conductorName}
                   </div>
                 )}
               </div>
