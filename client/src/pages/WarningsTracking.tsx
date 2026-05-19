@@ -175,7 +175,7 @@ export default function WarningsTracking() {
                   <SelectItem value="all">Todas as operações</SelectItem>
                   {operations?.filter((op: any) => op.id && op.id.trim() !== '').map((op: any) => (
                     <SelectItem key={op.id} value={op.id}>
-                      {op.nome}
+                      {typeof op.nome === 'string' ? op.nome : String(op.nome || "")}
                     </SelectItem>
                   ))}
                 </SelectContent>

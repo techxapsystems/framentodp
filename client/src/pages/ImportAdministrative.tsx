@@ -273,13 +273,13 @@ export default function ImportAdministrative() {
                 <tbody>
                   {preview.map((emp, idx) => (
                     <tr key={idx} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{emp.nome}</td>
+                      <td className="p-2">{typeof emp.nome === 'string' ? emp.nome : String(emp.nome || "")}</td>
                       <td className="p-2">
-                        <Badge variant="outline">{emp.cargo}</Badge>
+                        <Badge variant="outline">{typeof emp.cargo === 'string' ? emp.cargo : String(emp.cargo || "")}</Badge>
                       </td>
-                      <td className="p-2 font-mono text-xs">{emp.cpf}</td>
-                      <td className="p-2">{emp.admissao}</td>
-                      <td className="p-2">{emp.situacao}</td>
+                      <td className="p-2 font-mono text-xs">{typeof emp.cpf === 'string' ? emp.cpf : String(emp.cpf || "")}</td>
+                      <td className="p-2">{typeof emp.admissao === 'string' ? emp.admissao : String(emp.admissao || "")}</td>
+                      <td className="p-2">{typeof emp.situacao === 'string' ? emp.situacao : String(emp.situacao || "")}  </td>
                     </tr>
                   ))}
                 </tbody>

@@ -262,7 +262,7 @@ export default function Reports() {
                 >
                   <div className="font-medium">{conductor.conductorName}</div>
                   <div className="text-sm text-slate-500">
-                    {conductor.operacao} • {conductor.placa}
+                    {typeof conductor.operacao === 'string' ? conductor.operacao : (conductor.operacao as any)?.nome || "-"} • {conductor.placa || "-"}
                   </div>
                 </button>
               ))}

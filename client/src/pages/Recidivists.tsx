@@ -94,8 +94,8 @@ export default function Recidivists() {
     if (searchInput.trim()) {
       const filtered = allConductors.filter(
         (conductor: any) =>
-          conductor.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-          conductor.cpf.includes(searchInput)
+          (conductor.conductorName || "").toLowerCase().includes(searchInput.toLowerCase()) ||
+          (conductor.cpf || "").includes(searchInput)
       );
       setSearchResults(filtered);
       setShowResults(true);
@@ -193,8 +193,8 @@ export default function Recidivists() {
                           }}
                           className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0"
                         >
-                          <div className="font-medium">{conductor.name}</div>
-                          <div className="text-sm text-muted-foreground">{conductor.cpf}</div>
+                          <div className="font-medium">{conductor.conductorName || conductor.nome || ""}</div>
+                          <div className="text-sm text-muted-foreground">{typeof conductor.cpf === 'string' ? conductor.cpf : String(conductor.cpf || "")}</div>
                         </button>
                       ))}
                     </div>
