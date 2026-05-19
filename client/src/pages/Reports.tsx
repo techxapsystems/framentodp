@@ -347,22 +347,22 @@ export default function Reports() {
                         </div>
                         <div>
                           <span className="text-slate-600 text-xs">Status</span>
-                          <p className={`font-medium ${adv.advertenciaAplicada ? "text-green-600" : "text-orange-600"}`}>
+                          <p className={`font-medium ${adv.advertenciaAplicada ? "text-green-600" : "text-yellow-600"}`}>
                             {adv.advertenciaAplicada ? "Assinada" : "Pendente"}
                           </p>
                         </div>
                         <div>
                           <span className="text-slate-600 text-xs">Tipo</span>
-                          <Badge variant="default">Advertência</Badge>
+                          <p className="font-medium">Advertência</p>
                         </div>
                       </div>
                       <div className="border-t border-blue-200 pt-3">
-                        <p className="text-xs text-slate-600 mb-1">Motivo/Descrição:</p>
-                        <p className="text-sm text-slate-900 whitespace-pre-wrap break-words">{adv.motivo || "-"}</p>
+                        <p className="text-xs text-slate-600 mb-1"><strong>Motivo/Descrição:</strong></p>
+                        <p className="text-sm text-slate-900 whitespace-pre-wrap">{adv.motivo || "-"}</p>
                         {adv.observacao && (
                           <>
-                            <p className="text-xs text-slate-600 mb-1 mt-3">Observação:</p>
-                            <p className="text-sm text-slate-900 whitespace-pre-wrap break-words">{adv.observacao}</p>
+                            <p className="text-xs text-slate-600 mt-2 mb-1"><strong>Observação:</strong></p>
+                            <p className="text-sm text-slate-900">{adv.observacao}</p>
                           </>
                         )}
                       </div>
@@ -389,41 +389,31 @@ export default function Reports() {
                         </div>
                         <div>
                           <span className="text-slate-600 text-xs">Status</span>
-                          <p className={`font-medium ${susp.advertenciaAplicada ? "text-green-600" : "text-orange-600"}`}>
+                          <p className={`font-medium ${susp.advertenciaAplicada ? "text-green-600" : "text-yellow-600"}`}>
                             {susp.advertenciaAplicada ? "Assinada" : "Pendente"}
                           </p>
                         </div>
                         <div>
                           <span className="text-slate-600 text-xs">Tipo</span>
-                          <Badge variant="destructive">Suspensão</Badge>
+                          <p className="font-medium">Suspensão</p>
                         </div>
+                        <div />
                       </div>
                       <div className="border-t border-red-200 pt-3">
-                        <p className="text-xs text-slate-600 mb-1">Motivo/Descrição:</p>
-                        <p className="text-sm text-slate-900 whitespace-pre-wrap break-words">{susp.motivo || "-"}</p>
+                        <p className="text-xs text-slate-600 mb-1"><strong>Motivo/Descrição:</strong></p>
+                        <p className="text-sm text-slate-900 whitespace-pre-wrap">{susp.motivo || "-"}</p>
                         {susp.observacao && (
                           <>
-                            <p className="text-xs text-slate-600 mb-1 mt-3">Observação:</p>
-                            <p className="text-sm text-slate-900 whitespace-pre-wrap break-words">{susp.observacao}</p>
+                            <p className="text-xs text-slate-600 mt-2 mb-1"><strong>Observação:</strong></p>
+                            <p className="text-sm text-slate-900">{susp.observacao}</p>
                           </>
                         )}
                         {susp.dataInicio && (
                           <>
-                            <p className="text-xs text-slate-600 mb-1 mt-3">Período de Suspensão:</p>
-                            <div className="grid grid-cols-3 gap-2 text-sm">
-                              <div>
-                                <span className="text-slate-600">Início:</span>
-                                <p className="font-medium">{formatDate(susp.dataInicio)}</p>
-                              </div>
-                              <div>
-                                <span className="text-slate-600">Fim:</span>
-                                <p className="font-medium">{formatDate(susp.dataFim)}</p>
-                              </div>
-                              <div>
-                                <span className="text-slate-600">Retorno:</span>
-                                <p className="font-medium">{formatDate(susp.dataRetorno)}</p>
-                              </div>
-                            </div>
+                            <p className="text-xs text-slate-600 mt-2 mb-1"><strong>Período de Suspensão:</strong></p>
+                            <p className="text-sm text-slate-900">
+                              Início: {formatDate(susp.dataInicio)} | Fim: {formatDate(susp.dataFim)} | Retorno: {formatDate(susp.dataRetorno)}
+                            </p>
                           </>
                         )}
                       </div>
@@ -433,9 +423,10 @@ export default function Reports() {
               </div>
             )}
 
-            {reportData.totalMedidas === 0 && (
+            {/* Sem dados */}
+            {reportData.advertencias.length === 0 && reportData.suspensoes.length === 0 && (
               <div className="text-center py-8 text-slate-500">
-                Nenhuma medida registrada para este colaborador
+                <p>Nenhuma advertência ou suspensão registrada para este colaborador.</p>
               </div>
             )}
           </CardContent>
