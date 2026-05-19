@@ -12,7 +12,16 @@ interface PreviewData {
   totalLinhas: number;
   totalMotoristas: number;
   totalComInfracao: number;
-  motoristasComInfracao: Array<{
+  motoristas?: Array<{
+    cpf: string;
+    nome: string;
+    operacao: string;
+    placa: string;
+    totalOcorrencias: number;
+    nivelAdvertencia: number;
+    infracoesQtd: number;
+  }>;
+  motoristasComInfracao?: Array<{
     cpf: string;
     nome: string;
     operacao: string;
@@ -179,7 +188,7 @@ export function BulkImportSection() {
               </div>
             </div>
 
-            {preview && preview.motoristasComInfracao && preview.motoristasComInfracao.length > 0 && (
+            {preview && (preview.motoristasComInfracao?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="font-medium">Motoristas com Infrações Detectadas:</h4>
                 <div className="max-h-48 overflow-y-auto space-y-2">
