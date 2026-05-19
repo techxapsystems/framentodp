@@ -42,7 +42,6 @@ const menuItems: MenuItem[] = [
   { icon: CheckCircle2, label: "Baixa de Advertências", path: "/baixa-advertencias", module: "controle_de_advertencias" },
   { icon: FileText, label: "Relatórios", path: "/relatorios", module: "controle_de_advertencias" },
   { icon: BookOpen, label: "Biblioteca de Modelos", path: "/biblioteca-modelos", module: "controle_de_advertencias" },
-  { icon: FileUp, label: "Importação em Massa", path: "/importacao-advertencias" },
   { icon: Thermometer, label: "Análise GIF BRF", path: "/analise-gif-brf", module: "analise_gif_brf" },
   { icon: BarChart3, label: "Relatório Comparativo", path: "/relatorio-comparativo", module: "analise_gif_brf" },
   
