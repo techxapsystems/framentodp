@@ -117,8 +117,6 @@ export default function Recidivists() {
       motivo: warningContent,
       nivelAdvertencia: warningType === 'advertencia' ? 1 : 0,
       dataInfracao: infrationDate,
-      operacao: operacao || undefined,
-      placa: licensePlate || undefined,
       dataInicio: dataInicio || undefined,
       dataFim: dataFim || undefined,
       dataRetorno: dataRetorno || undefined,
