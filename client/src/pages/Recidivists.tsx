@@ -112,9 +112,10 @@ export default function Recidivists() {
     }
 
     createWarningMutation.mutate({
-      conductorId: selectedConductor,
+      conductorName: selectedConductor,
       tipo: warningType,
-      descricao: warningContent,
+      motivo: warningContent,
+      nivelAdvertencia: warningType === 'advertencia' ? 1 : 0,
       dataInfracao: infrationDate,
       operacao: operacao || undefined,
       placa: licensePlate || undefined,

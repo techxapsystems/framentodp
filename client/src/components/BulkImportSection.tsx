@@ -108,6 +108,9 @@ export function BulkImportSection() {
     reader.readAsArrayBuffer(file);
   };
 
+  // Suppress unused variable warning
+  void previewMutation;
+
   const handleNewImport = () => {
     setFile(null);
     setPreview(null);
@@ -192,7 +195,7 @@ export function BulkImportSection() {
               <div className="space-y-2">
                 <h4 className="font-medium">Motoristas com Infrações Detectadas:</h4>
                 <div className="max-h-48 overflow-y-auto space-y-2">
-                  {preview.motoristasComInfracao.map((motorista, idx) => (
+                  {preview.motoristasComInfracao?.map((motorista, idx) => (
                     <div key={idx} className="p-2 border rounded text-sm">
                       <div className="font-medium">{motorista.nome}</div>
                       <div className="text-xs text-muted-foreground">{motorista.cpf}</div>
