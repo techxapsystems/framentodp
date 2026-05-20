@@ -197,7 +197,7 @@ export function BulkImportSection() {
                 <div className="max-h-48 overflow-y-auto space-y-2">
                   {preview.motoristasComInfracao?.map((motorista, idx) => (
                     <div key={idx} className="p-2 border rounded text-sm">
-                      <div className="font-medium">{motorista.nome}</div>
+                      <div className="font-medium">{String(motorista.nome || '')}</div>
                       <div className="text-xs text-muted-foreground">{motorista.cpf}</div>
                       <div className="text-xs mt-1">
                         <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">

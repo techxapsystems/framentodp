@@ -333,8 +333,9 @@ export default function WarningsTracking() {
                       const advCount = op.warnings?.filter((w: any) => w.tipo === 'advertencia').length || 0;
                       const suspCount = op.warnings?.filter((w: any) => w.tipo === 'suspensao').length || 0;
 
+                      const opStr = String(op.operacao || '');
                       return {
-                        operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
+                        operacao: opStr.length > 20 ? opStr.substring(0, 17) + '...' : opStr,
                         Advertências: advCount,
                         Suspensões: suspCount,
                         total: op.total,
@@ -370,8 +371,9 @@ export default function WarningsTracking() {
                       const advNaoAssinadas = op.warnings?.filter((w: any) => w.tipo === 'advertencia' && !w.advertenciaAplicada).length || 0;
                       const suspNaoAssinadas = op.warnings?.filter((w: any) => w.tipo === 'suspensao' && !w.advertenciaAplicada).length || 0;
 
+                      const opStr = String(op.operacao || '');
                       return {
-                        operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
+                        operacao: opStr.length > 20 ? opStr.substring(0, 17) + '...' : opStr,
                         Advertências: advNaoAssinadas,
                         Suspensões: suspNaoAssinadas,
                         totalNaoAssinadas: op.naoAssinadas,
@@ -420,8 +422,8 @@ export default function WarningsTracking() {
                     const taxa = ((item.assinadas / item.total) * 100).toFixed(1);
                     const taxaNum = parseFloat(taxa);
                     return (
-                      <TableRow key={item.operacao}>
-                        <TableCell className="font-medium">{item.operacao}</TableCell>
+                      <TableRow key={String(item.operacao || '')}>
+                        <TableCell className="font-medium">{String(item.operacao || '')}</TableCell>
                         <TableCell>{item.total}</TableCell>
                         <TableCell className="text-green-600">{item.assinadas}</TableCell>
                         <TableCell className="text-red-600">{item.naoAssinadas}</TableCell>

@@ -77,9 +77,9 @@ export default function WarningsDashboard() {
                     <tbody>
                       {currentStats.map((item: any) => (
                         <tr key={item.id} className="border-b border-slate-200 hover:bg-slate-50">
-                          <td className="py-3 px-4 font-medium">{item.nome}</td>
-                          <td className="py-3 px-4">{item.operacao}</td>
-                          <td className="py-3 px-4">{item.placa || "-"}</td>
+                          <td className="py-3 px-4 font-medium">{String(item.nome || '')}</td>
+                          <td className="py-3 px-4">{String(item.operacao || '')}</td>
+                          <td className="py-3 px-4">{String(item.placa || '-')}</td>
                           <td className="py-3 px-4">
                             {item.data ? new Date(item.data).toLocaleDateString("pt-BR") : "-"}
                           </td>
@@ -130,9 +130,9 @@ export default function WarningsDashboard() {
                     <tbody>
                       {currentStats.map((item: any) => (
                         <tr key={item.id} className="border-b border-slate-200 hover:bg-slate-50">
-                          <td className="py-3 px-4 font-medium">{item.nome}</td>
-                          <td className="py-3 px-4">{item.operacao}</td>
-                          <td className="py-3 px-4">{item.placa || "-"}</td>
+                          <td className="py-3 px-4 font-medium">{String(item.nome || '')}</td>
+                          <td className="py-3 px-4">{String(item.operacao || '')}</td>
+                          <td className="py-3 px-4">{String(item.placa || '-')}</td>
                           <td className="py-3 px-4">
                             {item.data ? new Date(item.data).toLocaleDateString("pt-BR") : "-"}
                           </td>
