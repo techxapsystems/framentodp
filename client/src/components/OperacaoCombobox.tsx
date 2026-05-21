@@ -33,9 +33,14 @@ export function OperacaoCombobox({
   const [searchValue, setSearchValue] = useState(value);
 
   // Converter operações para array de strings
-  const operacoesList = operacoes.map((op) =>
-    typeof op === "string" ? op : op.nome
-  );
+  const operacoesList = operacoes
+    .map((op) => {
+      if (typeof op === "string") {
+        return String(op || '');
+      }
+      return String(op.nome || '');
+    })
+    .filter((op) => op && op.trim() !== '');
 
   // Atualizar searchValue quando value mudar externamente
   useEffect(() => {
@@ -43,9 +48,10 @@ export function OperacaoCombobox({
   }, [value]);
 
   // Filtrar operações baseado no texto digitado
-  const filteredOperacoes = operacoesList.filter((op) =>
-    op.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  const filteredOperacoes = operacoesList.filter((op) => {
+    const opStr = String(op || '');
+    return opStr.toLowerCase().includes(searchValue.toLowerCase());
+  });
 
   const handleSelect = (operacao: string) => {
     onChange(operacao);

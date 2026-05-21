@@ -930,8 +930,9 @@ export async function getAllOperations() {
     // Extrair operações únicas
     const operacoes = new Map<string, string>();
     conductorsList.forEach((c: any) => {
-      if (c.operacao && c.operacao.trim()) {
-        operacoes.set(c.operacao, c.operacao);
+      const op = String(c.operacao || '').trim();
+      if (op) {
+        operacoes.set(op, op);
       }
     });
     
@@ -939,8 +940,8 @@ export async function getAllOperations() {
     const result = Array.from(operacoes.values())
       .sort()
       .map((op: string) => ({
-        id: op,
-        nome: op,
+        id: String(op || ''),
+        nome: String(op || ''),
       }));
     
     return result;

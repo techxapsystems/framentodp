@@ -173,11 +173,18 @@ export default function WarningsTracking() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as operações</SelectItem>
-                  {operations?.filter((op: any) => op.id && op.id.trim() !== '').map((op: any) => (
-                    <SelectItem key={op.id} value={op.id}>
-                      {typeof op.nome === 'string' ? op.nome : String(op.nome || "")}
-                    </SelectItem>
-                  ))}
+                  {operations?.filter((op: any) => {
+                    const id = String(op.id ?? '');
+                    return id && id.trim() !== '';
+                  }).map((op: any) => {
+                    const id = String(op.id ?? '');
+                    const nome = String(op.nome ?? '');
+                    return (
+                      <SelectItem key={id} value={id}>
+                        {nome}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
