@@ -419,13 +419,13 @@ export const dashboardRouter = router({
         const employees = await getAllEmployees();
         // Mapear para o formato esperado (conductorName, placa, operacao, cargo, cpf, matricula)
         return employees.map((e: any) => ({
-          conductorName: e.nome,
-          placa: e.placa,
-          operacao: e.operacao,
-          cargo: e.cargo,
-          cpf: e.cpf,
-          matricula: e.matricula,
-          tipo: e.tipo,
+          conductorName: String(e.nome || ''),
+          placa: String(e.placa || ''),
+          operacao: String(e.operacao || ''),
+          cargo: String(e.cargo || ''),
+          cpf: String(e.cpf || ''),
+          matricula: String(e.matricula || ''),
+          tipo: String(e.tipo || ''),
         })) || [];
       } catch (error) {
         console.error("Error fetching employees:", error);

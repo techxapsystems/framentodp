@@ -1139,7 +1139,7 @@ export async function getAllEmployees() {
         id: a.id,
         nome: a.nome,
         placa: null,
-        operacao: null,
+        operacao: '',
         cargo: a.cargo,
         cpf: a.cpf,
         ctps: null,

@@ -18,7 +18,24 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
+    console.error('[ERROR BOUNDARY] Error caught:', error.toString());
+    console.error('[ERROR BOUNDARY] Error message:', error.message);
+    console.error('[ERROR BOUNDARY] Stack:', error.stack);
     return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[ERROR BOUNDARY] Component stack:', errorInfo.componentStack);
+    console.error('[ERROR BOUNDARY] Full error info:', errorInfo);
+    
+    // Log to window for debugging
+    (window as any).__lastError = {
+      error: error.toString(),
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: new Date().toISOString(),
+    };
   }
 
   render() {
