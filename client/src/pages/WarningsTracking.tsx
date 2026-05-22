@@ -26,6 +26,16 @@ export default function WarningsTracking() {
 
   // Buscar operações disponíveis
   const { data: operations = [] } = trpc.dashboard.getAllOperations.useQuery();
+  
+  // Diagnóstico
+  useEffect(() => {
+    console.log('[WarningsTracking] operations data:', operations);
+    if (operations.length > 0) {
+      console.log('[WarningsTracking] First operation:', operations[0]);
+      console.log('[WarningsTracking] First operation.id type:', typeof operations[0].id);
+      console.log('[WarningsTracking] First operation.nome type:', typeof operations[0].nome);
+    }
+  }, [operations]);
 
   // Inicializar datas
   useEffect(() => {

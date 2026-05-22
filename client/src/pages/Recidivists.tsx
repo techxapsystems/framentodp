@@ -43,6 +43,16 @@ export default function Recidivists() {
 
   // Buscar operações disponíveis
   const { data: operacoes = [] } = trpc.dashboard.getAllOperations.useQuery();
+  
+  // Diagnóstico
+  useEffect(() => {
+    console.log('[Recidivists] operacoes data:', operacoes);
+    if (operacoes.length > 0) {
+      console.log('[Recidivists] First operacao:', operacoes[0]);
+      console.log('[Recidivists] First operacao.id type:', typeof operacoes[0].id);
+      console.log('[Recidivists] First operacao.nome type:', typeof operacoes[0].nome);
+    }
+  }, [operacoes]);
 
   // Query para buscar todos os motoristas
   const { data: queryResult = [], error: queryError, isError } = trpc.dashboard.getIdleDriversForWarning.useQuery(
