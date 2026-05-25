@@ -876,10 +876,16 @@ export async function getWarningsStatsByOperation(params?: {
     });
 
     // Debug: imprimir dados agrupados
-    const result = Object.values(grouped);
+    const result = Object.values(grouped).map((item: any) => ({
+      operacao: String(item.operacao || ''),
+      total: Number(item.total) || 0,
+      assinadas: Number(item.assinadas) || 0,
+      naoAssinadas: Number(item.naoAssinadas) || 0,
+      // NÃO incluir o array 'warnings' para evitar renderizar objetos em JSX
+    }));
     console.log('[DEBUG] Warnings grouped by operation:', JSON.stringify(result, null, 2));
 
-    return Object.values(grouped);
+    return result;
   } catch (error) {
     console.error("[DB] Error getting warnings stats by operation:", error);
     return [];
