@@ -33,12 +33,19 @@ export function OperacaoCombobox({
   const [searchValue, setSearchValue] = useState(value);
 
   // Converter operações para array de strings
-  const operacoesList = operacoes
+  const operacoesList = (Array.isArray(operacoes) ? operacoes : [])
     .map((op) => {
       if (typeof op === "string") {
-        return String(op || '');
+        const str = String(op || '').trim();
+        if (!str || str === 'null' || str === 'undefined') return '';
+        return str;
       }
-      return String(op.nome || '');
+      if (typeof op === 'object' && op !== null && 'nome' in op) {
+        const str = String(op.nome || '').trim();
+        if (!str || str === 'null' || str === 'undefined') return '';
+        return str;
+      }
+      return '';
     })
     .filter((op) => op && op.trim() !== '');
 

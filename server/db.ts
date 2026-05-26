@@ -945,10 +945,18 @@ export async function getAllOperations() {
     // Converter para array e ordenar
     const result = Array.from(operacoes.values())
       .sort()
-      .map((op: string) => ({
-        id: String(op || ''),
-        nome: String(op || ''),
-      }));
+      .map((op: string) => {
+        const opStr = String(op || '').trim();
+        // Garantir que nunca retorna 'null' ou 'undefined'
+        if (!opStr || opStr === 'null' || opStr === 'undefined') {
+          return null;
+        }
+        return {
+          id: opStr,
+          nome: opStr,
+        };
+      })
+      .filter((op): op is {id: string; nome: string} => op !== null);
     
     return result;
   } catch (error) {
