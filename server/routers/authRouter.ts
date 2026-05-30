@@ -67,7 +67,7 @@ export const authRouter = router({
           email: user.email,
           name: user.name,
           role: user.role,
-          modules: user.modules ? JSON.parse(user.modules) : [],
+          modules: user.modules || '[]',
           token: sessionToken,
         },
       };
@@ -90,7 +90,7 @@ export const authRouter = router({
       email: user.email,
       name: user.name,
       role: user.role,
-      modules: user.modules ? JSON.parse(user.modules) : [],
+      modules: user.modules || '[]',
       status: user.status,
     };
   }),
