@@ -1,10 +1,5 @@
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
-// Framento Branding
-export const TECHXAP_LOGO = "/framento-logo.webp";
-export const APP_NAME = "Framento";
-export const APP_TAGLINE = "Gestão de Motoristas";
-
 // Generate login URL at runtime so redirect URI reflects the current origin.
 export const getLoginUrl = () => {
   const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;

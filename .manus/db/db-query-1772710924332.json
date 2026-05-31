@@ -1,9 +1,0 @@
-{
-  "query": "\n-- Primeiro, verificar se existe categoria \"Disciplinar\"\nSELECT id FROM model_categories WHERE name = 'Disciplinar' LIMIT 1;\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3dGJWfvPW4PQcvR.root --database niJQc4ibt4VMW3Ni9Ahpj8 --execute \n-- Primeiro, verificar se existe categoria \"Disciplinar\"\nSELECT id FROM model_categories WHERE name = 'Disciplinar' LIMIT 1;\n",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 356
-}

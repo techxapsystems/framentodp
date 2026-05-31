@@ -1,1 +1,0 @@
-ALTER TABLE `conductors` ADD `ctps` varchar(50);

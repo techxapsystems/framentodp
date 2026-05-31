@@ -1,8 +1,0 @@
-{
-  "query": "DELETE FROM warnings; DELETE FROM conductors;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3dGJWfvPW4PQcvR.root --database niJQc4ibt4VMW3Ni9Ahpj8 --execute DELETE FROM warnings; DELETE FROM conductors;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1146 (42S02) at line 1: Table 'nijqc4ibt4vmw3ni9ahpj8.conductors' doesn't exist"
-  ]
-}

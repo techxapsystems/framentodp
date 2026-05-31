@@ -1,8 +1,0 @@
-{
-  "query": "INSERT INTO warnings (conductorName, categoria, dataAplicacao, criadoEm, advertenciaAplicada, operacao) VALUES ('JOSE GONCALVES GUEDES', 'pouco_rodado', NOW(), NOW(), 0, 'GPA SP');",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3dGJWfvPW4PQcvR.root --database niJQc4ibt4VMW3Ni9Ahpj8 --execute INSERT INTO warnings (conductorName, categoria, dataAplicacao, criadoEm, advertenciaAplicada, operacao) VALUES ('JOSE GONCALVES GUEDES', 'pouco_rodado', NOW(), NOW(), 0, 'GPA SP');",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'operacao' in 'field list'"
-  ]
-}
