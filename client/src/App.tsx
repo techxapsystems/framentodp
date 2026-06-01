@@ -28,7 +28,6 @@ import ComparisonReport from "./pages/ComparisonReport";
 import ImportAdministrative from "./pages/ImportAdministrative";
 
 
-
 function Router() {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -145,7 +144,6 @@ function Router() {
             <ComparisonReport />
           </ProtectedRoute>
         )} />
-
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

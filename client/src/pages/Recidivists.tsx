@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,13 +17,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, ExternalLink, Search, X, Upload } from "lucide-react";
+import { BookOpen, ExternalLink, Search, X } from "lucide-react";
 import { WarningPDFButton } from "@/components/WarningPDFGenerator";
 import { toast } from "sonner";
 import { DateMaskInput } from "@/components/DateMaskInput";
 import { OperacaoCombobox } from "@/components/OperacaoCombobox";
-import { BulkImportSection } from "@/components/BulkImportSection";
 
 export default function Recidivists() {
   const [selectedConductor, setSelectedConductor] = useState<string>("");
@@ -45,280 +44,396 @@ export default function Recidivists() {
   const { data: operacoes = [] } = trpc.dashboard.getAllOperations.useQuery();
 
   // Query para buscar todos os motoristas
-  const { data: queryResult = [], error: queryError, isError } = trpc.dashboard.getIdleDriversForWarning.useQuery(
+  const { data: queryResult, error: queryError, isError } = trpc.dashboard.getIdleDriversForWarning.useQuery(
     undefined,
     {
       enabled: true,
+      staleTime: 0,
     }
   );
 
-  const allConductors = Array.isArray(queryResult) ? queryResult : [];
+  // Log errors for debugging
+  useEffect(() => {
+    if (isError && queryError) {
+      console.error('Error loading motoristas:', queryError);
+    }
+  }, [isError, queryError]);
 
-  // Buscar dados do motorista selecionado
-  const { data: conductorData } = trpc.dashboard.getIdleDriversForWarning.useQuery(
-    undefined,
-    { enabled: !!selectedConductor }
-  );
-  
-  const selectedConductorData = conductorData?.find((c: any) => c.id === selectedConductor);
+  // Extrair o array de motoristas do resultado da query
+  const idleDriversData = Array.isArray(queryResult) ? queryResult : (queryResult as any)?.json || [];
 
-  // Mutation para criar advertência
+  const selectedConductorData = idleDriversData && Array.isArray(idleDriversData)
+    ? idleDriversData.find((d: any) => d.conductorName === selectedConductor)
+    : null;
+
+  const utils = trpc.useUtils();
+
   const createWarningMutation = trpc.dashboard.createWarning.useMutation({
-    onSuccess: () => {
-      toast.success("Advertência criada com sucesso!");
+    onSuccess: (data: any) => {
+      if (!data?.success) {
+        toast.error(data?.message || "Falha ao registrar advertência");
+        return;
+      }
+      
+      toast.success("Advertência registrada com sucesso");
+      toast.info("Clique em 'Imprimir PDF' para gerar o documento");
+      
+      // Invalidar todas as queries para forçar refresh dos dashboards
+      utils.dashboard.getIdleDriversForWarning.invalidate();
+      utils.dashboard.getWarningsStatsByDriver.invalidate();
+      utils.dashboard.getWarningsStatsByOperation.invalidate();
+      utils.dashboard.getWarningsReport.invalidate();
+      
+      // Disparar evento para o dashboard se atualizar automaticamente
+      window.dispatchEvent(new CustomEvent('dashboardRefresh'));
+      // Limpar formulário
       setSelectedConductor("");
-      setWarningContent("");
+      setWarningType("advertencia");
       setInfrationDate("");
+      setWarningContent("");
       setLicensePlate("");
       setOperacao("");
       setDataInicio("");
       setDataFim("");
       setDataRetorno("");
+      setSearchInput("");
+      setShowResults(false);
       setDialogOpen(false);
     },
-    onError: (error) => {
-      toast.error(`Erro ao criar advertência: ${error.message}`);
+    onError: (error: any) => {
+      toast.error(error?.message || "Erro ao registrar advertência");
     },
   });
 
-  // Atualizar dados do motorista quando selecionado
-  useEffect(() => {
-    if (selectedConductorData) {
-      setOperacao(selectedConductorData.operacao || "");
-      setLicensePlate(selectedConductorData.placa || "");
-    }
-  }, [selectedConductorData]);
-
-  // Busca controlada
-  useEffect(() => {
-    if (searchInput.trim()) {
-      const filtered = allConductors.filter(
-        (conductor: any) =>
-          conductor.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-          conductor.cpf.includes(searchInput)
-      );
-      setSearchResults(filtered);
-      setShowResults(true);
-    } else {
+  // Função de busca controlada
+  const handleSearch = () => {
+    if (searchInput.trim().length === 0) {
       setSearchResults([]);
       setShowResults(false);
+      return;
     }
-  }, [searchInput, allConductors]);
 
-  const handleCreateWarning = async () => {
-    if (!selectedConductor || !warningContent || !infrationDate) {
+    const searchTerm = searchInput.toLowerCase();
+    const results = idleDriversData.filter((driver: any) => {
+      const name = (driver.conductorName || "").toLowerCase();
+      const cpf = (driver.cpf || "").toLowerCase();
+      const matricula = (driver.matricula || "").toLowerCase();
+      
+      return name.includes(searchTerm) || cpf.includes(searchTerm) || matricula.includes(searchTerm);
+    });
+
+    setSearchResults(results);
+    setShowResults(true);
+
+    if (results.length === 0) {
+      toast.info("Nenhum motorista encontrado com esse termo");
+    }
+  };
+
+  // Função para selecionar motorista
+  const handleSelectConductor = (conductor: any) => {
+    setSelectedConductor(conductor.conductorName);
+    setLicensePlate(conductor.placa || "");
+    setOperacao(conductor.operacao || "");
+    setSearchInput(conductor.conductorName);
+    setShowResults(false);
+  };
+
+  // Limpar busca
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setSearchResults([]);
+    setShowResults(false);
+    setSelectedConductor("");
+    setLicensePlate("");
+    setOperacao("");
+  };
+
+  const handleConductorChange = (conductorName: string) => {
+    setSelectedConductor(conductorName);
+    const conductor = idleDriversData?.find((d: any) => d.conductorName === conductorName);
+    if (conductor) {
+      setLicensePlate(conductor.placa || "");
+      setOperacao(conductor.operacao || "");
+      setSearchInput(conductor.conductorName);
+    }
+  };
+
+  const handleCreateWarning = () => {
+    if (!selectedConductor || !infrationDate || !warningContent) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
 
+    if (warningType === "suspensao" && (!dataInicio || !dataFim || !dataRetorno)) {
+      toast.error("Preencha todos os campos de suspensão");
+      return;
+    }
+
+    // Converter data DD/MM ou DD/MM/YYYY para formato completo
+    let formattedDate = infrationDate;
+    if (infrationDate.length === 5) {
+      // Se for DD/MM, adicionar ano atual
+      const currentYear = new Date().getFullYear();
+      formattedDate = `${infrationDate}/${currentYear}`;
+    }
+
     createWarningMutation.mutate({
       conductorName: selectedConductor,
-      tipo: warningType,
+      nivelAdvertencia: 1,
       motivo: warningContent,
-      nivelAdvertencia: warningType === 'advertencia' ? 1 : 0,
-      dataInfracao: infrationDate,
-      dataInicio: dataInicio || undefined,
-      dataFim: dataFim || undefined,
-      dataRetorno: dataRetorno || undefined,
+      observacao: "",
+      tipo: warningType,
+      categoria: "outro",
+      dataInfracao: formattedDate, // Adicionar data da infração
+      dataInicio: warningType === "suspensao" ? dataInicio : undefined,
+      dataFim: warningType === "suspensao" ? dataFim : undefined,
+      dataRetorno: warningType === "suspensao" ? dataRetorno : undefined,
     });
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Cadastro de Advertências</h1>
-          <p className="text-muted-foreground mt-1">
-            Gerencie advertências e suspensões de motoristas
-          </p>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            Cadastro de Advertências e Suspensões
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-sm text-slate-600 mb-4">
+              Use esta seção para registrar advertências e suspensões de motoristas. Os dados são preenchidos automaticamente quando você seleciona um motorista.
+            </p>
+          </div>
 
-      <Tabs defaultValue="manual" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="manual">Cadastro Manual</TabsTrigger>
-          <TabsTrigger value="importacao">
-            <Upload className="w-4 h-4 mr-2" />
-            Importação em Massa
-          </TabsTrigger>
-        </TabsList>
+          {/* Botão para abrir dialog */}
+          <div>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold" size="lg">
+                  + Nova Advertência
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Registrar Nova Advertência</DialogTitle>
+                </DialogHeader>
 
-        {/* TAB 1: CADASTRO MANUAL */}
-        <TabsContent value="manual" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Criar Nova Advertência</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Seleção de Motorista */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Motorista *</label>
-                <div className="relative">
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                      <input
-                        type="text"
-                        placeholder="Buscar por nome ou CPF..."
-                        value={searchInput}
-                        onChange={(e) => setSearchInput(e.target.value)}
-                        className="w-full pl-10 pr-3 py-2 border rounded-md"
-                      />
-                    </div>
-                    {selectedConductor && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedConductor("");
-                          setSearchInput("");
-                          setOperacao("");
-                          setLicensePlate("");
-                        }}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-
-                  {showResults && searchResults.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg z-50 max-h-48 overflow-y-auto">
-                      {searchResults.map((conductor: any) => (
-                        <button
-                          key={conductor.id}
-                          onClick={() => {
-                            setSelectedConductor(conductor.id);
-                            setSearchInput("");
-                            setShowResults(false);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0"
-                        >
-                          <div className="font-medium">{conductor.name}</div>
-                          <div className="text-sm text-muted-foreground">{conductor.cpf}</div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {selectedConductor && (
-                  <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
-                    ✓ Motorista selecionado: {allConductors.find((c: any) => c.id === selectedConductor)?.conductorName}
-                  </div>
-                )}
-              </div>
-
-              {/* Tipo de Advertência */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Tipo de Advertência *</label>
-                <Select value={warningType} onValueChange={(value: any) => setWarningType(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="advertencia">Advertência</SelectItem>
-                    <SelectItem value="suspensao">Suspensão</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Data da Infração */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Data da Infração *</label>
-                <DateMaskInput value={infrationDate} onChange={setInfrationDate} />
-              </div>
-
-              {/* Operação */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Operação</label>
-                <OperacaoCombobox
-                  value={operacao}
-                  onChange={setOperacao}
-                  operacoes={operacoes}
-                />
-              </div>
-
-              {/* Placa */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Placa</label>
-                <input
-                  type="text"
-                  value={licensePlate}
-                  onChange={(e) => setLicensePlate(e.target.value)}
-                  placeholder="ABC-1234"
-                  className="w-full px-3 py-2 border rounded-md"
-                />
-              </div>
-
-              {/* Conteúdo da Advertência */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Descrição da Advertência *</label>
-                <textarea
-                  value={warningContent}
-                  onChange={(e) => setWarningContent(e.target.value)}
-                  placeholder="Descreva o motivo da advertência..."
-                  className="w-full px-3 py-2 border rounded-md min-h-24"
-                />
-              </div>
-
-              {/* Campos de Suspensão */}
-              {warningType === "suspensao" && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Data de Início da Suspensão</label>
-                    <DateMaskInput value={dataInicio} onChange={setDataInicio} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Data de Fim da Suspensão</label>
-                    <DateMaskInput value={dataFim} onChange={setDataFim} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Data de Retorno</label>
-                    <DateMaskInput value={dataRetorno} onChange={setDataRetorno} />
-                  </div>
-                </>
-              )}
-
-              {/* Botões */}
-              <div className="flex gap-2 pt-4">
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="flex-1">Criar Advertência</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Confirmar Criação</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <p>Tem certeza que deseja criar esta advertência?</p>
+                <div className="space-y-4">
+                  {/* Busca de Motorista - CORRIGIDA */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Motorista: *
+                    </label>
+                    <div className="space-y-2">
                       <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Digite nome, CPF ou matrícula..."
+                          value={searchInput}
+                          onChange={(e) => setSearchInput(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter") {
+                              handleSearch();
+                            }
+                          }}
+                          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        />
                         <Button
+                          onClick={handleSearch}
                           variant="outline"
-                          onClick={() => setDialogOpen(false)}
-                          className="flex-1"
+                          size="sm"
+                          className="gap-2"
                         >
-                          Cancelar
+                          <Search className="h-4 w-4" />
+                          Buscar
                         </Button>
-                        <Button
-                          onClick={handleCreateWarning}
-                          disabled={createWarningMutation.isPending}
-                          className="flex-1"
-                        >
-                          {createWarningMutation.isPending ? "Criando..." : "Confirmar"}
-                        </Button>
+                        {selectedConductor && (
+                          <Button
+                            onClick={handleClearSearch}
+                            variant="ghost"
+                            size="sm"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        {/* TAB 2: IMPORTAÇÃO EM MASSA */}
-        <TabsContent value="importacao" className="space-y-6">
-          <BulkImportSection />
-        </TabsContent>
-      </Tabs>
+                      {/* Mostrar motorista selecionado */}
+                      {selectedConductor && !showResults && (
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-sm font-medium text-green-900">
+                            ✓ Motorista selecionado: <strong>{selectedConductor}</strong>
+                          </p>
+                          {selectedConductorData?.cpf && (
+                            <p className="text-xs text-green-700 mt-1">
+                              CPF: {selectedConductorData.cpf} | Matrícula: {selectedConductorData.matricula}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Mostrar resultados da busca */}
+                      {showResults && searchResults.length > 0 && (
+                        <div className="border border-slate-300 rounded-lg max-h-64 overflow-y-auto">
+                          {searchResults.map((driver: any, idx: number) => (
+                            <button
+                              key={idx}
+                              onClick={() => handleSelectConductor(driver)}
+                              className="w-full text-left px-3 py-2 hover:bg-yellow-50 border-b border-slate-200 last:border-b-0 transition"
+                            >
+                              <div className="font-medium text-slate-900">{driver.conductorName}</div>
+                              <div className="text-xs text-slate-500">
+                                {driver.cpf && `CPF: ${driver.cpf}`}
+                                {driver.matricula && ` | Matrícula: ${driver.matricula}`}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Mensagem quando nenhum resultado */}
+                      {showResults && searchResults.length === 0 && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-900">
+                            Nenhum motorista encontrado com "{searchInput}"
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Placa do Veículo */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Placa do Veículo:
+                    </label>
+                    <input
+                      type="text"
+                      value={licensePlate}
+                      onChange={(e) => setLicensePlate(e.target.value)}
+                      placeholder={licensePlate ? "Preenchida automaticamente" : "Digite a placa do veículo"}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                    />
+                  </div>
+
+                  {/* Operação */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Operação:
+                    </label>
+                    <OperacaoCombobox
+                      value={operacao}
+                      onChange={setOperacao}
+                      operacoes={operacoes}
+                      placeholder="Selecione ou digite uma operação..."
+                    />
+                  </div>
+
+                  {/* Data da Infração */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Data da Infração: *
+                    </label>
+                    <DateMaskInput
+                      value={infrationDate}
+                      onChange={setInfrationDate}
+                      placeholder="DD/MM/YYYY"
+                    />
+                  </div>
+
+                  {/* Tipo de Advertência */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Tipo: *
+                    </label>
+                    <Select value={warningType} onValueChange={(value: any) => setWarningType(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="advertencia">Advertência</SelectItem>
+                        <SelectItem value="suspensao">Suspensão</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Campos de Suspensão - Aparecem apenas quando tipo = suspensão */}
+                  {warningType === "suspensao" && (
+                    <>
+                      <div>
+                        <label className="text-sm font-medium text-slate-700 block mb-2">
+                          Data de Início: *
+                        </label>
+                        <DateMaskInput
+                          value={dataInicio}
+                          onChange={setDataInicio}
+                          placeholder="DD/MM/YYYY"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-slate-700 block mb-2">
+                          Data de Fim: *
+                        </label>
+                        <DateMaskInput
+                          value={dataFim}
+                          onChange={setDataFim}
+                          placeholder="DD/MM/YYYY"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-slate-700 block mb-2">
+                          Data de Retorno: *
+                        </label>
+                        <DateMaskInput
+                          value={dataRetorno}
+                          onChange={setDataRetorno}
+                          placeholder="DD/MM/YYYY"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Texto da Advertência */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Texto da Advertência/Suspensão: *
+                    </label>
+                    <textarea
+                      value={warningContent}
+                      onChange={(e) => setWarningContent(e.target.value)}
+                      placeholder="Digite o motivo e descrição completa da advertência ou suspensão"
+                      rows={5}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                  </div>
+
+                  {/* Botões de Ação */}
+                  <div className="flex gap-2 justify-end pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setDialogOpen(false)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={handleCreateWarning}
+                      disabled={createWarningMutation.isPending}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-slate-900"
+                    >
+                      {createWarningMutation.isPending ? "Registrando..." : "Registrar Advertência"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
