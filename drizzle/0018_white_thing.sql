@@ -1,0 +1,2 @@
+ALTER TABLE `warnings` MODIFY COLUMN `tipo` enum('advertencia','suspensao') NOT NULL;--> statement-breakpoint
+ALTER TABLE `warnings` ADD `categoria` enum('pouco_rodado','horas_extras','outro') DEFAULT 'outro';

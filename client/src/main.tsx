@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink, TRPCClientError } from "@trpc/client";
+import { httpLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
@@ -18,6 +18,15 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
+  // Check if user is logged in locally (localStorage)
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    // User is logged in locally, don't redirect to OAuth
+    console.warn("Session expired but user is logged in locally");
+    return;
+  }
+
+  // Only redirect to OAuth if no local user session
   window.location.href = getLoginUrl();
 };
 
@@ -39,13 +48,32 @@ queryClient.getMutationCache().subscribe(event => {
 
 const trpcClient = trpc.createClient({
   links: [
-    httpBatchLink({
+    httpLink({
       url: "/api/trpc",
       transformer: superjson,
       fetch(input, init) {
+        const headers: Record<string, string> = {};
+        
+        // Add authorization header from localStorage
+        const user = localStorage.getItem("user");
+        if (user) {
+          try {
+            const userData = JSON.parse(user);
+            if (userData.token) {
+              headers["Authorization"] = `Bearer ${userData.token}`;
+            }
+          } catch (e) {
+            console.warn("Failed to parse user from localStorage");
+          }
+        }
+        
         return globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
+          headers: {
+            ...(init?.headers as Record<string, string>),
+            ...headers,
+          },
         });
       },
     }),

@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE users SET password = '5c1987c97199a08256cdfa482e5bc5009a165dfe5271dfccb6de56dd9b6b727b' WHERE email = 'gabriel.ferreira';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3dGJWfvPW4PQcvR.root --database niJQc4ibt4VMW3Ni9Ahpj8 --execute UPDATE users SET password = '5c1987c97199a08256cdfa482e5bc5009a165dfe5271dfccb6de56dd9b6b727b' WHERE email = 'gabriel.ferreira';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 442
+}

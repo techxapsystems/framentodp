@@ -1,0 +1,1 @@
+ALTER TABLE `conductors` DROP INDEX `conductors_matricula_unique`;
