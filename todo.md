@@ -1201,3 +1201,125 @@
 - [x] Permitir edição de operacao e placa (remover readOnly)
 - [x] Manter auto-preenchimento quando dados do motorista estão disponíveis
 - [x] Implementar Combobox com autocomplete para campo operacao
+
+
+## Importação em Massa de Advertências (NOVA FEATURE)
+
+### Fase 1: Preparação e Planejamento
+- [ ] Criar branch de feature: `feature/bulk-warnings-import`
+- [ ] Copiar planilha de exemplo (BLACKLIST26.xlsx) para referência
+- [ ] Revisar os 134 modelos de advertências em MODELOS_COMPLETOS.md
+- [ ] Mapear campos da planilha para campos de advertência
+- [ ] Documentar regras de mapeamento de templates
+
+### Fase 2: Parser Excel e Validação
+- [ ] Implementar função parseWarningsExcel() em importService.ts
+  - [ ] Ler arquivo XLSX com dados de motoristas
+  - [ ] Validar colunas obrigatórias (Condutor, CPF, Operação, Placa, etc.)
+  - [ ] Normalizar dados (trim, uppercase, etc.)
+  - [ ] Detectar linhas inválidas e reportar erros
+  - [ ] Retornar array de registros validados
+- [ ] Criar testes para parseWarningsExcel()
+- [ ] Implementar validação de CPF (verificar se motorista existe)
+
+### Fase 3: Sistema de Templates de Advertências
+- [ ] Criar arquivo warningTemplates.ts com 134 templates
+  - [ ] Estrutura: { id, nome, tipo (advertencia/suspensao), texto, categoria }
+  - [ ] Mapear templates para categorias (dissidia, insubordinação, cinto, etc.)
+- [ ] Implementar função matchTemplate() para mapear infração → template
+  - [ ] Baseado em palavras-chave na coluna "Motivo" ou similar
+  - [ ] Fallback para template genérico se não encontrar match
+- [ ] Criar testes para matchTemplate()
+
+### Fase 4: Backend - Batch Warning Creation
+- [ ] Adicionar mutation `bulkCreateWarnings` em dashboardRouter.ts
+  - [ ] Input: array de { conductorName, cpf, operacao, placa, templateId, dataInfracao, ... }
+  - [ ] Validar cada registro antes de inserir
+  - [ ] Usar transação para garantir atomicidade
+  - [ ] Retornar { success, created, failed, errors }
+- [ ] Implementar createAuditLog para cada importação em lote
+  - [ ] Registrar usuário, data, quantidade de advertências, status
+- [ ] Criar testes para bulkCreateWarnings()
+
+### Fase 5: UI - Aba de Importação em Massa
+- [ ] Adicionar aba "Importação em Massa" na página Recidivists.tsx
+  - [ ] Usar Tabs component (já existe no projeto)
+  - [ ] Aba 1: "Cadastro Manual" (existente)
+  - [ ] Aba 2: "Importação em Massa" (nova)
+- [ ] Implementar upload de arquivo Excel
+  - [ ] Drag-and-drop ou file input
+  - [ ] Validar extensão (.xlsx)
+  - [ ] Mostrar barra de progresso durante upload
+- [ ] Implementar preview de dados
+  - [ ] Mostrar primeiras 10 linhas do arquivo
+  - [ ] Mostrar colunas detectadas
+  - [ ] Mostrar erros de validação
+- [ ] Implementar botão "Importar"
+  - [ ] Chamar mutation bulkCreateWarnings
+  - [ ] Mostrar progresso durante importação
+  - [ ] Mostrar resultado (X advertências criadas, Y erros)
+
+### Fase 6: Geração de PDFs em Lote
+- [ ] Implementar função generateBulkWarningPDFs() em pdfService.ts
+  - [ ] Receber array de advertências criadas
+  - [ ] Gerar PDF para cada uma usando template existente
+  - [ ] Salvar PDFs em S3 com nomes únicos
+  - [ ] Retornar array de URLs dos PDFs
+- [ ] Adicionar campo warningPdfUrl ao schema de warnings
+- [ ] Implementar download automático ou link para PDFs
+- [ ] Criar testes para generateBulkWarningPDFs()
+
+### Fase 7: Auditoria e Histórico
+- [ ] Adicionar tabela `bulkImportHistory` ao schema
+  - [ ] Campos: id, importedBy, importedAt, fileName, totalRecords, successCount, failureCount, status
+- [ ] Implementar função saveBulkImportHistory() em db.ts
+- [ ] Criar tela de visualização de histórico de importações
+  - [ ] Mostrar lista de importações com datas e estatísticas
+  - [ ] Permitir visualizar detalhes de cada importação
+  - [ ] Permitir re-exportar PDFs de importações antigas
+- [ ] Adicionar createAuditLog para cada ação de importação
+
+### Fase 8: Testes Completos
+- [ ] Testes unitários para parseWarningsExcel() (5+ casos)
+- [ ] Testes unitários para matchTemplate() (5+ casos)
+- [ ] Testes unitários para bulkCreateWarnings() (5+ casos)
+- [ ] Testes de integração para fluxo completo (upload → import → PDFs)
+- [ ] Testes E2E para UI (upload arquivo, preview, importar)
+- [ ] Testes de edge cases (arquivo vazio, dados inválidos, duplicatas)
+- [ ] Meta: 100% de cobertura para funções críticas
+
+### Fase 9: Testes em Staging
+- [ ] Fazer upload da planilha de exemplo (BLACKLIST26.xlsx)
+- [ ] Verificar se todos os 14 registros foram importados
+- [ ] Verificar se templates foram mapeados corretamente
+- [ ] Verificar se PDFs foram gerados
+- [ ] Verificar se auditoria foi registrada
+- [ ] Testar com arquivo com dados inválidos
+- [ ] Testar com arquivo com motoristas inexistentes
+
+### Fase 10: Deploy para Produção
+- [ ] Criar checkpoint de staging
+- [ ] Testar em produção com dados reais
+- [ ] Monitorar erros nos primeiros dias
+- [ ] Documentar processo de importação para usuários
+- [ ] Criar checkpoint final de produção
+
+
+## Importação em Massa de Advertências (IMPLEMENTADA)
+- [x] Fase 1: Preparação do ambiente de desenvolvimento
+- [x] Fase 2: Parser Excel com validação de dados
+  - [x] Normalização de CPF e datas
+  - [x] Detecção automática de tipo (advertência vs suspensão)
+  - [x] 10 testes unitários (100% passando)
+- [x] Fase 3: Backend - Mutation `bulkCreateWarnings`
+  - [x] Processa array de registros em lote
+  - [x] Retorna estatísticas (sucesso, falhas, erros detalhados)
+  - [x] Tratamento robusto de erros
+- [x] Fase 4: UI - Aba de Importação em Massa
+  - [x] Componente `BulkWarningsImport` com upload de arquivo
+  - [x] Preview dos dados com validação
+  - [x] Aba "Importação em Massa" na página Recidivists
+  - [x] Integração com mutation `bulkCreateWarnings`
+- [ ] Fase 5: Testes de Integração
+- [ ] Fase 6: Testes em Staging
+- [ ] Fase 7: Deploy em Produção

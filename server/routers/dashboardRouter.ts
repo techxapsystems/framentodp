@@ -887,4 +887,96 @@ export const dashboardRouter = router({
 //         return [];
 //       }
 //     }),
+
+  /**
+   * Criar múltiplas advertências em lote (bulk import)
+   */
+  bulkCreateWarnings: protectedProcedure
+    .input(
+      z.object({
+        records: z.array(
+          z.object({
+            conductorName: z.string(),
+            cpf: z.string(),
+            matricula: z.string().optional(),
+            operacao: z.string(),
+            placa: z.string(),
+            motivo: z.string(),
+            dataInfracao: z.string(),
+            tipo: z.enum(["advertencia", "suspensao"]),
+            categoria: z.string().optional(),
+            templateId: z.string().optional(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const { createWarning: createWarningDb } = await import("../db");
+
+        const results = {
+          success: 0,
+          failed: 0,
+          errors: [] as Array<{ index: number; error: string }>,
+          createdIds: [] as number[],
+        };
+
+        for (let i = 0; i < input.records.length; i++) {
+          const record = input.records[i];
+
+          try {
+            const result = await createWarningDb({
+              conductorName: record.conductorName,
+              tipo: record.tipo,
+              categoria: record.categoria || "outro",
+              nivelAdvertencia: record.tipo === "suspensao" ? 3 : 1,
+              motivo: record.motivo,
+              aplicadoPor: ctx.user.email || ctx.user.name || "Sistema",
+              dataInfracao: record.dataInfracao,
+              cpf: record.cpf,
+              matricula: record.matricula,
+              operacao: record.operacao,
+              placa: record.placa,
+            });
+
+            if (result?.id) {
+              results.success++;
+              results.createdIds.push(result.id);
+            } else {
+              results.failed++;
+              results.errors.push({
+                index: i,
+                error: "Falha ao criar advertência: ID não retornado",
+              });
+            }
+          } catch (error) {
+            results.failed++;
+            results.errors.push({
+              index: i,
+              error: `Erro: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
+            });
+          }
+        }
+
+        return {
+          success: results.failed === 0,
+          totalRecords: input.records.length,
+          successCount: results.success,
+          failureCount: results.failed,
+          errors: results.errors,
+          createdIds: results.createdIds,
+          message: `${results.success} advertências criadas com sucesso${results.failed > 0 ? `, ${results.failed} falhadas` : ""}`,
+        };
+      } catch (error) {
+        console.error("[bulkCreateWarnings] Erro:", error);
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Erro ao importar advertências em lote: ${String(error)}`,
+        });
+      }
+    }),
 });

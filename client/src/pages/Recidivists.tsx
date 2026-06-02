@@ -22,6 +22,8 @@ import { WarningPDFButton } from "@/components/WarningPDFGenerator";
 import { toast } from "sonner";
 import { DateMaskInput } from "@/components/DateMaskInput";
 import { OperacaoCombobox } from "@/components/OperacaoCombobox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BulkWarningsImport } from "@/components/BulkWarningsImport";
 
 export default function Recidivists() {
   const [selectedConductor, setSelectedConductor] = useState<string>("");
@@ -201,16 +203,23 @@ export default function Recidivists() {
             Cadastro de Advertências e Suspensões
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <p className="text-sm text-slate-600 mb-4">
-              Use esta seção para registrar advertências e suspensões de motoristas. Os dados são preenchidos automaticamente quando você seleciona um motorista.
-            </p>
-          </div>
+        <CardContent>
+          <Tabs defaultValue="individual" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="individual">Cadastro Individual</TabsTrigger>
+              <TabsTrigger value="bulk">Importação em Massa</TabsTrigger>
+            </TabsList>
 
-          {/* Botão para abrir dialog */}
-          <div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <TabsContent value="individual" className="space-y-4 mt-4">
+              <div>
+                <p className="text-sm text-slate-600 mb-4">
+                  Use esta seção para registrar advertências e suspensões de motoristas. Os dados são preenchidos automaticamente quando você seleciona um motorista.
+                </p>
+              </div>
+
+              {/* Botão para abrir dialog */}
+              <div>
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold" size="lg">
                   + Nova Advertência
@@ -431,7 +440,13 @@ export default function Recidivists() {
                 </div>
               </DialogContent>
             </Dialog>
-          </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="bulk" className="mt-4">
+              <BulkWarningsImport />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
