@@ -66,12 +66,21 @@ export function BulkWarningsImport() {
     try {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'buffer' });
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      
+      // Read the LAST sheet (most recent data)
+      const lastSheetName = workbook.SheetNames[workbook.SheetNames.length - 1];
+      const worksheet = workbook.Sheets[lastSheetName];
 
       if (!worksheet) {
         toast.error('Nenhuma aba encontrada no arquivo');
         setIsLoading(false);
         return;
+      }
+      
+      // Show which sheet is being imported
+      const totalSheets = workbook.SheetNames.length;
+      if (totalSheets > 1) {
+        toast.info(`Importando a última aba (${lastSheetName}) de ${totalSheets} abas`);
       }
 
       const rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });

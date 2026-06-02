@@ -1320,6 +1320,11 @@
   - [x] Preview dos dados com validação
   - [x] Aba "Importação em Massa" na página Recidivists
   - [x] Integração com mutation `bulkCreateWarnings`
-- [ ] Fase 5: Testes de Integração
+- [x] Fase 5: Leitura Automática da Última Aba
+  - [x] Detectar automaticamente a última aba da planilha
+  - [x] Ler apenas dessa aba (ignorar histórico)
+  - [x] Mostrar qual aba está sendo importada
+  - [x] Testado com planilha real (47 abas, última aba com 11 registros)
+- [ ] Fase 6: Testes de Integração
 - [ ] Fase 6: Testes em Staging
 - [ ] Fase 7: Deploy em Produção
