@@ -32,10 +32,13 @@ export function OperacaoCombobox({
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(value);
 
-  // Converter operações para array de strings
-  const operacoesList = operacoes.map((op) =>
-    typeof op === "string" ? op : op.nome
-  );
+  // Converter operações para array de strings com validação defensiva
+  const operacoesList = (Array.isArray(operacoes) ? operacoes : []).map((op) => {
+    if (!op) return '';
+    if (typeof op === 'string') return String(op).trim();
+    if (typeof op === 'object' && op.nome) return String(op.nome).trim();
+    return String(op).trim();
+  }).filter((op) => op.length > 0);
 
   // Atualizar searchValue quando value mudar externamente
   useEffect(() => {
@@ -43,19 +46,22 @@ export function OperacaoCombobox({
   }, [value]);
 
   // Filtrar operações baseado no texto digitado
-  const filteredOperacoes = operacoesList.filter((op) =>
-    op.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  const filteredOperacoes = operacoesList.filter((op) => {
+    if (!op || typeof op !== 'string') return false;
+    return op.toLowerCase().includes(String(searchValue || '').toLowerCase());
+  });
 
   const handleSelect = (operacao: string) => {
-    onChange(operacao);
-    setSearchValue(operacao);
+    const normalizedOp = String(operacao || '').trim();
+    onChange(normalizedOp);
+    setSearchValue(normalizedOp);
     setOpen(false);
   };
 
   const handleInputChange = (text: string) => {
-    setSearchValue(text);
-    onChange(text);
+    const normalizedText = String(text || '').trim();
+    setSearchValue(normalizedText);
+    onChange(normalizedText);
   };
 
   return (
