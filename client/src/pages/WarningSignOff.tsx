@@ -53,6 +53,7 @@ export default function WarningSignOff() {
   const [filterOperation, setFilterOperation] = useState('');
   const [operations, setOperations] = useState<string[]>([]);
   const [filteredWarnings, setFilteredWarnings] = useState<Warning[]>([]);
+  const [showOnlyPending, setShowOnlyPending] = useState(true);
   
   const deleteWarningMutation = trpc.dashboard.deleteWarning.useMutation();
 
@@ -76,6 +77,7 @@ export default function WarningSignOff() {
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
+      if (showOnlyPending) params.append('pending', 'true');
 
       const response = await fetch(`/api/auth/warnings-stats?${params.toString()}`);
       const result = await response.json();
@@ -735,6 +737,17 @@ export default function WarningSignOff() {
                   <option key={op} value={op}>{op}</option>
                 ))}
               </select>
+            </div>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showOnlyPending}
+                  onChange={(e) => setShowOnlyPending(e.target.checked)}
+                  className="w-4 h-4 rounded border-input"
+                />
+                <span className="text-sm font-medium">Mostrar apenas Pendentes</span>
+              </label>
             </div>
             <div className="flex items-end gap-2">
               <Button onClick={loadWarnings} className="w-full">

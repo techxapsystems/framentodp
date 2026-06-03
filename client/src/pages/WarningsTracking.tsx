@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { AlertCircle, CheckCircle2, Clock, TrendingUp, X, Download, FileText, CheckCheck, XCircle, Percent, RefreshCw } from "lucide-react";
-import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { AlertCircle, CheckCircle2, Clock, TrendingUp, Download, FileText, CheckCheck, XCircle, Percent, RefreshCw, BarChart3, LineChart as LineChartIcon } from "lucide-react";
+import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -24,10 +24,8 @@ export default function WarningsTracking() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Buscar operações disponíveis
   const { data: operations = [] } = trpc.dashboard.getAllOperations.useQuery();
 
-  // Inicializar datas
   useEffect(() => {
     if (startDateRef.current && endDateRef.current) {
       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -38,19 +36,16 @@ export default function WarningsTracking() {
     }
   }, []);
 
-  // Polling automático a cada 60 segundos
   useEffect(() => {
     const pollingInterval = setInterval(() => {
       loadData();
-    }, 60000); // 60 segundos
+    }, 60000);
 
     return () => clearInterval(pollingInterval);
   }, [selectedOperation]);
 
-  // Listener para invalidação de cache de outras telas
   useEffect(() => {
     const handleDashboardRefresh = () => {
-
       loadData();
     };
 
@@ -69,17 +64,14 @@ export default function WarningsTracking() {
       if (endDate) params.append('endDate', endDate);
       if (selectedOperation && selectedOperation !== 'all') params.append('operacao', selectedOperation);
       
-      // Carregar estatísticas gerais
       const response1 = await fetch(`/api/auth/warnings-stats?${params.toString()}`);
       const result1 = await response1.json();
       setStats(result1.result?.data?.json || null);
 
-      // Carregar dados por operação
       const response2 = await fetch(`/api/auth/warnings-stats-by-operation?${params.toString()}`);
       const result2 = await response2.json();
       setByOperation(result2.result?.data?.json || []);
       
-      // Atualizar timestamp de última atualização
       setLastUpdated(new Date());
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -98,72 +90,32 @@ export default function WarningsTracking() {
 
   const handleExportPDF = async () => {
     try {
-      const startDate = startDateRef.current?.value;
-      const endDate = endDateRef.current?.value;
-
-      const params = new URLSearchParams();
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
-      if (selectedOperation && selectedOperation !== 'all') params.append('operacao', selectedOperation);
-
-      const response = await fetch(`/api/auth/warnings-report-pdf?${params.toString()}`);
-      if (!response.ok) {
-        toast.error('Erro ao gerar PDF');
-        return;
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `relatorio-advertencias-${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success('PDF exportado com sucesso');
+      toast.info("Exportação em desenvolvimento");
     } catch (error) {
-      console.error('Erro ao exportar PDF:', error);
-      toast.error('Erro ao exportar PDF');
+      console.error("Erro ao exportar:", error);
+      toast.error("Erro ao exportar PDF");
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Acompanhamento de Advertências</h1>
-        <p className="text-muted-foreground mt-2">
-          Monitore o status das advertências enviadas aos motoristas
-        </p>
-        {lastUpdated && (
-          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-            <RefreshCw size={12} />
-            Atualizado às {formatLastUpdated(lastUpdated)}
-          </p>
-        )}
-      </div>
-
       {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5" />
+            Acompanhamento de Advertências
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Data Inicial</label>
-              <Input
-                type="date"
-                ref={startDateRef}
-              />
+              <Input type="date" ref={startDateRef} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Data Final</label>
-              <Input
-                type="date"
-                ref={endDateRef}
-              />
+              <Input type="date" ref={endDateRef} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Operação</label>
@@ -189,108 +141,89 @@ export default function WarningsTracking() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Agrupar por</label>
-              <Select value={groupBy} onValueChange={(v: any) => setGroupBy(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="day">Dia</SelectItem>
-                  <SelectItem value="week">Semana</SelectItem>
-                  <SelectItem value="month">Mês</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-end gap-2">
+              <Button onClick={loadData} className="w-full">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Atualizar
+              </Button>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={loadData} className="w-auto px-6">
-              Aplicar Filtros
-            </Button>
-            <Button onClick={handleExportPDF} variant="outline" className="w-auto px-6 gap-2">
-              <Download className="h-4 w-4" />
-              Exportar PDF
-            </Button>
-          </div>
+          {lastUpdated && (
+            <div className="text-xs text-muted-foreground">
+              Última atualização: {formatLastUpdated(lastUpdated)}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* KPIs */}
-      {isLoading ? (
-        <div className="text-center py-8">Carregando...</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+      {/* KPIs - Métricas Principais */}
+      {!isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-l-4 border-l-blue-500">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total de Advertências</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-3">
-                <FileText className="h-8 w-8 text-blue-500" />
-                <div className="text-2xl font-bold">{warningStats.total || 0}</div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-3xl font-bold">{warningStats.total || 0}</div>
+                <FileText className="w-8 h-8 text-blue-500/50" />
               </div>
+              <p className="text-xs text-muted-foreground mt-1">Advertências + Suspensões</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-l-4 border-l-green-500">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Assinadas</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-3">
-                <CheckCheck className="h-8 w-8 text-green-600" />
-                <div className="text-2xl font-bold text-green-600">{warningStats.assinadas || 0}</div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-3xl font-bold text-green-600">{warningStats.assinadas || 0}</div>
+                <CheckCheck className="w-8 h-8 text-green-500/50" />
               </div>
+              <p className="text-xs text-muted-foreground mt-1">Processadas</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-l-4 border-l-orange-500">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Não Assinadas</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-3">
-                <XCircle className="h-8 w-8 text-red-600" />
-                <div className="text-2xl font-bold text-red-600">{warningStats.naoAssinadas || 0}</div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-3xl font-bold text-orange-600">{warningStats.naoAssinadas || 0}</div>
+                <AlertCircle className="w-8 h-8 text-orange-500/50" />
               </div>
-              <Button
-                variant="link"
-                size="sm"
-                className="mt-2 p-0"
-                onClick={() => {
-                  setPendingWarnings(warningStats.warnings || []);
-                  setShowPendingDialog(true);
-                }}
-              >
-                Ver detalhes
-              </Button>
+              <p className="text-xs text-muted-foreground mt-1">Aguardando assinatura</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-l-4 border-l-purple-500">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Devolução</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-3">
-                <Percent className="h-8 w-8 text-amber-500" />
-                <div className="text-2xl font-bold">{(warningStats.taxaDevolucao || 0).toFixed(1)}%</div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-3xl font-bold text-purple-600">{(warningStats.taxaDevolucao || 0).toFixed(1)}%</div>
+                <TrendingUp className="w-8 h-8 text-purple-500/50" />
               </div>
+              <p className="text-xs text-muted-foreground mt-1">Devoluções</p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Gráfico Unificado - Donut Chart */}
+      {/* Gráficos - Layout Profissional */}
       {!isLoading && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">Resumo por Tipo</CardTitle>
-            <CardDescription>Distribuição total de advertências e suspensões</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-center">
-              <ResponsiveContainer width="100%" height={300}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Distribuição por Tipo */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Distribuição por Tipo</CardTitle>
+              <CardDescription>Advertências vs Suspensões</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
                     data={[
@@ -305,97 +238,51 @@ export default function WarningsTracking() {
                     ]}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
+                    innerRadius={50}
+                    outerRadius={90}
                     labelLine={false}
                     label={({ name, value }) => `${name}: ${value}`}
-                    fill="#8884d8"
                     dataKey="value"
                   >
                     <Cell fill="#3b82f6" />
-                    <Cell fill="#8b5cf6" />
+                    <Cell fill="#ef4444" />
                   </Pie>
-                  <Tooltip />
+                  <Tooltip formatter={(value) => `${value} registros`} />
                   <Legend />
                 </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Gráficos por Operação - Barras Agrupadas */}
-      {!isLoading && byOperation.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* Gráfico 3: Total por Operação */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Total por Operação</CardTitle>
-              <CardDescription>Quantidade total de advertências e suspensões</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart
-                  data={byOperation
-                    .map((op: any) => {
-                      const advCount = op.warnings?.filter((w: any) => w.tipo === 'advertencia').length || 0;
-                      const suspCount = op.warnings?.filter((w: any) => w.tipo === 'suspensao').length || 0;
-
-                      return {
-                        operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
-                        Advertências: advCount,
-                        Suspensões: suspCount,
-                        total: op.total,
-                      };
-                    })
-                    .sort((a: any, b: any) => b.total - a.total)}
-                  layout="vertical"
-                  margin={{ top: 5, right: 60, left: 150, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="operacao" type="category" width={145} tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="Advertências" fill="#3B82F6" label={{ position: 'right', fontSize: 12 }} />
-                  <Bar dataKey="Suspensões" fill="#EF4444" label={{ position: 'right', fontSize: 12 }} />
-                </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          {/* Gráfico 4: Não Assinadas por Operação */}
+          {/* Status de Assinatura */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Não Assinadas por Operação</CardTitle>
-              <CardDescription>Advertências e suspensões não assinadas</CardDescription>
+              <CardTitle className="text-base">Status de Assinatura</CardTitle>
+              <CardDescription>Proporção de assinadas vs pendentes</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={280}>
                 <BarChart
-                  data={byOperation
-                    .map((op: any) => {
-                      const advNaoAssinadas = op.warnings?.filter((w: any) => w.tipo === 'advertencia' && !w.advertenciaAplicada).length || 0;
-                      const suspNaoAssinadas = op.warnings?.filter((w: any) => w.tipo === 'suspensao' && !w.advertenciaAplicada).length || 0;
-
-                      return {
-                        operacao: op.operacao.length > 20 ? op.operacao.substring(0, 17) + '...' : op.operacao,
-                        Advertências: advNaoAssinadas,
-                        Suspensões: suspNaoAssinadas,
-                        totalNaoAssinadas: op.naoAssinadas,
-                      };
-                    })
-                    .sort((a: any, b: any) => b.totalNaoAssinadas - a.totalNaoAssinadas)}
+                  data={[
+                    {
+                      status: "Assinadas",
+                      count: warningStats.assinadas || 0,
+                      fill: "#10b981",
+                    },
+                    {
+                      status: "Pendentes",
+                      count: warningStats.naoAssinadas || 0,
+                      fill: "#f97316",
+                    },
+                  ]}
                   layout="vertical"
-                  margin={{ top: 5, right: 60, left: 150, bottom: 5 }}
+                  margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
-                  <YAxis dataKey="operacao" type="category" width={145} tick={{ fontSize: 12 }} />
+                  <YAxis dataKey="status" type="category" />
                   <Tooltip />
-                  <Legend />
-                  <Bar dataKey="Advertências" fill="#EAB308" label={{ position: 'right', fontSize: 12 }} />
-                  <Bar dataKey="Suspensões" fill="#EF4444" label={{ position: 'right', fontSize: 12 }} />
+                  <Bar dataKey="count" fill="#3b82f6" label={{ position: 'right' }} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -404,92 +291,77 @@ export default function WarningsTracking() {
       )}
 
       {/* Tabela por Operação */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Advertências por Operação</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {byOperation.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">Nenhum dado disponível</div>
-          ) : (
+      {!isLoading && byOperation.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Resumo por Operação</CardTitle>
+            <CardDescription>Estatísticas detalhadas por operação</CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="text-sm">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Operação</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Assinadas</TableHead>
-                    <TableHead>Não Assinadas</TableHead>
-                    <TableHead>Taxa (%)</TableHead>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold">Operação</TableHead>
+                    <TableHead className="text-right font-semibold">Total</TableHead>
+                    <TableHead className="text-right font-semibold">Advertências</TableHead>
+                    <TableHead className="text-right font-semibold">Suspensões</TableHead>
+                    <TableHead className="text-right font-semibold">Assinadas</TableHead>
+                    <TableHead className="text-right font-semibold">Pendentes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {byOperation.map((item: any) => {
-                    const taxa = ((item.assinadas / item.total) * 100).toFixed(1);
-                    const taxaNum = parseFloat(taxa);
-                    return (
-                      <TableRow key={item.operacao}>
-                        <TableCell className="font-medium">{item.operacao}</TableCell>
-                        <TableCell>{item.total}</TableCell>
-                        <TableCell className="text-green-600">{item.assinadas}</TableCell>
-                        <TableCell className="text-red-600">{item.naoAssinadas}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-xs">
-                              <div
-                                className="bg-green-500 h-2 rounded-full transition-all"
-                                style={{ width: `${taxaNum}%` }}
-                              />
-                            </div>
-                            <span className="text-sm font-medium min-w-fit">{taxa}%</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {byOperation
+                    .sort((a: any, b: any) => b.total - a.total)
+                    .map((op: any, idx: number) => {
+                      const advCount = op.warnings?.filter((w: any) => w.tipo === 'advertencia').length || 0;
+                      const suspCount = op.warnings?.filter((w: any) => w.tipo === 'suspensao').length || 0;
+                      const assinadas = op.warnings?.filter((w: any) => w.assinada).length || 0;
+                      const pendentes = op.total - assinadas;
+                      const pctAssinadas = op.total > 0 ? ((assinadas / op.total) * 100).toFixed(0) : 0;
+
+                      return (
+                        <TableRow key={idx} className="hover:bg-muted/50">
+                          <TableCell className="font-medium">{op.operacao}</TableCell>
+                          <TableCell className="text-right font-semibold">{op.total}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                              {advCount}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                              {suspCount}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              {assinadas}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                              {pendentes}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                 </TableBody>
               </Table>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Dialog de Advertências Pendentes */}
-      <Dialog open={showPendingDialog} onOpenChange={setShowPendingDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Advertências Não Assinadas</DialogTitle>
-          </DialogHeader>
-          <div className="max-h-96 overflow-y-auto">
-            {pendingWarnings.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">Nenhuma advertência pendente</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Motorista</TableHead>
-                    <TableHead>Data de Cadastro</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingWarnings.map((warning: any) => (
-                    <TableRow key={warning.id}>
-                      <TableCell className="font-medium">{warning.conductorName}</TableCell>
-                      <TableCell>{new Date(warning.criadoEm).toLocaleDateString("pt-BR", { year: "numeric", month: "2-digit", day: "2-digit" })}</TableCell>
-                      <TableCell>{warning.categoria}</TableCell>
-                      <TableCell>
-                        <Badge variant="destructive">Pendente</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+      {isLoading && (
+        <div className="text-center py-12">
+          <div className="inline-flex items-center gap-2 text-muted-foreground">
+            <RefreshCw className="w-4 h-4 animate-spin" />
+            Carregando dados...
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

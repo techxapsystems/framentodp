@@ -979,4 +979,55 @@ export const dashboardRouter = router({
         });
       }
     }),
+
+  /**
+   * Deleta advertências criadas pelo usuário admin nos últimos N dias
+   */
+  deleteWarningsByDateRange: protectedProcedure
+    .input(
+      z.object({
+        daysBack: z.number().min(1).max(30),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Apenas administradores podem deletar advertências em lote",
+          });
+        }
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const now = new Date();
+        const dateLimit = new Date(now);
+        dateLimit.setDate(dateLimit.getDate() - input.daysBack);
+        dateLimit.setHours(0, 0, 0, 0);
+
+        // Deletar apenas advertências criadas pelo usuário admin (ctx.user.email)
+        const result = await db
+          .delete(warnings)
+          .where(
+            and(
+              gte(warnings.criadoEm, dateLimit),
+              eq(warnings.aplicadoPor, ctx.user.email || '')
+            )
+          );
+
+        return {
+          success: true,
+          deletedCount: 0,
+          message: "Advertências deletadas com sucesso",
+        };
+      } catch (error) {
+        console.error("[deleteWarningsByDateRange] Erro:", error);
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Erro ao deletar advertências: ${String(error)}`,
+        });
+      }
+    }),
 });

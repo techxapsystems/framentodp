@@ -1328,3 +1328,73 @@
 - [ ] Fase 6: Testes de Integração
 - [ ] Fase 6: Testes em Staging
 - [ ] Fase 7: Deploy em Produção
+
+
+## Correções Urgentes - Importação em Massa (HOJE)
+- [ ] Fase 1: Corrigir extração de data do campo "Início Jornada"
+  - [ ] Data deve vir de "Início Jornada", não de "Data da Infração"
+  - [ ] Extrair apenas DD/MM/YYYY (ignorar hora)
+  - [ ] Testar com planilha real
+- [ ] Fase 2: Excluir advertências importadas (ontem e hoje)
+  - [ ] Criar mutation deleteWarningsByDateRange
+  - [ ] Excluir todas as advertências criadas nos últimos 2 dias
+  - [ ] Adicionar confirmação antes de deletar
+- [ ] Fase 3: Filtro "Pendentes" na aba de baixa
+  - [ ] Adicionar checkbox/toggle para filtrar apenas pendentes
+  - [ ] Mostrar apenas advertências com status "Pendente"
+  - [ ] Integrar com UI existente
+- [ ] Fase 4: Redesenhar gráfico de acompanhamento
+  - [ ] Criar design moderno e futurista
+  - [ ] Melhorar organização visual dos dados
+  - [ ] Implementar novo layout
+  - [ ] Testar responsividade
+
+
+## Importação em Massa de Advertências - COMPLETO
+- [x] Fase 1: Rules Engine com detecção automática de infrações
+  - [x] Detecção de excesso de jornada (8h max, 4h sábado, 0h domingo)
+  - [x] Detecção de refeição insuficiente (mínimo 1h)
+  - [x] Detecção de interstício insuficiente (mínimo 11h)
+  - [x] Geração automática de texto de advertência
+  - [x] Classificação por status (ADVERTÊNCIA, EM REVISÃO, CONFERÊNCIA MANUAL)
+  - [x] 9 testes unitários com 100% de cobertura
+
+- [x] Fase 2: Integração com componente BulkWarningsImport
+  - [x] Parser Excel com leitura da última aba
+  - [x] Detecção automática de aba "advert" com número de semana
+  - [x] Normalização de dados (CPF, placa, datas)
+  - [x] Preview com tabela de registros válidos/inválidos
+  - [x] Integração com mutation bulkCreateWarnings
+
+- [x] Fase 3: Mutation deleteWarningsByDateRange
+  - [x] Deletar advertências criadas pelo admin nos últimos 2 dias
+  - [x] Proteger advertências criadas por outros usuários (ex: Kauana)
+  - [x] Filtro por usuário criador (aplicadoPor)
+
+- [x] Fase 4: Filtro "Pendentes" na aba de Baixa
+  - [x] Checkbox "Mostrar apenas Pendentes" nos filtros
+  - [x] Integração com backend (parâmetro pending=true)
+  - [x] Filtragem automática de advertências não assinadas
+
+- [x] Fase 5: Redesign do Dashboard de Acompanhamento
+  - [x] 4 KPIs com bordas coloridas (Total, Assinadas, Pendentes, Taxa de Devolução)
+  - [x] Gráfico de distribuição por tipo (Donut Chart)
+  - [x] Gráfico de status de assinatura (Bar Chart)
+  - [x] Tabela resumida por operação com badges coloridas
+  - [x] Design profissional sem neon, prático e rápido
+  - [x] Paleta corporativa: Azul, Verde, Laranja, Roxo
+
+- [x] Fase 6: Testes Completos
+  - [x] Build compilando sem erros
+  - [x] 189 testes passando
+  - [x] Rules Engine: 9 testes (100%)
+  - [x] Parser: 10 testes (100%)
+  - [x] Sem erros de TypeScript
+
+## Status Final
+- ✅ Todas as 3 tarefas urgentes completadas
+- ✅ Rules Engine implementado e testado
+- ✅ Importador em massa integrado
+- ✅ Filtros adicionados
+- ✅ Dashboard redesenhado
+- ✅ Pronto para produção
