@@ -1030,4 +1030,117 @@ export const dashboardRouter = router({
         });
       }
     }),
+
+  framentoBulkImport: protectedProcedure
+    .input(
+      z.object({
+        fileBase64: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const { parseBulkImportFile } = await import('../services/framentoBulkImportParser');
+
+        const buffer = Buffer.from(input.fileBase64, 'base64');
+        const result = await parseBulkImportFile(buffer);
+
+        return {
+          success: true,
+          sheetName: result.sheetName,
+          totalRecords: result.totalRecords,
+          validRecords: result.validRecords,
+          invalidRecords: result.invalidRecords,
+          warnings: result.warnings,
+          errors: result.errors,
+          message: `${result.validRecords} advertencias validas, ${result.invalidRecords} com problemas`,
+        };
+      } catch (error) {
+        console.error('[framentoBulkImport] Erro:', error);
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Erro ao processar importacao: ${String(error)}`,
+        });
+      }
+    }),
+
+  /**
+   * Importação em massa v4 - com Rules Engine completo
+   */
+  framentoBulkImportV4: protectedProcedure
+    .input(
+      z.object({
+        arquivo: z.instanceof(Buffer),
+        cnpj: z.string().optional(),
+        empresa: z.string().optional(),
+        endereco: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const { processarArquivoExcel } = await import('../services/framentoBulkImportParserV4');
+        const { gerarZIPComPDFs } = await import('../services/framentoPDFGeneratorV4');
+
+        // Processar arquivo
+        const resultado = await processarArquivoExcel(input.arquivo);
+
+        if (!resultado.success) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Erro ao processar arquivo: ${resultado.erros[0]?.erro || 'Desconhecido'}`,
+          });
+        }
+
+        // Gerar PDFs
+        const pdfs = await gerarZIPComPDFs(resultado.warnings, {
+          cnpj: input.cnpj,
+          empresa: input.empresa,
+          endereco: input.endereco,
+        });
+
+        // Salvar advertências no banco
+        const db = await getDb();
+        if (!db) throw new Error('Database not available');
+
+        let criadasCount = 0;
+        for (const warning of resultado.warnings) {
+          if (warning.status === 'ADVERTENCIA') {
+            try {
+              await db.insert(warnings).values({
+                conductorName: warning.condutor,
+                cpf: warning.cpf,
+                placa: warning.placa,
+                operacao: warning.operacao,
+                tipo: 'advertencia',
+                motivo: warning.textoAdvertencia,
+                criadoEm: new Date(),
+                aplicadoPor: ctx.user?.email || 'sistema',
+                advertenciaAplicada: false,
+              });
+              criadasCount++;
+            } catch (erro) {
+              console.error(`Erro ao salvar advertência de ${warning.condutor}:`, erro);
+            }
+          }
+        }
+
+        return {
+          success: true,
+          totalProcessado: resultado.resumo.total,
+          advertenciasCriadas: criadasCount,
+          emRevisao: resultado.resumo.emRevisao,
+          conferencia: resultado.resumo.conferencia,
+          pdfs: Array.from(pdfs.keys()),
+          abaSelecionada: resultado.abaSelecionada,
+          erros: resultado.erros,
+        };
+      } catch (error) {
+        console.error('[framentoBulkImportV4] Erro:', error);
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Erro ao processar importação v4: ${String(error)}`,
+        });
+      }
+    }),
 });

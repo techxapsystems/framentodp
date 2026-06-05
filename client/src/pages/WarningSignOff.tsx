@@ -71,8 +71,18 @@ export default function WarningSignOff() {
   const loadWarnings = async () => {
     try {
       setLoading(true);
-      const startDate = startDateRef.current?.value;
-      const endDate = endDateRef.current?.value;
+      
+      // Se "Mostrar apenas Pendentes" está ativo, ignora filtros de data
+      let startDate = '';
+      let endDate = '';
+      
+      if (!showOnlyPending) {
+        startDate = startDateRef.current?.value || '';
+        endDate = endDateRef.current?.value || '';
+      } else {
+        // Quando pendentes está ativo, mostra de TODO o período até hoje
+        endDate = new Date().toISOString().split('T')[0];
+      }
 
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
@@ -96,6 +106,15 @@ export default function WarningSignOff() {
       }
       if (filterOperation) {
         allWarnings = allWarnings.filter((w: any) => w.operacao === filterOperation);
+      }
+      
+      // Se "Mostrar apenas Pendentes" está ativo, desabilita campos de data
+      if (showOnlyPending && startDateRef.current && endDateRef.current) {
+        startDateRef.current.disabled = true;
+        endDateRef.current.disabled = true;
+      } else if (startDateRef.current && endDateRef.current) {
+        startDateRef.current.disabled = false;
+        endDateRef.current.disabled = false;
       }
 
       // Separar por tipo e status
