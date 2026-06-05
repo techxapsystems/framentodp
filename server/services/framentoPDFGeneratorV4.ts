@@ -41,7 +41,7 @@ export async function gerarPDFAdvertencia(
   warning: WarningResult,
   options: PDFGeneratorOptions = {}
 ): Promise<Buffer> {
-  const pdfDoc = PDFDocument.create();
+  const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595, 842]); // A4
   const { width, height } = page.getSize();
 
@@ -59,12 +59,10 @@ export async function gerarPDFAdvertencia(
 
   // Função auxiliar para desenhar texto
   function drawText(text: string, size: number = 11, bold: boolean = false, x: number = marginLeft) {
-    const font = bold ? 'Helvetica-Bold' : 'Helvetica';
     page.drawText(text, {
       x,
       y: yPosition,
       size,
-      font,
       color: preto,
       maxWidth: width - marginLeft - marginRight,
     });
@@ -85,7 +83,6 @@ export async function gerarPDFAdvertencia(
     x: marginLeft,
     y: yPosition,
     size: 10,
-    font: 'Helvetica',
     color: cinza,
   });
 
@@ -93,7 +90,6 @@ export async function gerarPDFAdvertencia(
     x: width - marginRight - 150,
     y: yPosition,
     size: 10,
-    font: 'Helvetica',
     color: cinza,
   });
 
@@ -177,7 +173,6 @@ export async function gerarPDFAdvertencia(
           x: marginLeft + 10,
           y: yPosition,
           size: 10,
-          font: 'Helvetica',
           color: preto,
         });
       } else {
@@ -185,7 +180,6 @@ export async function gerarPDFAdvertencia(
           x: marginLeft + 10,
           y: yPosition,
           size: 10,
-          font: 'Helvetica',
           color: preto,
         });
       }
@@ -208,7 +202,6 @@ export async function gerarPDFAdvertencia(
     x: marginLeft,
     y: yPosition,
     size: 11,
-    font: 'Helvetica-Bold',
     color: statusColor,
   });
 
@@ -243,7 +236,6 @@ export async function gerarPDFAdvertencia(
     x: marginLeft + 250,
     y: yPosition,
     size: 9,
-    font: 'Helvetica',
     color: preto,
   });
 
@@ -251,7 +243,6 @@ export async function gerarPDFAdvertencia(
     x: marginLeft + 250,
     y: yPosition - lineHeight,
     size: 9,
-    font: 'Helvetica',
     color: preto,
   });
 
@@ -262,7 +253,6 @@ export async function gerarPDFAdvertencia(
     x: marginLeft,
     y: 20,
     size: 8,
-    font: 'Helvetica',
     color: cinza,
   });
 
@@ -270,13 +260,12 @@ export async function gerarPDFAdvertencia(
     x: width - marginRight - 200,
     y: 20,
     size: 8,
-    font: 'Helvetica',
     color: cinza,
   });
 
   // Converter para buffer
   const pdfBytes = await pdfDoc.save();
-  return Buffer.from(pdfBytes);
+  return Buffer.from(pdfBytes as Uint8Array);
 }
 
 /**

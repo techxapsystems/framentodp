@@ -1108,14 +1108,13 @@ export const dashboardRouter = router({
             try {
               await db.insert(warnings).values({
                 conductorName: warning.condutor,
-                cpf: warning.cpf,
-                placa: warning.placa,
-                operacao: warning.operacao,
                 tipo: 'advertencia',
                 motivo: warning.textoAdvertencia,
+                nivelAdvertencia: 1,
                 criadoEm: new Date(),
                 aplicadoPor: ctx.user?.email || 'sistema',
                 advertenciaAplicada: false,
+                geradaAutomaticamente: true,
               });
               criadasCount++;
             } catch (erro) {
