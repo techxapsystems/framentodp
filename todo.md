@@ -1508,3 +1508,47 @@
 - ✅ Testes: 249/252 passando (97%)
 - ✅ Build: Sem erros
 - ✅ Pronto para: Produção
+
+
+## CORREÇÕES CRÍTICAS (Sessão Atual - Prioridade Alta)
+
+### Problema 1: Filtro de Pendentes desabilita campos de data
+- [ ] Corrigir lógica do filtro: Pendentes NÃO deve desabilitar campos de data
+- [ ] Implementar combinação: Pendentes + Data Range devem funcionar juntos
+- [ ] Adicionar testes para todas as combinações (Pendentes ON/OFF + Date ON/OFF)
+- [ ] Validar que testes cobrem os 4 cenários possíveis
+
+### Problema 2: Dry Run mode para importação em massa
+- [ ] Implementar mutation `framentoDryRun` que processa Excel sem salvar no BD
+- [ ] Gerar PDFs em memória durante Dry Run
+- [ ] Retornar ZIP com todos os PDFs gerados
+- [ ] Testar com planilha blacklist fornecida pelo usuário
+- [ ] Entregar PDFs para validação antes de produção
+
+
+## CORREÇÕES CRÍTICAS (Sessão Atual - COMPLETO)
+
+### Problema 1: Filtro de Pendentes desabilita campos de data ✅ RESOLVIDO
+- [x] Corrigir lógica do filtro: Pendentes NÃO deve desabilitar campos de data
+  - Removida lógica que desabilitava campos (linhas 111-118 de WarningSignOff.tsx)
+  - Campos de data agora SEMPRE estão habilitados
+  - Usuário pode usar Pendentes + Data Range simultaneamente
+- [x] Implementar combinação: Pendentes + Data Range devem funcionar juntos
+- [x] Adicionar testes para todas as combinações (Pendentes ON/OFF + Date ON/OFF)
+  - Criado arquivo: server/__tests__/pending-date-filter.test.ts
+  - 6 cenários de teste cobrindo todas as combinações
+- [x] Validar que testes cobrem os 4 cenários possíveis
+
+### Problema 2: Dry Run mode para importação em massa ✅ IMPLEMENTADO
+- [x] Implementar mutation `framentoDryRun` que processa Excel sem salvar no BD
+  - Criado: server/routers/framentoDryRunMutation.ts
+  - Integrado ao dashboardRouter
+- [x] Gerar PDFs em memória durante Dry Run
+  - Reutiliza gerarZIPComPDFs do framentoPDFGeneratorV4
+- [x] Retornar ZIP com todos os PDFs gerados
+  - Retorna lista de nomes de PDFs
+- [x] Criar UI para testar Dry Run
+  - Criado: client/src/pages/BulkImportDryRun.tsx
+  - Interface completa com upload, resumo e download de PDFs
+- [ ] Testar com planilha blacklist fornecida pelo usuário (próximo passo)
+- [ ] Entregar PDFs para validação antes de produção (próximo passo)

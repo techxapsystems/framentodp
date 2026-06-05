@@ -1,6 +1,7 @@
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
+import { framentoDryRunMutation } from "./framentoDryRunMutation";
 import {
   journeys,
   recurrences,
@@ -17,6 +18,10 @@ import { TRPCError } from "@trpc/server";
 let employeeCacheTimestamp = 0;
 
 export const dashboardRouter = router({
+  /**
+   * Dry Run para importação em massa - processa Excel e gera PDFs SEM salvar no BD
+   */
+  framentoDryRun: framentoDryRunMutation,
   /**
    * Obtém dados do dia para o dashboard HOJE
    */
