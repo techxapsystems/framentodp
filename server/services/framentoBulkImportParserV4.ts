@@ -184,6 +184,7 @@ export async function processarArquivoExcel(
       fim: encontrarColuna(headers, 'fim'),
       matricula: encontrarColuna(headers, 'matricula'),
       data: encontrarColuna(headers, 'data'),
+      codigoSistema: encontrarColuna(headers, 'codigoSistema'),
     };
 
     // Processar linhas
@@ -240,6 +241,20 @@ export async function processarArquivoExcel(
         const celulaCor = worksheet[`A${i + 1}`];
         const cor = extrairCorCelula(celulaCor);
 
+        // Extrair Código Sistema
+        let codigoSistema: number | undefined;
+        if (colIndices.codigoSistema >= 0) {
+          const codigoVal = linha[colIndices.codigoSistema];
+          if (typeof codigoVal === 'number') {
+            codigoSistema = codigoVal;
+          } else if (typeof codigoVal === 'string') {
+            const parsed = parseInt(codigoVal, 10);
+            if (!isNaN(parsed)) {
+              codigoSistema = parsed;
+            }
+          }
+        }
+
         // Montar ParsedRow
         const parsedRow: ParsedRow = {
           condutor,
@@ -255,6 +270,7 @@ export async function processarArquivoExcel(
           matricula: colIndices.matricula >= 0 ? String(linha[colIndices.matricula] || '').trim() : undefined,
           data: dataRegistro || dataInicio,
           cellColor: cor,
+          codigoSistema,
         };
 
         // Validar e gerar advertência

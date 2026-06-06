@@ -18,6 +18,7 @@ export interface ParsedRow {
   matricula?: string;
   data?: Date;
   cellColor?: string; // #FFFF00, #FFCC00, etc.
+  codigoSistema?: number; // 1=ADVERTENCIA, 2=EM_REVISAO, 3=CONFERENCIA_MANUAL
 }
 
 export interface InfracaoDetectada {
@@ -58,6 +59,7 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
   fim: ['fim jornada'],
   matricula: ['matricula', 'matrícula'],
   data: ['data'],
+  codigoSistema: ['código sistema', 'codigo sistema', 'código', 'codigo'],
 };
 
 /**
@@ -242,7 +244,11 @@ export function detectarInfracoes(row: ParsedRow): InfracaoDetectada[] {
 /**
  * Detecta status baseado na cor da célula
  */
-export function detectarStatus(cellColor?: string): 'ADVERTENCIA' | 'EM_REVISAO' | 'CONFERENCIA_MANUAL' {
+export function detectarStatus(cellColor?: string, codigoSistema?: number): 'ADVERTENCIA' | 'EM_REVISAO' | 'CONFERENCIA_MANUAL' {
+  if (codigoSistema === 1) return 'ADVERTENCIA';
+  if (codigoSistema === 2) return 'EM_REVISAO';
+  if (codigoSistema === 3) return 'CONFERENCIA_MANUAL';
+
   if (!cellColor) return 'CONFERENCIA_MANUAL';
 
   const normalized = cellColor.toUpperCase();
@@ -381,8 +387,8 @@ export function validarLinha(
     };
   }
 
-  // Detectar status pela cor
-  const status = detectarStatus(row.cellColor);
+  // Detectar status pelo Código Sistema ou cor
+  const status = detectarStatus(row.cellColor, row.codigoSistema);
 
   // Se status for EM_REVISAO, não gerar PDF
   if (status === 'EM_REVISAO') {
