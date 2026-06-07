@@ -17,6 +17,8 @@ export default function Import() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
 
+  const bulkImportMutation = trpc.dashboard.framentoBulkImportV4.useMutation();
+
   const refetchHistory = () => {};
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,22 +29,36 @@ export default function Import() {
     setImportResult(null);
 
     try {
-      // Ler arquivo como array buffer
+      // Ler arquivo como Buffer
       const buffer = await file.arrayBuffer();
-      const uint8Array = new Uint8Array(buffer);
-      
-      // Converter para base64
-      let base64 = "";
-      for (let i = 0; i < uint8Array.length; i++) {
-        base64 += String.fromCharCode(uint8Array[i]);
+
+      // Chamar mutation de importação
+      const result = await bulkImportMutation.mutateAsync({
+        arquivo: buffer as any,
+      });
+
+      if (result.success) {
+        toast.success(`Importação concluída! ${result.advertenciasCriadas} advertências criadas.`);
+        setImportResult({
+          success: true,
+          message: `Importação realizada com sucesso!`,
+          totalRows: result.totalProcessado,
+          newRows: result.advertenciasCriadas,
+        });
+      } else {
+        toast.error(`Erro na importação: ${result.erros?.[0]?.erro || 'Erro desconhecido'}`);
+        setImportResult({
+          success: false,
+          message: `Erro na importação: ${result.erros?.[0]?.erro || 'Erro desconhecido'}`,
+        });
       }
-      const base64String = btoa(base64);
-
-
-      toast.info("Funcionalidade de importação ainda não implementada");
       setIsProcessing(false);
     } catch (error) {
       toast.error(`Erro ao ler arquivo: ${String(error)}`);
+      setImportResult({
+        success: false,
+        message: `Erro ao processar arquivo: ${String(error)}`,
+      });
       setIsProcessing(false);
     }
   };

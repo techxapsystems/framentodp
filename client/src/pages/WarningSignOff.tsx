@@ -77,9 +77,17 @@ export default function WarningSignOff() {
       const endDate = endDateRef.current?.value || '';
 
       const params = new URLSearchParams();
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
-      if (showOnlyPending) params.append('pending', 'true');
+      
+      // IMPORTANTE: Se "Mostrar apenas Pendentes" está marcado,
+      // IGNORA completamente o filtro de data e busca TODAS as pendentes
+      if (showOnlyPending) {
+        params.append('pending', 'true');
+        // NAO adicionar datas quando filtro de pendentes está ativo
+      } else {
+        // Apenas usar filtro de data quando NAO está buscando apenas pendentes
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+      }
 
       const response = await fetch(`/api/auth/warnings-stats?${params.toString()}`);
       const result = await response.json();
