@@ -13,11 +13,33 @@ import {
 // import { savePdfHistory } from "../db"; // Função não implementada
 import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import * as dbHelpers from "../db";
 
 // Invalidar cache de funcionarios quando importados
 let employeeCacheTimestamp = 0;
 
 export const dashboardRouter = router({
+  /**
+   * Obter historico de importacoes
+   */
+  getImportHistory: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().max(100).default(20),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const history = await dbHelpers.getImportHistory(input.limit);
+        return history;
+      } catch (error) {
+        console.error('[getImportHistory] Erro:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Erro ao buscar historico de importacoes',
+        });
+      }
+    }),
   /**
    * Dry Run para importação em massa - processa Excel e gera PDFs SEM salvar no BD
    */

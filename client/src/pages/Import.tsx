@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Upload, CheckCircle2, AlertCircle, Clock, Loader } from "lucide-react";
+import { Upload, CheckCircle2, AlertCircle, Clock, Loader, FileText, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Import() {
@@ -19,8 +19,7 @@ export default function Import() {
   const [processingPhase, setProcessingPhase] = useState<"reading" | "processing" | "saving">("reading");
 
   const bulkImportMutation = trpc.dashboard.framentoBulkImportV4.useMutation();
-
-  const refetchHistory = () => {};
+  const { data: importHistory, refetch: refetchHistory } = trpc.dashboard.getImportHistory.useQuery({ limit: 20 });
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,6 +50,8 @@ export default function Import() {
           totalRows: result.totalProcessado,
           newRows: result.advertenciasCriadas,
         });
+        // Atualizar histórico
+        refetchHistory();
       } else {
         toast.error(`Erro na importação: ${result.erros?.[0]?.erro || 'Erro desconhecido'}`);
         setImportResult({
@@ -69,8 +70,9 @@ export default function Import() {
     }
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("pt-BR", {
+  const formatDate = (date: string | Date) => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString("pt-BR", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -78,8 +80,6 @@ export default function Import() {
       minute: "2-digit",
     });
   };
-  
-  const history = { data: [] }; // TODO: Implementar router de importação
 
   const getPhaseLabel = () => {
     switch (processingPhase) {
@@ -133,13 +133,8 @@ export default function Import() {
                 <>
                   {/* Smooth Loading Animation */}
                   <div className="relative w-16 h-16">
-                    {/* Outer rotating ring */}
                     <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-blue-500 animate-spin"></div>
-                    
-                    {/* Middle pulsing ring */}
                     <div className="absolute inset-2 rounded-full border-2 border-blue-200 animate-pulse"></div>
-                    
-                    {/* Inner icon */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <Loader className="w-6 h-6 text-blue-500 animate-spin" />
                     </div>
@@ -221,55 +216,126 @@ export default function Import() {
         </CardContent>
       </Card>
 
-      {/* History Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Histórico de Importações
-          </CardTitle>
-          <p className="text-sm text-slate-600 mt-2">
-            Últimas importações realizadas
-          </p>
-        </CardHeader>
-        <CardContent>
-          {history?.data && history.data.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Arquivo</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Total de Linhas</TableHead>
-                  <TableHead>Linhas Novas</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {history.data.map((imp: any) => (
-                  <TableRow key={imp.id}>
-                    <TableCell className="font-medium">{imp.fileName}</TableCell>
-                    <TableCell>{formatDate(imp.importedAt)}</TableCell>
-                    <TableCell>{imp.rowCount}</TableCell>
-                    <TableCell>{imp.newRowsCount}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className="bg-green-50 text-green-700 border-green-200"
-                      >
-                        Sucesso
+      {/* Import History Cards */}
+      {importHistory && importHistory.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-5 h-5 text-slate-600" />
+            <h2 className="text-xl font-bold text-slate-900">Histórico de Importações</h2>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-600">Total Importado</p>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {importHistory.reduce((sum, imp: any) => sum + imp.rowCount, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <FileText className="w-10 h-10 text-blue-500 opacity-20" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-600">Registros Novos</p>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {importHistory.reduce((sum, imp: any) => sum + imp.newRowsCount, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <TrendingUp className="w-10 h-10 text-green-500 opacity-20" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-600">Total Importações</p>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {importHistory.length}
+                    </p>
+                  </div>
+                  <CheckCircle2 className="w-10 h-10 text-slate-500 opacity-20" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Timeline View */}
+          <div className="space-y-3">
+            {importHistory.map((imp: any, index: number) => (
+              <Card key={imp.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="flex-shrink-0">
+                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-900">{imp.fileName}</p>
+                          <p className="text-sm text-slate-500">
+                            Importado por: <span className="font-medium">{imp.importedBy}</span>
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 mt-4 ml-8">
+                        <div className="bg-blue-50 rounded-lg p-3">
+                          <p className="text-xs text-slate-600 font-medium">Total de Linhas</p>
+                          <p className="text-lg font-bold text-blue-600">{imp.rowCount}</p>
+                        </div>
+                        <div className="bg-green-50 rounded-lg p-3">
+                          <p className="text-xs text-slate-600 font-medium">Linhas Novas</p>
+                          <p className="text-lg font-bold text-green-600">{imp.newRowsCount}</p>
+                        </div>
+                        <div className="bg-slate-50 rounded-lg p-3">
+                          <p className="text-xs text-slate-600 font-medium">Data</p>
+                          <p className="text-sm font-medium text-slate-700">{formatDate(imp.importedAt)}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="ml-4">
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        ✓ Sucesso
                       </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {(!importHistory || importHistory.length === 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Histórico de Importações
+            </CardTitle>
+            <p className="text-sm text-slate-600 mt-2">
+              Últimas importações realizadas
+            </p>
+          </CardHeader>
+          <CardContent>
             <p className="text-center text-slate-600 py-8">
               Nenhuma importação realizada ainda
             </p>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* CSS for smooth animations */}
       <style>{`

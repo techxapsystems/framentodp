@@ -1491,3 +1491,56 @@ export async function getUserWarningAuditHistory(
     return [];
   }
 }
+
+
+/**
+ * Obter histórico de importações (últimas 20)
+ */
+export async function getImportHistory(limit: number = 20) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const result = await db
+      .select()
+      .from(imports)
+      .orderBy(desc(imports.importedAt))
+      .limit(limit);
+    
+    return result;
+  } catch (error) {
+    console.error("[DB] Error getting import history:", error);
+    return [];
+  }
+}
+
+/**
+ * Registrar nova importação
+ */
+export async function recordImport(data: {
+  fileName: string;
+  fileHash: string;
+  rowCount: number;
+  newRowsCount: number;
+  importedBy: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .insert(imports)
+      .values({
+        fileName: data.fileName,
+        fileHash: data.fileHash,
+        rowCount: data.rowCount,
+        newRowsCount: data.newRowsCount,
+        importedBy: data.importedBy,
+      });
+    
+    return result;
+  } catch (error) {
+    console.error("[DB] Error recording import:", error);
+    return null;
+  }
+}
