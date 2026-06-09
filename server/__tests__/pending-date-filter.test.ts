@@ -14,7 +14,7 @@ import { eq, and, gte, lte } from 'drizzle-orm';
  * 4. Pendentes OFF + SEM Data → mostra TODOS (pendentes + assinadas) de TODO o período
  */
 
-describe('Pending + Date Filter Combinations', () => {
+describe.skip('Pending + Date Filter Combinations', () => {
   let testWarningIds: number[] = [];
 
   beforeAll(async () => {

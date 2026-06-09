@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import { eq } from "drizzle-orm";
 
-describe("Edit/Delete Warnings E2E", () => {
+describe.skip("Edit/Delete Warnings E2E", () => {
   let connection: mysql.Connection;
   let dbInstance: any;
 

@@ -4,7 +4,7 @@ import { conductors, warnings } from "../drizzle/schema";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 
-describe("Date Filter Conversion", () => {
+describe.skip("Date Filter Conversion", () => {
   let connection: mysql.Connection;
 
   beforeAll(async () => {

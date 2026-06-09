@@ -126,6 +126,12 @@ export default function Import() {
 
   const lastImport = importHistory?.[0];
 
+  useEffect(() => {
+    console.log('[Import] importHistory:', importHistory);
+    console.log('[Import] lastImport:', lastImport);
+    console.log('[Import] isLoading:', isLoading);
+  }, [importHistory, lastImport, isLoading]);
+
   return (
     <div className="p-8 space-y-8">
       {/* Header */}
@@ -428,6 +434,48 @@ export default function Import() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Fallback Delete Card - Always visible if there are imports */}
+      {importHistory && importHistory.length > 0 && !lastImport && (
+        <Card className="border-slate-200 bg-white">
+          <CardHeader>
+            <CardTitle className="text-slate-900 flex items-center justify-between">
+              <span>Gerenciar Importações</span>
+              <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300">
+                {importHistory.length} importações
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="bg-slate-50 border border-slate-200 rounded p-3">
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  <span className="font-semibold">Aviso:</span> Ao deletar as importações, todas as advertências criadas serão removidas do sistema. Esta ação não pode ser desfeita.
+                </p>
+              </div>
+
+              <Button
+                onClick={() => setShowDeleteDialog(true)}
+                variant="outline"
+                className="w-full border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader className="w-4 h-4 mr-2 animate-spin" />
+                    Deletando...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Deletar Última Importação
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {(!importHistory || importHistory.length === 0) && (
