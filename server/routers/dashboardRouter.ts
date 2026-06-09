@@ -1169,4 +1169,38 @@ export const dashboardRouter = router({
         });
       }
     }),
+
+  /**
+   * Deletar todas as advertencias da ultima importacao
+   */
+  deleteLastImportWarnings: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      try {
+        const result = await dbHelpers.deleteLastImportWarnings();
+        
+        if (!result.success) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: result.message || 'Erro ao deletar advertencias',
+          });
+        }
+
+        console.log(`[Audit] User ${ctx.user?.email} deleted ${result.deleted} warnings from import ${result.importId}`);
+
+        return {
+          success: true,
+          deleted: result.deleted,
+          importId: result.importId,
+          fileName: result.fileName,
+          message: `${result.deleted} advertencias deletadas com sucesso`,
+        };
+      } catch (error) {
+        console.error('[deleteLastImportWarnings] Erro:', error);
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Erro ao deletar advertencias: ${String(error)}`,
+        });
+      }
+    }),
 });

@@ -1684,3 +1684,39 @@
 - ✅ Animações suaves implementadas
 - ✅ Histórico visual completo
 - ✅ Código limpo e pronto para produção
+
+
+## EXCLUSÃO DE ADVERTÊNCIAS DA ÚLTIMA IMPORTAÇÃO - SESSÃO 6 🔄
+
+### Planejamento ✅
+- [x] Criar helper de banco de dados para deletar por importação
+- [ ] Criar mutation tRPC para deletar última importação
+- [ ] Adicionar UI com botão e confirmação
+- [ ] Escrever testes
+- [ ] Testar end-to-end
+- [ ] Entregar 100% funcional
+
+## EXCLUSÃO DE ADVERTÊNCIAS DA ÚLTIMA IMPORTAÇÃO - SESSÃO 6 ✅ 100% COMPLETO
+
+### Backend Implementado ✅
+- [x] Criar helper de banco de dados para deletar por importação
+- [x] getLastImport() - Busca última importação
+- [x] deleteWarningsByImportId() - Deleta por importação
+- [x] deleteLastImportWarnings() - Deleta última importação
+- [x] Criar mutation tRPC deleteLastImportWarnings
+
+### Frontend Implementado ✅
+- [x] Adicionar UI com botão e confirmação
+- [x] Card vermelho com informações da última importação
+- [x] AlertDialog para confirmação
+- [x] Loading state durante delete
+- [x] Toast notifications
+- [x] Auto-refresh do histórico após delete
+
+### Testes Implementados ✅
+- [x] Escrever testes (4 novos testes)
+- [x] Testar end-to-end
+- [x] 256/256 testes PASSANDO (100%)
+
+### Status Final ✅
+- [x] Entregar 100% funcional

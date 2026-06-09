@@ -2,6 +2,17 @@ import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -10,15 +21,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Upload, CheckCircle2, AlertCircle, Clock, Loader, FileText, TrendingUp } from "lucide-react";
+import { Upload, CheckCircle2, AlertCircle, Clock, Loader, FileText, TrendingUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Import() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
   const [processingPhase, setProcessingPhase] = useState<"reading" | "processing" | "saving">("reading");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const bulkImportMutation = trpc.dashboard.framentoBulkImportV4.useMutation();
+  const deleteLastImportMutation = trpc.dashboard.deleteLastImportWarnings.useMutation();
   const { data: importHistory, refetch: refetchHistory } = trpc.dashboard.getImportHistory.useQuery({ limit: 20 });
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,11 +44,9 @@ export default function Import() {
     setProcessingPhase("reading");
 
     try {
-      // Ler arquivo como Buffer
       setProcessingPhase("reading");
       const buffer = await file.arrayBuffer();
 
-      // Chamar mutation de importação
       setProcessingPhase("processing");
       const result = await bulkImportMutation.mutateAsync({
         arquivo: buffer as any,
@@ -50,7 +62,6 @@ export default function Import() {
           totalRows: result.totalProcessado,
           newRows: result.advertenciasCriadas,
         });
-        // Atualizar histórico
         refetchHistory();
       } else {
         toast.error(`Erro na importação: ${result.erros?.[0]?.erro || 'Erro desconhecido'}`);
@@ -67,6 +78,25 @@ export default function Import() {
         message: `Erro ao processar arquivo: ${String(error)}`,
       });
       setIsProcessing(false);
+    }
+  };
+
+  const handleDeleteLastImport = async () => {
+    setIsDeleting(true);
+    try {
+      const result = await deleteLastImportMutation.mutateAsync();
+      
+      if (result.success) {
+        toast.success(`${result.deleted} advertências deletadas com sucesso!`);
+        setShowDeleteDialog(false);
+        refetchHistory();
+      } else {
+        toast.error("Erro ao deletar advertências");
+      }
+    } catch (error) {
+      toast.error(`Erro: ${String(error)}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -93,6 +123,8 @@ export default function Import() {
         return "Processando...";
     }
   };
+
+  const lastImport = importHistory?.[0];
 
   return (
     <div className="p-8 space-y-8">
@@ -131,7 +163,6 @@ export default function Import() {
             >
               {isProcessing ? (
                 <>
-                  {/* Smooth Loading Animation */}
                   <div className="relative w-16 h-16">
                     <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-blue-500 animate-spin"></div>
                     <div className="absolute inset-2 rounded-full border-2 border-blue-200 animate-pulse"></div>
@@ -144,7 +175,6 @@ export default function Import() {
                     <p className="text-slate-700 font-medium">Processando arquivo...</p>
                     <p className="text-sm text-slate-600">{getPhaseLabel()}</p>
                     
-                    {/* Progress indicators */}
                     <div className="flex gap-2 justify-center mt-3">
                       <div
                         className={`h-1 w-8 rounded-full transition-all duration-500 ${
@@ -216,6 +246,84 @@ export default function Import() {
         </CardContent>
       </Card>
 
+      {/* Delete Last Import Card */}
+      {lastImport && (
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-700">
+              <Trash2 className="w-5 h-5" />
+              Deletar Última Importação
+            </CardTitle>
+            <p className="text-sm text-red-600 mt-2">
+              Remova todas as advertências criadas na última importação
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-white rounded-lg p-4 mb-4 border border-red-100">
+              <p className="text-sm text-slate-700 mb-2">
+                <span className="font-semibold">Arquivo:</span> {lastImport.fileName}
+              </p>
+              <p className="text-sm text-slate-700 mb-2">
+                <span className="font-semibold">Data:</span> {formatDate(lastImport.importedAt)}
+              </p>
+              <p className="text-sm text-slate-700">
+                <span className="font-semibold">Advertências:</span> {lastImport.newRowsCount} criadas
+              </p>
+            </div>
+
+            <div className="bg-red-100 border border-red-300 rounded-lg p-3 mb-4">
+              <p className="text-sm text-red-800">
+                ⚠️ <span className="font-semibold">Atenção:</span> Esta ação deletará todas as {lastImport.newRowsCount} advertências criadas nesta importação. Esta ação não pode ser desfeita.
+              </p>
+            </div>
+
+            <Button
+              onClick={() => setShowDeleteDialog(true)}
+              variant="destructive"
+              className="w-full"
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                  Deletando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Deletar {lastImport.newRowsCount} Advertências
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-700">Deletar Advertências?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a deletar <span className="font-semibold">{lastImport?.newRowsCount}</span> advertências da importação de <span className="font-semibold">{lastImport?.fileName}</span>.
+              <br />
+              <br />
+              Esta ação <span className="font-semibold text-red-600">não pode ser desfeita</span>. Tem certeza?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteLastImport}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? "Deletando..." : "Deletar Tudo"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Import History Cards */}
       {importHistory && importHistory.length > 0 && (
         <div>
@@ -224,7 +332,6 @@ export default function Import() {
             <h2 className="text-xl font-bold text-slate-900">Histórico de Importações</h2>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card>
               <CardContent className="pt-6">
@@ -269,7 +376,6 @@ export default function Import() {
             </Card>
           </div>
 
-          {/* Timeline View */}
           <div className="space-y-3">
             {importHistory.map((imp: any, index: number) => (
               <Card key={imp.id} className="hover:shadow-md transition-shadow">
@@ -317,7 +423,6 @@ export default function Import() {
         </div>
       )}
 
-      {/* Empty State */}
       {(!importHistory || importHistory.length === 0) && (
         <Card>
           <CardHeader>
@@ -337,7 +442,6 @@ export default function Import() {
         </Card>
       )}
 
-      {/* CSS for smooth animations */}
       <style>{`
         @keyframes spin {
           from {

@@ -1544,3 +1544,93 @@ export async function recordImport(data: {
     return null;
   }
 }
+
+
+/**
+ * Obter a última importação
+ */
+export async function getLastImport() {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .select()
+      .from(imports)
+      .orderBy(desc(imports.importedAt))
+      .limit(1);
+    
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error("[DB] Error getting last import:", error);
+    return null;
+  }
+}
+
+/**
+ * Deletar todas as advertências de uma importação específica
+ */
+export async function deleteWarningsByImportId(importId: number) {
+  const db = await getDb();
+  if (!db) return { success: false, deleted: 0 };
+
+  try {
+    // Buscar todas as jornadas dessa importação para obter os nomes dos condutores
+    const journeysList = await db
+      .select({ conductorName: journeys.conductorName })
+      .from(journeys)
+      .where(eq(journeys.importId, importId));
+
+    if (journeysList.length === 0) {
+      return { success: true, deleted: 0 };
+    }
+
+    const conductorNames = Array.from(new Set(journeysList.map(j => j.conductorName)));
+
+    // Deletar advertências criadas automaticamente para esses condutores
+    const result = await db
+      .delete(warnings)
+      .where(
+        and(
+          inArray(warnings.conductorName, conductorNames),
+          eq(warnings.geradaAutomaticamente, true)
+        )
+      );
+
+    console.log(`[DB] Deleted warnings for import ${importId}`);
+    return { success: true, deleted: result[0]?.affectedRows || 0 };
+  } catch (error) {
+    console.error("[DB] Error deleting warnings by import:", error);
+    return { success: false, deleted: 0, error: String(error) };
+  }
+}
+
+/**
+ * Deletar todas as advertências da última importação
+ */
+export async function deleteLastImportWarnings() {
+  const db = await getDb();
+  if (!db) return { success: false, deleted: 0 };
+
+  try {
+    // Obter última importação
+    const lastImport = await getLastImport();
+    if (!lastImport) {
+      return { success: false, deleted: 0, message: "Nenhuma importação encontrada" };
+    }
+
+    // Deletar advertências dessa importação
+    const result = await deleteWarningsByImportId(lastImport.id);
+    
+    return {
+      success: result.success,
+      deleted: result.deleted,
+      importId: lastImport.id,
+      fileName: lastImport.fileName,
+      importedAt: lastImport.importedAt,
+    };
+  } catch (error) {
+    console.error("[DB] Error deleting last import warnings:", error);
+    return { success: false, deleted: 0, error: String(error) };
+  }
+}
