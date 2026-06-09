@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -246,55 +246,62 @@ export default function Import() {
         </CardContent>
       </Card>
 
-      {/* Delete Last Import Card */}
+      {/* Delete Last Import Card - Professional Minimalist */}
       {lastImport && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-slate-200 bg-white">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-700">
-              <Trash2 className="w-5 h-5" />
-              Deletar Última Importação
+            <CardTitle className="text-slate-900 flex items-center justify-between">
+              <span>Gerenciar Última Importação</span>
+              <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300">
+                {lastImport.newRowsCount} advertências
+              </Badge>
             </CardTitle>
-            <p className="text-sm text-red-600 mt-2">
-              Remova todas as advertências criadas na última importação
-            </p>
           </CardHeader>
           <CardContent>
-            <div className="bg-white rounded-lg p-4 mb-4 border border-red-100">
-              <p className="text-sm text-slate-700 mb-2">
-                <span className="font-semibold">Arquivo:</span> {lastImport.fileName}
-              </p>
-              <p className="text-sm text-slate-700 mb-2">
-                <span className="font-semibold">Data:</span> {formatDate(lastImport.importedAt)}
-              </p>
-              <p className="text-sm text-slate-700">
-                <span className="font-semibold">Advertências:</span> {lastImport.newRowsCount} criadas
-              </p>
-            </div>
+            <div className="space-y-4">
+              {/* Info Section */}
+              <div className="border-t border-b border-slate-200 py-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-semibold text-slate-600">Arquivo:</span>
+                  <span className="text-sm text-slate-900">{lastImport.fileName}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-semibold text-slate-600">Importado em:</span>
+                  <span className="text-sm text-slate-900">{formatDate(lastImport.importedAt)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-semibold text-slate-600">Importado por:</span>
+                  <span className="text-sm text-slate-900">{lastImport.importedBy}</span>
+                </div>
+              </div>
 
-            <div className="bg-red-100 border border-red-300 rounded-lg p-3 mb-4">
-              <p className="text-sm text-red-800">
-                ⚠️ <span className="font-semibold">Atenção:</span> Esta ação deletará todas as {lastImport.newRowsCount} advertências criadas nesta importação. Esta ação não pode ser desfeita.
-              </p>
-            </div>
+              {/* Warning Message */}
+              <div className="bg-slate-50 border border-slate-200 rounded p-3">
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  <span className="font-semibold">Aviso:</span> Ao deletar esta importação, todas as {lastImport.newRowsCount} advertências criadas serão removidas do sistema. Esta ação não pode ser desfeita.
+                </p>
+              </div>
 
-            <Button
-              onClick={() => setShowDeleteDialog(true)}
-              variant="destructive"
-              className="w-full"
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader className="w-4 h-4 mr-2 animate-spin" />
-                  Deletando...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Deletar {lastImport.newRowsCount} Advertências
-                </>
-              )}
-            </Button>
+              {/* Delete Button */}
+              <Button
+                onClick={() => setShowDeleteDialog(true)}
+                variant="outline"
+                className="w-full border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader className="w-4 h-4 mr-2 animate-spin" />
+                    Deletando...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Deletar Importação
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -303,12 +310,12 @@ export default function Import() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-700">Deletar Advertências?</AlertDialogTitle>
+            <AlertDialogTitle>Deletar Advertências?</AlertDialogTitle>
             <AlertDialogDescription>
               Você está prestes a deletar <span className="font-semibold">{lastImport?.newRowsCount}</span> advertências da importação de <span className="font-semibold">{lastImport?.fileName}</span>.
               <br />
               <br />
-              Esta ação <span className="font-semibold text-red-600">não pode ser desfeita</span>. Tem certeza?
+              Esta ação <span className="font-semibold">não pode ser desfeita</span>. Tem certeza?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -316,7 +323,7 @@ export default function Import() {
             <AlertDialogAction
               onClick={handleDeleteLastImport}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-slate-600 hover:bg-slate-700"
             >
               {isDeleting ? "Deletando..." : "Deletar Tudo"}
             </AlertDialogAction>
@@ -450,23 +457,6 @@ export default function Import() {
           to {
             transform: rotate(360deg);
           }
-        }
-
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-
-        .animate-pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
       `}</style>
     </div>
