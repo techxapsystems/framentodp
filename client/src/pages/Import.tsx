@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +33,7 @@ export default function Import() {
 
   const bulkImportMutation = trpc.dashboard.framentoBulkImportV4.useMutation();
   const deleteLastImportMutation = trpc.dashboard.deleteLastImportWarnings.useMutation();
-  const { data: importHistory, refetch: refetchHistory } = trpc.dashboard.getImportHistory.useQuery({ limit: 20 });
+  const { data: importHistory = [], refetch: refetchHistory, isLoading } = trpc.dashboard.getImportHistory.useQuery({ limit: 20 });
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -247,7 +247,7 @@ export default function Import() {
       </Card>
 
       {/* Delete Last Import Card - Professional Minimalist */}
-      {lastImport && (
+      {importHistory && importHistory.length > 0 && lastImport && (
         <Card className="border-slate-200 bg-white">
           <CardHeader>
             <CardTitle className="text-slate-900 flex items-center justify-between">
@@ -332,7 +332,7 @@ export default function Import() {
       </AlertDialog>
 
       {/* Import History Cards */}
-      {importHistory && importHistory.length > 0 && (
+      {importHistory && importHistory.length > 0 && !isLoading && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-slate-600" />
