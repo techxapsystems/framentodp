@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Upload, CheckCircle2, AlertCircle, Clock, Loader, FileText, TrendingUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import ImportHistory from "@/components/ImportHistory";
 
 export default function Import() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -130,6 +131,12 @@ export default function Import() {
     console.log('[Import] importHistory:', importHistory);
     console.log('[Import] lastImport:', lastImport);
     console.log('[Import] isLoading:', isLoading);
+    console.log('[Import] Condição para mostrar delete card:', {
+      temImportHistory: !!importHistory,
+      temItens: importHistory?.length > 0,
+      temLastImport: !!lastImport,
+      temFallback: importHistory && importHistory.length > 0 && !lastImport,
+    });
   }, [importHistory, lastImport, isLoading]);
 
   return (
@@ -251,6 +258,9 @@ export default function Import() {
           )}
         </CardContent>
       </Card>
+
+      {/* Import History Component - Shows últimas 3 importações com botões de delete */}
+      <ImportHistory />
 
       {/* Delete Last Import Card - Professional Minimalist */}
       {importHistory && importHistory.length > 0 && lastImport && (

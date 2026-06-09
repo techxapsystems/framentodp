@@ -28,9 +28,11 @@ export const dashboardRouter = router({
         limit: z.number().max(100).default(20),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       try {
+        console.log('[getImportHistory] User:', ctx.user?.id, 'Limit:', input.limit);
         const history = await dbHelpers.getImportHistory(input.limit);
+        console.log('[getImportHistory] Resultado:', history?.length || 0, 'registros');
         return history;
       } catch (error) {
         console.error('[getImportHistory] Erro:', error);
