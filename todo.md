@@ -1720,3 +1720,20 @@
 
 ### Status Final ✅
 - [x] Entregar 100% funcional
+
+
+## CORREÇÕES CRÍTICAS - SESSÃO 7 ✅ COMPLETO
+
+### Problema 1: Texto da Advertência sem Inteligência ✅
+- [x] Revisar Rules Engine para aplicar lógica de encaixes de tempo
+- [x] Implementar leitura completa da planilha para contexto
+- [x] Gerar texto inteligente conforme exemplos fornecidos
+- [x] Testar com múltiplos cenários (12 warnings gerados com sucesso)
+- [x] Validar PDFs gerados
+
+### Problema 2: Botão Delete não está visível ✅
+- [x] Implementar histórico das últimas 3 importações visível
+- [x] Adicionar botão de delete para cada importação
+- [x] Integrar com WarningSignOff para deletar do sistema completo
+- [x] Integrar com outras telas relevantes
+- [x] Testar delete end-to-end

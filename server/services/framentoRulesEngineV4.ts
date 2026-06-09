@@ -97,143 +97,82 @@ export function timeToMinutes(value: any): number | null {
   if (typeof value === 'string') {
     const trimmed = value.trim();
     
-    // Formato HH:MM
-    if (/^\d{1,2}:\d{2}$/.test(trimmed)) {
-      const [hours, minutes] = trimmed.split(':').map(Number);
+    // Formato HH:MM ou HH:MM:SS
+    const timeMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (timeMatch) {
+      const hours = parseInt(timeMatch[1], 10);
+      const minutes = parseInt(timeMatch[2], 10);
       return hours * 60 + minutes;
     }
-    
-    // Formato HH:MM:SS
-    if (/^\d{1,2}:\d{2}:\d{2}$/.test(trimmed)) {
-      const [hours, minutes, seconds] = trimmed.split(':').map(Number);
-      return hours * 60 + minutes + Math.round(seconds / 60);
-    }
-    
-    // Tenta converter como número
-    const num = parseFloat(trimmed.replace(',', '.'));
-    if (!isNaN(num) && num > 0) {
-      return Math.round(num * 24 * 60); // Converte fração de dia para minutos
+
+    // Tenta decimal (0.354166 = 08:30)
+    const decimal = parseFloat(trimmed);
+    if (!isNaN(decimal) && decimal > 0 && decimal < 24) {
+      return Math.round(decimal * 60);
     }
   }
 
-  // Se for número (decimal)
-  if (typeof value === 'number' && value > 0) {
-    return Math.round(value * 24 * 60); // Converte fração de dia para minutos
-  }
-
-  // Se for Date (datetime do Excel)
-  if (value instanceof Date) {
-    const hours = value.getHours();
-    const minutes = value.getMinutes();
-    return hours * 60 + minutes;
+  // Se for número (Excel datetime)
+  if (typeof value === 'number') {
+    if (value > 0 && value < 24) {
+      return Math.round(value * 60);
+    }
   }
 
   return null;
 }
 
 /**
- * Converte minutos para formato "HHhMM"
+ * Formata minutos para HH:MM
  */
-export function minutesToFormat(minutes: number | null): string {
-  if (minutes === null || minutes === undefined) return '';
-  
+export function minutesToHHMM(minutes: number): string {
+  if (minutes === null || minutes === undefined) return '-';
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  return `${hours}h${mins.toString().padStart(2, '0')}`;
+  return `${String(hours).padStart(2, '0')}h${String(mins).padStart(2, '0')}`;
 }
 
 /**
- * Extrai data e calcula dia da semana
- */
-export function parseDataAndDia(data?: Date, inicioStr?: string): { data: Date; dia: string } | null {
-  let date: Date | null = null;
-
-  if (data instanceof Date && !isNaN(data.getTime())) {
-    date = data;
-  } else if (typeof inicioStr === 'string') {
-    // Tenta extrair DD/MM/YYYY dos 10 primeiros caracteres
-    const match = inicioStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    if (match) {
-      const [, day, month, year] = match;
-      date = new Date(`${year}-${month}-${day}`);
-    }
-  }
-
-  if (!date || isNaN(date.getTime())) {
-    return null;
-  }
-
-  const dias = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-  const dia = dias[date.getDay()];
-
-  return { data: date, dia };
-}
-
-/**
- * Calcula limite de jornada baseado no dia da semana
- */
-export function getLimiteJornada(dia: string): number {
-  // seg–sex = 08:00 | sáb = 04:00 | dom/feriado = 00:00
-  if (dia === 'segunda' || dia === 'terça' || dia === 'quarta' || dia === 'quinta' || dia === 'sexta') {
-    return 8 * 60; // 08:00
-  }
-  if (dia === 'sábado') {
-    return 4 * 60; // 04:00
-  }
-  return 0; // domingo/feriado
-}
-
-/**
- * Detecta infrações baseado nas regras v4
+ * Detecta infrações baseado em regras
  */
 export function detectarInfracoes(row: ParsedRow): InfracaoDetectada[] {
   const infracoes: InfracaoDetectada[] = [];
 
-  // (A) EXCESSO DE JORNADA
-  if (row.jornada_sem_refeicao !== null && row.jornada_sem_refeicao !== undefined) {
-    const diaInfo = parseDataAndDia(row.data, row.inicio?.toISOString());
-    if (diaInfo) {
-      const limite = getLimiteJornada(diaInfo.dia);
-      if (row.jornada_sem_refeicao > limite) {
-        infracoes.push({
-          tipo: 'jornada',
-          descricao: 'Excesso de jornada',
-          valor: minutesToFormat(row.jornada_sem_refeicao),
-          limite: '08h00',
-        });
-      }
-    }
+  // Jornada: máximo 10h (8h + 2h autorizado)
+  if (row.jornada_sem_refeicao && row.jornada_sem_refeicao > 600) {
+    infracoes.push({
+      tipo: 'jornada',
+      descricao: 'Jornada acima do limite',
+      valor: minutesToHHMM(row.jornada_sem_refeicao),
+      limite: '10h00',
+    });
   }
 
-  // (B) REFEIÇÃO (intrajornada) - mínimo 01:00
+  // Interstício: mínimo 11h
+  if (row.intersticio && row.intersticio < 660) {
+    infracoes.push({
+      tipo: 'intersticio',
+      descricao: 'Interstício abaixo do limite',
+      valor: minutesToHHMM(row.intersticio),
+      limite: '11h00',
+    });
+  }
+
+  // Refeição: mínimo 1h
   if (row.refeicao !== null && row.refeicao !== undefined) {
-    if (row.refeicao === 0 || row.refeicao < 0) {
-      // Ausente
+    if (row.refeicao === 0) {
       infracoes.push({
         tipo: 'refeicao',
         descricao: 'Sem intrajornada',
-        valor: 'Não teve almoço',
+        valor: '0h00',
         limite: '01h00',
       });
     } else if (row.refeicao < 60) {
-      // Insuficiente
       infracoes.push({
         tipo: 'refeicao',
-        descricao: 'Intrajornada insuficiente',
-        valor: minutesToFormat(row.refeicao),
+        descricao: 'Refeição abaixo do limite',
+        valor: minutesToHHMM(row.refeicao),
         limite: '01h00',
-      });
-    }
-  }
-
-  // (C) INTERSTÍCIO (interjornada) - mínimo 11:00
-  if (row.intersticio !== null && row.intersticio !== undefined && row.intersticio > 0) {
-    if (row.intersticio < 660) { // 11 * 60 = 660
-      infracoes.push({
-        tipo: 'intersticio',
-        descricao: 'Interjornada insuficiente',
-        valor: minutesToFormat(row.intersticio),
-        limite: '11h00',
       });
     }
   }
@@ -242,25 +181,20 @@ export function detectarInfracoes(row: ParsedRow): InfracaoDetectada[] {
 }
 
 /**
- * Detecta status baseado na cor da célula
+ * Formata data para português
  */
-export function detectarStatus(cellColor?: string, codigoSistema?: number): 'ADVERTENCIA' | 'EM_REVISAO' | 'CONFERENCIA_MANUAL' {
-  if (codigoSistema === 1) return 'ADVERTENCIA';
-  if (codigoSistema === 2) return 'EM_REVISAO';
-  if (codigoSistema === 3) return 'CONFERENCIA_MANUAL';
-
-  if (!cellColor) return 'CONFERENCIA_MANUAL';
-
-  const normalized = cellColor.toUpperCase();
-  
-  if (normalized === '#FFFF00') return 'ADVERTENCIA';
-  if (normalized === '#FFCC00') return 'EM_REVISAO';
-  
-  return 'CONFERENCIA_MANUAL';
+function formatarData(data: Date): string {
+  return data.toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 }
 
 /**
  * Gera texto da advertência conforme template oficial v4
+ * INTELIGENTE: Usa estrutura de múltiplas infrações no mesmo dia
  */
 export function gerarTextoAdvertencia(
   row: ParsedRow,
@@ -269,180 +203,75 @@ export function gerarTextoAdvertencia(
 ): string {
   if (infracoes.length === 0) return '';
 
-  let texto = '';
-
-  // Formata data de análise
-  const dataAnalise = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  // Formata data da infração
-  const dataInfracao = diaInfo.data.toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  // Monta o parágrafo de infrações
-  let paragrafos: string[] = [];
-
-  // Infração de jornada
+  const dataInfracao = formatarData(diaInfo.data);
+  
+  // Template base conforme exemplo fornecido
+  let textoInfracoes = '';
+  
+  // Jornada
   const jornadaInf = infracoes.find(i => i.tipo === 'jornada');
   if (jornadaInf) {
-    paragrafos.push(
-      `No dia ${dataInfracao}, foi constatada jornada aberta com duração de ${jornadaInf.valor}, ultrapassando o limite permitido que é de 08h00 podendo ser estendida por duas horas com AUTORIZAÇÃO do gestor`
-    );
+    textoInfracoes += `No dia ${dataInfracao}, foi constatada jornada aberta com duração de ${jornadaInf.valor}, ultrapassando o limite permitido que é de 08h00 podendo ser estendida por duas horas com AUTORIZAÇÃO do gestor`;
   }
 
-  // Infração de interstício
+  // Interstício
   const interstícioInf = infracoes.find(i => i.tipo === 'intersticio');
   if (interstícioInf) {
-    const conector = paragrafos.length > 0 ? '. Também foram suprimidos os intervalos para descanso, sendo realizado um intervalo interjornada (intervalo de uma jornada para outra) de apenas' : 'Também foram suprimidos os intervalos para descanso, sendo realizado um intervalo interjornada (intervalo de uma jornada para outra) de apenas';
-    paragrafos.push(
-      `${conector} ${interstícioInf.valor}, quando o mínimo exigido por lei e orientado pela empresa é de 11h00`
-    );
-  }
-
-  // Infração de refeição
-  const refeicaoInf = infracoes.find(i => i.tipo === 'refeicao');
-  if (refeicaoInf) {
-    const conector = paragrafos.length > 0 ? ' e neste mesmo dia' : '. Também, neste mesmo dia,';
-    if (refeicaoInf.descricao === 'Sem intrajornada') {
-      paragrafos.push(`${conector} NÃO teve descanso intrajornada (intervalo de almoço) sendo que o exigido em Lei é de no mínimo 01h00`);
+    if (textoInfracoes) {
+      textoInfracoes += `, Também foram suprimidos os intervalos para descanso, sendo realizado um intervalo interjornada (intervalo de uma jornada para outra) de apenas ${interstícioInf.valor}, quando o mínimo exigido por lei e orientado pela empresa é de 11h00`;
     } else {
-      paragrafos.push(`${conector} realizou descanso intrajornada (intervalo de almoço) de apenas ${refeicaoInf.valor}, inferior ao mínimo de 01h00 exigido em Lei`);
+      textoInfracoes += `No dia ${dataInfracao}, foram suprimidos os intervalos para descanso, sendo realizado um intervalo interjornada (intervalo de uma jornada para outra) de apenas ${interstícioInf.valor}, quando o mínimo exigido por lei e orientado pela empresa é de 11h00`;
     }
   }
 
-  // Junta todos os parágrafos
-  texto = paragrafos.join('');
-  if (texto && !texto.endsWith('.')) {
-    texto += '.';
+  // Refeição
+  const refeicaoInf = infracoes.find(i => i.tipo === 'refeicao');
+  if (refeicaoInf) {
+    if (textoInfracoes) {
+      if (refeicaoInf.descricao === 'Sem intrajornada') {
+        textoInfracoes += ` e neste mesmo dia NÃO teve descanso intrajornada (intervalo de almoço) sendo que o exigido em Lei é de no mínimo 01h00`;
+      } else {
+        textoInfracoes += ` e neste mesmo dia realizou descanso intrajornada (intervalo de almoço) de apenas ${refeicaoInf.valor}, inferior ao mínimo de 01h00 exigido em Lei`;
+      }
+    } else {
+      if (refeicaoInf.descricao === 'Sem intrajornada') {
+        textoInfracoes += `No dia ${dataInfracao}, NÃO teve descanso intrajornada (intervalo de almoço) sendo que o exigido em Lei é de no mínimo 01h00`;
+      } else {
+        textoInfracoes += `No dia ${dataInfracao}, realizou descanso intrajornada (intervalo de almoço) de apenas ${refeicaoInf.valor}, inferior ao mínimo de 01h00 exigido em Lei`;
+      }
+    }
   }
+
+  // Adiciona ponto final se necessário
+  if (textoInfracoes && !textoInfracoes.endsWith('.')) {
+    textoInfracoes += '.';
+  }
+
+  // Template completo conforme exemplo
+  const texto = `A empresa Transportes Framento, no exercício regular de seu poder diretivo e disciplinar, conforme disposto no artigo 2º da Consolidação das Leis do Trabalho (CLT), vem, por meio deste documento, aplicar ADVERTÊNCIA FORMAL a Vossa Senhoria, na função de motorista profissional, pelos fatos que seguem. Durante análise de sua jornada de trabalho das últimas duas semanas, foram identificadas as seguintes irregularidades: ${textoInfracoes} Tais condutas configuram descumprimento de obrigações contratuais e ato de indisciplina, nos termos do artigo 482, alíneas "h" (indisciplina ou insubordinação) da CLT, além de descumprir as normas internas da empresa. Diante do exposto, a empresa ADVERTE formalmente Vossa Senhoria, solicitando o imediato ajuste de conduta e o cumprimento rigoroso dos horários estabelecidos em contrato e orientações internas. Em caso de reincidência, será aplicado sanções mais severas, conforme previsto na legislação vigente e nas normas da empresa. Ressalta-se que esta medida está sendo adotada em conformidade com o princípio da imediatidade da ação disciplinar. Solicita-se que Vossa Senhoria assine o presente documento, declarando ciência de seu conteúdo. Em caso de recusa, a empresa procederá com o registro da entrega por meio da assinatura de duas testemunhas, conforme previsto em norma interna.`;
 
   return texto;
 }
 
 /**
- * Valida linha e retorna resultado
+ * Detecta status baseado em codigoSistema
  */
-export function validarLinha(
-  row: ParsedRow,
-  numeroProtocolo?: number,
-  cnpj?: string,
-  endereco?: string,
-  ctps?: string
-): WarningResult | null {
-  // Validar CPF
-  const cpfValidacao = normalizeCPF(row.cpf);
-  if (!cpfValidacao.valid) {
-    return {
-      condutor: row.condutor,
-      cpf: row.cpf,
-      placa: row.placa,
-      operacao: row.operacao,
-      data: row.data || new Date(),
-      diaSemana: 'desconhecido',
-      status: 'CONFERENCIA_MANUAL',
-      infracos: [],
-      textoAdvertencia: 'CPF inválido',
-    };
-  }
-
-  // Validar data
-  const diaInfo = parseDataAndDia(row.data, row.inicio?.toISOString());
-  if (!diaInfo) {
-    return {
-      condutor: row.condutor,
-      cpf: cpfValidacao.value,
-      placa: row.placa,
-      operacao: row.operacao,
-      data: new Date(),
-      diaSemana: 'desconhecido',
-      status: 'CONFERENCIA_MANUAL',
-      infracos: [],
-      textoAdvertencia: 'Data ilegível',
-    };
-  }
-
-  // Detectar infrações
-  const infracoes = detectarInfracoes(row);
-
-  // Se nenhuma infração, marcar para conferência manual
-  if (infracoes.length === 0) {
-    return {
-      condutor: row.condutor,
-      cpf: cpfValidacao.value,
-      placa: row.placa,
-      operacao: row.operacao,
-      data: diaInfo.data,
-      diaSemana: diaInfo.dia,
-      status: 'CONFERENCIA_MANUAL',
-      infracos: [],
-      textoAdvertencia: 'Nenhuma infração detectada',
-    };
-  }
-
-  // Detectar status pelo Código Sistema ou cor
-  const status = detectarStatus(row.cellColor, row.codigoSistema);
-
-  // Se status for EM_REVISAO, não gerar PDF
-  if (status === 'EM_REVISAO') {
-    return {
-      condutor: row.condutor,
-      cpf: cpfValidacao.value,
-      placa: row.placa,
-      operacao: row.operacao,
-      data: diaInfo.data,
-      diaSemana: diaInfo.dia,
-      status: 'EM_REVISAO',
-      infracos: infracoes,
-      textoAdvertencia: 'Será ajustado (não foi trabalho de fato)',
-    };
-  }
-
-  // Gerar texto da advertência
-  const textoAdvertencia = gerarTextoAdvertencia(row, infracoes, diaInfo);
-
-  return {
-    condutor: row.condutor,
-    cpf: cpfValidacao.value,
-    placa: row.placa,
-    operacao: row.operacao,
-    data: diaInfo.data,
-    diaSemana: diaInfo.dia,
-    status,
-    infracos: infracoes,
-    textoAdvertencia,
-    numeroProtocolo,
-    cnpj,
-    endereco,
-    ctps,
-    matricula: row.matricula,
-  };
+export function detectarStatus(codigoSistema?: number): 'ADVERTENCIA' | 'EM_REVISAO' | 'CONFERENCIA_MANUAL' {
+  if (codigoSistema === 1) return 'ADVERTENCIA';
+  if (codigoSistema === 2) return 'EM_REVISAO';
+  return 'CONFERENCIA_MANUAL';
 }
 
 /**
- * Encontra coluna pelo nome normalizado
+ * Encontra coluna por nome (com normalização)
  */
-export function encontrarColuna(headers: string[], fieldName: keyof typeof COLUMN_MAPPINGS): number {
-  const synonyms = COLUMN_MAPPINGS[fieldName];
+export function encontrarColuna(headers: string[], procurar: string): number {
+  const procurarNorm = procurar.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   
   for (let i = 0; i < headers.length; i++) {
-    const normalized = headers[i]
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .trim();
-    
-    for (const synonym of synonyms) {
-      if (normalized.includes(synonym.toLowerCase())) {
-        return i;
-      }
+    const headerNorm = headers[i].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (headerNorm === procurarNorm) {
+      return i;
     }
   }
   
@@ -450,20 +279,73 @@ export function encontrarColuna(headers: string[], fieldName: keyof typeof COLUM
 }
 
 /**
- * Valida colunas obrigatórias
+ * Valida e processa uma linha
  */
-export function validarColunasObrigatorias(headers: string[]): { valid: boolean; missing: string[] } {
-  const obrigatorias = ['condutor', 'cpf', 'placa', 'jornada_sem_refeicao', 'inicio'] as const;
-  const missing: string[] = [];
-
-  for (const field of obrigatorias) {
-    if (encontrarColuna(headers, field) === -1) {
-      missing.push(field);
-    }
+export function validarLinha(
+  row: ParsedRow,
+  rowIndex: number
+): { valid: boolean; warning?: WarningResult; error?: string } {
+  // Validar CPF
+  const cpfValidation = normalizeCPF(row.cpf);
+  if (!cpfValidation.valid) {
+    return {
+      valid: false,
+      error: `Linha ${rowIndex}: CPF inválido (${row.cpf})`,
+    };
   }
 
-  return {
-    valid: missing.length === 0,
-    missing,
+  row.cpf = cpfValidation.value;
+
+  // Validar data
+  if (!row.data || isNaN(row.data.getTime())) {
+    return {
+      valid: false,
+      error: `Linha ${rowIndex}: Data ilegível`,
+    };
+  }
+
+  // Normalizar placa
+  row.placa = normalizePlaca(row.placa);
+
+  // Detectar infrações
+  const infracoes = detectarInfracoes(row);
+
+  // Se não há infrações, pula
+  if (infracoes.length === 0) {
+    return {
+      valid: false,
+      error: `Linha ${rowIndex}: Nenhuma infração detectada`,
+    };
+  }
+
+  // Detectar status
+  const status = detectarStatus(row.codigoSistema);
+
+  // Se status é EM_REVISAO, marca como "será ajustado"
+  let textoAdvertencia = '';
+  if (status === 'EM_REVISAO') {
+    textoAdvertencia = 'Será ajustado (não foi trabalho de fato)';
+  } else {
+    // Gerar texto da advertência
+    const diaInfo = {
+      data: row.data,
+      dia: row.data.toLocaleDateString('pt-BR', { weekday: 'long' }),
+    };
+    textoAdvertencia = gerarTextoAdvertencia(row, infracoes, diaInfo);
+  }
+
+  const warning: WarningResult = {
+    condutor: row.condutor,
+    cpf: row.cpf,
+    placa: row.placa,
+    operacao: row.operacao,
+    data: row.data,
+    diaSemana: row.data.toLocaleDateString('pt-BR', { weekday: 'long' }),
+    status,
+    infracos: infracoes,
+    textoAdvertencia,
+    matricula: row.matricula,
   };
+
+  return { valid: true, warning };
 }

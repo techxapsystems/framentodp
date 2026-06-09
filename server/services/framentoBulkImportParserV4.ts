@@ -10,10 +10,8 @@ import {
   normalizeCPF,
   normalizePlaca,
   timeToMinutes,
-  parseDataAndDia,
   validarLinha,
   encontrarColuna,
-  validarColunasObrigatorias,
 } from './framentoRulesEngineV4';
 
 export interface BulkImportResult {
@@ -159,13 +157,15 @@ export async function processarArquivoExcel(
     resultado.totalLinhas = dados.length - 1;
 
     // Validar colunas obrigatórias
-    const validacao = validarColunasObrigatorias(headers);
-    if (!validacao.valid) {
+    const colunasObrigatorias = ['condutor', 'cpf', 'placa'];
+    const colunasEncontradas = colunasObrigatorias.filter(col => encontrarColuna(headers, col) >= 0);
+    if (colunasEncontradas.length < colunasObrigatorias.length) {
+      const faltando = colunasObrigatorias.filter(col => !colunasEncontradas.includes(col));
       resultado.success = false;
       resultado.erros.push({
         linha: 0,
         condutor: '',
-        erro: `Colunas obrigatórias faltando: ${validacao.missing.join(', ')}`,
+        erro: `Colunas obrigatórias faltando: ${faltando.join(', ')}`,
       });
       return resultado;
     }
@@ -175,16 +175,16 @@ export async function processarArquivoExcel(
       condutor: encontrarColuna(headers, 'condutor'),
       cpf: encontrarColuna(headers, 'cpf'),
       placa: encontrarColuna(headers, 'placa'),
-      jornada_sem_refeicao: encontrarColuna(headers, 'jornada_sem_refeicao'),
-      inicio: encontrarColuna(headers, 'inicio'),
+      jornada_sem_refeicao: encontrarColuna(headers, 'tempo jornada s/ refeicao'),
+      inicio: encontrarColuna(headers, 'inicio jornada'),
       operacao: encontrarColuna(headers, 'operacao'),
       cargo: encontrarColuna(headers, 'cargo'),
       intersticio: encontrarColuna(headers, 'intersticio'),
-      refeicao: encontrarColuna(headers, 'refeicao'),
-      fim: encontrarColuna(headers, 'fim'),
+      refeicao: encontrarColuna(headers, 'total refeicao'),
+      fim: encontrarColuna(headers, 'fim jornada'),
       matricula: encontrarColuna(headers, 'matricula'),
       data: encontrarColuna(headers, 'data'),
-      codigoSistema: encontrarColuna(headers, 'codigoSistema'),
+      codigoSistema: encontrarColuna(headers, 'codigo sistema'),
     };
 
     // Processar linhas
@@ -221,10 +221,18 @@ export async function processarArquivoExcel(
           if (inicioVal instanceof Date) {
             dataInicio = inicioVal;
           } else if (typeof inicioVal === 'string') {
-            const match = inicioVal.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+            // Tenta formato DD/MM/YYYY HH:MM
+            const match = inicioVal.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
             if (match) {
-              const [, day, month, year] = match;
-              dataInicio = new Date(`${year}-${month}-${day}`);
+              const [, day, month, year, hour, minute] = match;
+              dataInicio = new Date(`${year}-${month}-${day}T${hour}:${minute}:00`);
+            } else {
+              // Tenta apenas DD/MM/YYYY
+              const match2 = inicioVal.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+              if (match2) {
+                const [, day, month, year] = match2;
+                dataInicio = new Date(`${year}-${month}-${day}`);
+              }
             }
           }
         }
@@ -274,8 +282,9 @@ export async function processarArquivoExcel(
         };
 
         // Validar e gerar advertência
-        const warning = validarLinha(parsedRow, numeroProtocolo);
-        if (warning) {
+        const validacao = validarLinha(parsedRow, numeroProtocolo);
+        if (validacao.valid && validacao.warning) {
+          const warning = validacao.warning;
           // Se mesmo CPF aparecer múltiplas vezes, agrupar
           const chave = warning.cpf;
           if (motoristasProcessados.has(chave)) {
@@ -297,6 +306,12 @@ export async function processarArquivoExcel(
           }
 
           resultado.resumo.total++;
+        } else if (validacao.error) {
+          resultado.erros.push({
+            linha: numeroProtocolo,
+            condutor: parsedRow.condutor,
+            erro: validacao.error,
+          });
         }
       } catch (erro) {
         resultado.erros.push({
