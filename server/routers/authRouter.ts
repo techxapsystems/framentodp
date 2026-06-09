@@ -96,9 +96,13 @@ export const authRouter = router({
   }),
 
   /**
-   * Logout (apenas remove sessão no frontend)
+   * Logout (limpa cookie de sessão)
    */
-  logout: protectedProcedure.mutation(async () => {
+  logout: protectedProcedure.mutation(async ({ ctx }) => {
+    const { COOKIE_NAME } = await import("../../shared/const");
+    const { getSessionCookieOptions } = await import("../_core/cookies");
+    const cookieOptions = getSessionCookieOptions(ctx.req);
+    ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
     return { success: true };
   }),
 

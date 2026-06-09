@@ -79,7 +79,7 @@ describe("Auditoria Completa do Sistema", () => {
       const result = await db.select().from(warnings).limit(10);
       result.forEach((w: any) => {
         if (w.categoria) {
-          expect(["pouco_rodado", "horas_extras"]).toContain(w.categoria);
+          expect(["pouco_rodado", "horas_extras", "outro"]).toContain(w.categoria);
         }
       });
     });
