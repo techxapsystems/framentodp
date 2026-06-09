@@ -149,6 +149,9 @@ export default function Import() {
         </p>
       </div>
 
+      {/* Delete Last Import Component - ALWAYS VISIBLE AT TOP */}
+      <DeleteLastImport />
+
       {/* Upload Card */}
       <Card>
         <CardHeader>
@@ -259,8 +262,7 @@ export default function Import() {
         </CardContent>
       </Card>
 
-      {/* Delete Last Import Component - Simple button to delete last import */}
-      <DeleteLastImport />
+
 
       {/* Delete Last Import Card - Professional Minimalist */}
       {importHistory && importHistory.length > 0 && lastImport && (
