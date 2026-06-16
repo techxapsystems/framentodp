@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { AlertCircle, CheckCircle2, Clock, TrendingUp, Download, FileText, CheckCheck, XCircle, Percent, RefreshCw, BarChart3, LineChart as LineChartIcon } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, TrendingUp, Download, FileText, CheckCheck, XCircle, Percent, RefreshCw, BarChart3, LineChart as LineChartIcon, Zap, MessageCircle } from "lucide-react";
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { AIInsightsPanel } from "@/components/AIInsightsPanel";
+import { WarningsChatPanel } from "@/components/WarningsChatPanel";
 
 export default function WarningsTracking() {
   const startDateRef = useRef<HTMLInputElement>(null);
@@ -211,6 +213,24 @@ export default function WarningsTracking() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Painel de Insights com IA */}
+      {!isLoading && (
+        <AIInsightsPanel
+          startDate={startDateRef.current?.value || ""}
+          endDate={endDateRef.current?.value || ""}
+          operacao={selectedOperation !== "all" ? selectedOperation : undefined}
+        />
+      )}
+
+      {/* Painel de Chat Operacional */}
+      {!isLoading && (
+        <WarningsChatPanel
+          startDate={startDateRef.current?.value || ""}
+          endDate={endDateRef.current?.value || ""}
+          operacao={selectedOperation !== "all" ? selectedOperation : undefined}
+        />
       )}
 
       {/* Gráficos - Layout Profissional */}

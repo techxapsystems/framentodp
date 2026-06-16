@@ -1737,3 +1737,81 @@
 - [x] Integrar com WarningSignOff para deletar do sistema completo
 - [x] Integrar com outras telas relevantes
 - [x] Testar delete end-to-end
+
+
+## ✨ SESSÃO 8 - INTEGRAÇÃO DE IA PREDITIVA E CHAT OPERACIONAL
+
+### Fase 1: Mapeamento & Arquitetura ✅
+- [x] Mapear 5 pilares de inteligência artificial
+  - [x] Motoristas em risco iminente (probabilidade de escalação)
+  - [x] Operações em crise (tendências de piora)
+  - [x] Padrões temporais de violações
+  - [x] Motoristas crônicos vs ocasionais
+  - [x] Próximas ações recomendadas
+- [x] Documentar arquitetura em AI_PREDICTIVE_INSIGHTS_MAP.md
+- [x] Definir tipos de queries suportadas no chat
+
+### Fase 2: Backend - tRPC Procedures ✅
+- [x] Criar warningsAIRouter.ts com 2 procedures
+  - [x] getAIInsights: Gera insights preditivos
+  - [x] warningsChat: Chat operacional com histórico
+- [x] Implementar getWarningsContext para agregar dados
+- [x] Integrar invokeLLM (Gemini 2.5 Flash)
+- [x] Registrar router em server/routers.ts
+- [x] Testar endpoints com curl (validar autenticação)
+
+### Fase 3: Frontend - Componentes React ✅
+- [x] Criar AIInsightsPanel.tsx
+  - [x] Exibir resumo de contexto (KPIs)
+  - [x] Mostrar motoristas em risco crítico
+  - [x] Mostrar operações em foco
+  - [x] Renderizar insights em markdown
+  - [x] Botão de atualizar insights
+  - [x] Botão recolher/expandir
+- [x] Criar WarningsChatPanel.tsx
+  - [x] Integrar AIChatBox (componente existente)
+  - [x] Gerenciar histórico de mensagens
+  - [x] Sugestões de prompts pré-definidas
+  - [x] Botão recolher/expandir
+
+### Fase 4: Integração na Tela de Acompanhamento ✅
+- [x] Adicionar imports de componentes AI
+- [x] Integrar AIInsightsPanel após KPIs
+- [x] Integrar WarningsChatPanel após insights
+- [x] Passar filtros (startDate, endDate, operacao)
+- [x] Sincronizar com filtros existentes
+
+### Fase 5: Testes & Validação ✅
+- [x] Criar suite de testes (warnings-ai.test.ts)
+  - [x] Data Context Generation (5 testes)
+  - [x] Risk Assessment (3 testes)
+  - [x] Temporal Patterns (2 testes)
+  - [x] Operation Analysis (2 testes)
+  - [x] Predictive Indicators (3 testes)
+- [x] Validar 235/235 testes passando
+- [x] Validar build sem erros
+- [x] Testar endpoints com curl
+
+### Recursos Criados:
+- ✅ AI_PREDICTIVE_INSIGHTS_MAP.md - Documentação estratégica
+- ✅ server/routers/warningsAIRouter.ts - Backend procedures
+- ✅ client/src/components/AIInsightsPanel.tsx - Componente insights
+- ✅ client/src/components/WarningsChatPanel.tsx - Componente chat
+- ✅ server/__tests__/warnings-ai.test.ts - Suite de testes
+- ✅ Integração em client/src/pages/WarningsTracking.tsx
+
+### Status Final:
+- ✅ Build compilado sem erros
+- ✅ 235/235 testes passando
+- ✅ Endpoints tRPC funcionando
+- ✅ Componentes React integrados
+- ✅ Pronto para teste manual no navegador
+
+### Próximos Passos (Futuro):
+- [ ] Teste manual no navegador (user)
+- [ ] Feedback e ajustes de prompts de IA
+- [ ] Persistir insights em ai_insights table
+- [ ] Implementar cache (5 min)
+- [ ] Alertas automáticos por email
+- [ ] Relatórios preditivos em PDF
+- [ ] Integração com outras telas (Reincidentes, Relatórios)

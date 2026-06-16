@@ -13,6 +13,7 @@ import { pdfRouter } from "./routers/pdfRouter";
 import { userRouter } from "./routers/userRouter";
 import { authRouter } from "./routers/authRouter";
 import { txtempRouter } from "./routers/txtemp";
+import { warningsAIRouter } from "./routers/warningsAIRouter";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -28,6 +29,7 @@ export const appRouter = router({
   pdf: pdfRouter,
   users: userRouter,
   txtemp: txtempRouter,
+  warningsAI: warningsAIRouter,
 });
 
 export type AppRouter = typeof appRouter;
