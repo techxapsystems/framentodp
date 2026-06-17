@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import { trpc } from '@/lib/trpc';
 import { generateWarningPDF } from '@/components/WarningPDFGenerator';
+import { WarningsResolutionPanel } from '@/components/WarningsResolutionPanel';
 
 interface Warning {
   id: number;
@@ -704,6 +705,12 @@ export default function WarningSignOff() {
           Registre o recebimento de advertências e suspensões assinadas pelos motoristas
         </p>
       </div>
+
+      {/* Painel de IA - Dar Baixa com Chat */}
+      <WarningsResolutionPanel 
+        startDate={startDateRef.current?.value}
+        endDate={endDateRef.current?.value}
+      />
 
       {/* Filtros */}
       <Card>
