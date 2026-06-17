@@ -230,7 +230,7 @@ export const warningsResolutionRouter = router({
         names: z.array(z.string()).min(1),
       })
     )
-    .query(({ input, ctx }) => {
+    .mutation(({ input, ctx }) => {
       const validation = validateDriverNames(input.names);
 
       // Log validation attempt

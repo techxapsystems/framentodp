@@ -60,9 +60,9 @@ export function WarningsResolutionPanel({ startDate, endDate }: WarningsResoluti
     },
   });
 
-  // Query para validar nomes
+  // Mutation para validar nomes
   const { mutate: validateNames } = trpc.warningsResolution.validateDriverNames.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setValidationErrors(data.errors);
       if (data.valid) {
         toast.success(data.message);
