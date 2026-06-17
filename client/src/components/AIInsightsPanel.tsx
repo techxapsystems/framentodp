@@ -14,6 +14,7 @@ interface AIInsightsPanelProps {
 
 export function AIInsightsPanel({ startDate, endDate, operacao }: AIInsightsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Query para insights de IA
   const { data: insightsData, isLoading, refetch } = trpc.warningsAI.getAIInsights.useQuery(
@@ -34,8 +35,15 @@ export function AIInsightsPanel({ startDate, endDate, operacao }: AIInsightsPane
 
   const handleRefresh = () => {
     refetch();
+    setLastUpdated(new Date());
     toast.success("Insights atualizados!");
   };
+
+  useEffect(() => {
+    if (insightsData) {
+      setLastUpdated(new Date());
+    }
+  }, [insightsData]);
 
   if (!startDate || !endDate) {
     return null;
@@ -84,7 +92,7 @@ export function AIInsightsPanel({ startDate, endDate, operacao }: AIInsightsPane
             </div>
           ) : insightsData?.success ? (
             <div className="space-y-4">
-              {/* Resumo de Contexto */}
+              {/* Resumo de Contexto - KPIs */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div className="bg-white/50 rounded-lg p-3 border border-purple-200/50">
                   <div className="text-xs text-muted-foreground font-medium">Advertências</div>
@@ -137,7 +145,7 @@ export function AIInsightsPanel({ startDate, endDate, operacao }: AIInsightsPane
                     <h4 className="font-semibold text-sm text-red-900">Motoristas em Risco Crítico</h4>
                   </div>
                   <div className="space-y-1">
-                    {insightsData.context.topMotoristas.map((motorista: any, idx: number) => (
+                    {insightsData.context.topMotoristas.slice(0, 3).map((motorista: any, idx: number) => (
                       <div key={idx} className="text-xs text-red-800">
                         <span className="font-medium">{motorista.nome}</span>
                         {" - "}
@@ -156,7 +164,7 @@ export function AIInsightsPanel({ startDate, endDate, operacao }: AIInsightsPane
                     <h4 className="font-semibold text-sm text-orange-900">Operações em Foco</h4>
                   </div>
                   <div className="space-y-1">
-                    {insightsData.context.topOperacoes.map((operacao: any, idx: number) => (
+                    {insightsData.context.topOperacoes.slice(0, 3).map((operacao: any, idx: number) => (
                       <div key={idx} className="text-xs text-orange-800">
                         <span className="font-medium">{operacao.nome}</span>
                         {" - "}
@@ -169,10 +177,9 @@ export function AIInsightsPanel({ startDate, endDate, operacao }: AIInsightsPane
                 </div>
               )}
 
-              {/* Insights Detalhados */}
-              <div className="bg-white/50 rounded-lg p-3 border border-purple-200/50">
-                <h4 className="font-semibold text-sm mb-2 text-purple-900">Análise Preditiva</h4>
-                <div className="text-sm text-foreground prose prose-sm max-w-none">
+              {/* Insights Detalhados - Formato Executivo */}
+              <div className="bg-gradient-to-br from-purple-50 to-white rounded-lg border border-purple-200/50 overflow-hidden">
+                <div className="text-sm text-foreground space-y-2 p-3 max-h-96 overflow-y-auto prose prose-sm max-w-none">
                   <Streamdown>
                     {typeof insightsData.insights === 'string' 
                       ? insightsData.insights 
@@ -181,10 +188,11 @@ export function AIInsightsPanel({ startDate, endDate, operacao }: AIInsightsPane
                 </div>
               </div>
 
-              {/* Período */}
-              <div className="text-xs text-muted-foreground text-center pt-2 border-t">
-                Período: {insightsData.context.periodo.dataInicio} a{" "}
-                {insightsData.context.periodo.dataFim}
+              {/* Período & Status */}
+              <div className="text-xs text-muted-foreground text-center pt-2 border-t space-y-1">
+                <div>Período: {insightsData.context.periodo.dataInicio} a {insightsData.context.periodo.dataFim}</div>
+                {operacao && <div>Operação: {operacao}</div>}
+                {lastUpdated && <div className="text-purple-600 font-medium">✓ Atualizado {lastUpdated.toLocaleTimeString('pt-BR')}</div>}
               </div>
             </div>
           ) : (

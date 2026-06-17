@@ -186,48 +186,35 @@ export const warningsAIRouter = router({
           operacao: input.operacao,
         });
 
-        // Montar prompt para IA
+        // Montar prompt para IA - FORMATO EXECUTIVO
+        const topMotoristas = context.topMotoristas.slice(0, 3); // Apenas top 3
+        const topOperacoes = context.topOperacoes.slice(0, 3); // Apenas top 3
+        
         const prompt = `
-Você é um analista de operações de transporte especializado em segurança e conformidade.
+Você é um analista de operações de transporte. Gere um RESUMO EXECUTIVO em formato CONCISO.
 
-Analise os dados de advertências e suspensões do período e gere insights preditivos:
+DADOS (${context.periodo.dataInicio} a ${context.periodo.dataFim}):
+- Advertências: ${context.metricas.totalAdvertencias} | Suspensões: ${context.metricas.totalSuspensoes}
+- Motoristas: ${context.metricas.motoristesAfetados} | Tendência: ${context.tendencias.direcao} (${context.tendencias.percentualMudanca}%)
 
-DADOS DO PERÍODO:
-- Período: ${context.periodo.dataInicio} a ${context.periodo.dataFim} (${context.periodo.diasAnalisados} dias)
-- Total de Advertências: ${context.metricas.totalAdvertencias}
-- Total de Suspensões: ${context.metricas.totalSuspensoes}
-- Motoristas Afetados: ${context.metricas.motoristesAfetados}
-- Operações: ${context.metricas.operacoes}
-
-TENDÊNCIA:
-- Primeira metade: ${context.tendencias.primeiraMetade} casos
-- Segunda metade: ${context.tendencias.segundaMetade} casos
-- Mudança: ${context.tendencias.percentualMudanca}% (${context.tendencias.direcao})
-
-TOP 5 MOTORISTAS EM RISCO:
-${context.topMotoristas
-  .map(
-    (m: any) =>
-      `- ${m.nome}: ${m.totalAvisos} avisos (${m.avisosPoucoRodado} pouco rodado, ${m.avisosHorasExtras} horas extras, nível máximo ${m.nivelMaximo})`
-  )
+TOP 3 MOTORISTAS EM RISCO:
+${topMotoristas
+  .map((m: any) => `- ${m.nome}: ${m.totalAvisos} avisos (nível ${m.nivelMaximo})`)
   .join("\n")}
 
-OPERAÇÕES:
-${context.topOperacoes
-  .map(
-    (op: any) =>
-      `- ${op.nome}: ${op.totalAvisos} avisos, ${op.totalSuspensoes} suspensões, ${op.motoristasAfetados} motoristas afetados`
-  )
+TOP 3 OPERAÇÕES:
+${topOperacoes
+  .map((op: any) => `- ${op.nome}: ${op.totalAvisos} avisos, ${op.totalSuspensoes} suspensões`)
   .join("\n")}
 
-GERE UM ANÁLISE ESTRUTURADA COM:
-1. **Risco Iminente**: Quem vai ser suspenso nos próximos 7-30 dias? (probabilidade %)
-2. **Operações em Crise**: Qual operação está piorando? Por quê?
-3. **Padrões Temporais**: Quando/onde ocorrem mais violações?
-4. **Motoristas Crônicos**: Quem é reincidente sistemático?
-5. **Recomendações**: Quais ações tomar imediatamente?
+GERE EXATAMENTE 5 SEÇÕES (máximo 2-3 linhas cada):
+1. **Risco Iminente**: Top 3 motoristas + probabilidade de suspensão
+2. **Operações em Crise**: Qual está piorando + causa principal
+3. **Padrão Principal**: Tipo de violação mais comum
+4. **Ação Imediata**: 1-2 ações prioritárias
+5. **Outlook**: Predição para próximos 7 dias
 
-Seja conciso, objetivo e baseie-se nos dados fornecidos.
+Seja MUITO CONCISO. Use bullet points. Sem explicações longas.
 `;
 
         // Chamar IA
