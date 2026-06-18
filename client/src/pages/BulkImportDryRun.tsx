@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle2, Download, FileUp } from 'lucide-react';
+import { BulkDeleteImports } from '@/components/BulkDeleteImports';
 import { trpc } from '@/lib/trpc';
 
 interface DryRunResult {
@@ -99,10 +100,15 @@ export default function BulkImportDryRun() {
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Teste de Importação (Dry Run)</h1>
-        <p className="text-muted-foreground">
-          Processe a planilha Excel e visualize os PDFs que serão gerados, sem salvar nada no banco de dados.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Teste de Importação (Dry Run)</h1>
+            <p className="text-muted-foreground">
+              Processe a planilha Excel e visualize os PDFs que serão gerados, sem salvar nada no banco de dados.
+            </p>
+          </div>
+          <BulkDeleteImports onDeleteSuccess={() => toast.success("Importações deletadas com sucesso")} />
+        </div>
       </div>
 
       {/* Upload Section */}

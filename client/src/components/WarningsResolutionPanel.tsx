@@ -4,9 +4,10 @@ import { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, AlertCircle, MessageCircle, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, MessageCircle, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { WarningPdfViewer } from "@/components/WarningPdfViewer";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -37,6 +38,8 @@ export function WarningsResolutionPanel({ startDate, endDate }: WarningsResoluti
   const [pendencies, setPendencies] = useState<PendingWarning[]>([]);
   const [selectedWarnings, setSelectedWarnings] = useState<Set<number>>(new Set());
   const [showPendencies, setShowPendencies] = useState(false);
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [selectedWarningForPdf, setSelectedWarningForPdf] = useState<{ id: number; name: string } | null>(null);
 
   // Query para buscar pendências de um motorista
   const { mutate: getDriverPendencies, isPending: isFetchingPendencies } = trpc.warningsResolution.getDriverPendencies.useMutation({
@@ -322,6 +325,7 @@ export function WarningsResolutionPanel({ startDate, endDate }: WarningsResoluti
                       <TableHead>Nível</TableHead>
                       <TableHead>Categoria</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -349,6 +353,20 @@ export function WarningsResolutionPanel({ startDate, endDate }: WarningsResoluti
                         <TableCell className="text-sm">{warning.categoria}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{warning.status}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedWarningForPdf({ id: warning.id, name: currentDriver });
+                              setPdfViewerOpen(true);
+                            }}
+                            className="gap-1 text-blue-600 hover:text-blue-700"
+                          >
+                            <Eye className="w-4 h-4" />
+                            Ver PDF
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -400,6 +418,23 @@ export function WarningsResolutionPanel({ startDate, endDate }: WarningsResoluti
             </div>
           )}
         </CardContent>
+      )}
+
+      {/* PDF Viewer Modal */}
+      {selectedWarningForPdf && (
+        <WarningPdfViewer
+          warningId={selectedWarningForPdf.id}
+          conductorName={selectedWarningForPdf.name}
+          isOpen={pdfViewerOpen}
+          onClose={() => {
+            setPdfViewerOpen(false);
+            setSelectedWarningForPdf(null);
+          }}
+          onConfirm={() => {
+            // Após confirmar o PDF, pode prosseguir com a baixa
+            toast.success("PDF confirmado");
+          }}
+        />
       )}
     </Card>
   );
