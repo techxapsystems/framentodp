@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle2, Download, FileUp } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Download, FileUp, Eye } from 'lucide-react';
 import { BulkDeleteImports } from '@/components/BulkDeleteImports';
+import { ImportPdfViewer } from '@/components/ImportPdfViewer';
 import { trpc } from '@/lib/trpc';
 
 interface DryRunResult {
@@ -31,6 +32,8 @@ export default function BulkImportDryRun() {
   const [cnpj, setCnpj] = useState('');
   const [empresa, setEmpresa] = useState('');
   const [endereco, setEndereco] = useState('');
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState<{ name: string; url?: string } | null>(null);
 
   const dryRunMutation = trpc.dashboard.framentoDryRun.useMutation();
 
@@ -274,10 +277,24 @@ export default function BulkImportDryRun() {
                     {result.pdfs.map((pdf, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between p-2 bg-muted rounded-lg"
+                        className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
                       >
                         <span className="text-sm font-mono">{pdf}</span>
-                        <Badge variant="outline">PDF</Badge>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedPdf({ name: pdf });
+                              setPdfViewerOpen(true);
+                            }}
+                            className="gap-1 text-blue-600 hover:text-blue-700"
+                          >
+                            <Eye className="w-4 h-4" />
+                            Ver
+                          </Button>
+                          <Badge variant="outline">PDF</Badge>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -326,6 +343,19 @@ export default function BulkImportDryRun() {
             </CardContent>
           </Card>
         </>
+      )}
+
+      {/* PDF Viewer Modal */}
+      {selectedPdf && (
+        <ImportPdfViewer
+          pdfName={selectedPdf.name}
+          pdfUrl={selectedPdf.url}
+          isOpen={pdfViewerOpen}
+          onClose={() => {
+            setPdfViewerOpen(false);
+            setSelectedPdf(null);
+          }}
+        />
       )}
     </div>
   );
