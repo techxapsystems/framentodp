@@ -1,21 +1,19 @@
-import crypto from "crypto";
+import bcrypt from "bcrypt";
 
 /**
- * Hash de senha usando SHA-256 simples
- * Em produção, usar bcrypt ou argon2
+ * Hash de senha usando bcrypt
+ * Seguro e resistente a ataques de força bruta
  */
-export function hashPassword(password: string): string {
-  return crypto
-    .createHash("sha256")
-    .update(password + (process.env.JWT_SECRET || "default-secret"))
-    .digest("hex");
+export async function hashPassword(password: string): Promise<string> {
+  const saltRounds = 10;
+  return bcrypt.hash(password, saltRounds);
 }
 
 /**
  * Verificar se senha está correta
  */
-export function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
 }
 
 /**
@@ -42,9 +40,10 @@ export async function ensureAdminExists(db: any) {
       .where(eq(users.email, ADMIN_CREDENTIALS.email));
 
     if (existing.length === 0) {
+      const hashedPassword = await hashPassword(ADMIN_CREDENTIALS.password);
       await db.insert(users).values({
         email: ADMIN_CREDENTIALS.email,
-        password: hashPassword(ADMIN_CREDENTIALS.password),
+        password: hashedPassword,
         name: ADMIN_CREDENTIALS.name,
         role: ADMIN_CREDENTIALS.role,
         loginMethod: "email",

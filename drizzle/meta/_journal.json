@@ -8,6 +8,20 @@
       "when": 1780323912700,
       "tag": "0000_slippery_white_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1783342290617,
+      "tag": "0001_magenta_namorita",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1783342384480,
+      "tag": "0002_optimal_morlocks",
+      "breakpoints": true
     }
   ]
 }

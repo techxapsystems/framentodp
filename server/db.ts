@@ -207,10 +207,13 @@ export async function createUser(data: any) {
       modules: data.modules || JSON.stringify([]),
       status: data.status || "ativo",
       loginMethod: data.loginMethod || "email",
-      openId: null,
+      openId: "",
     } as any);
 
-    return (result as any).insertId;
+    // Drizzle returns an array with metadata
+    const insertId = (result as any)[0]?.insertId || (result as any).insertId;
+    console.log("[Database] Insert result:", { insertId, result: JSON.stringify(result).substring(0, 150) });
+    return insertId;
   } catch (error) {
     console.error("[Database] Error creating user:", error);
     throw error;

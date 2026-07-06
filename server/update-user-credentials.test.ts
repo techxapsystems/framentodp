@@ -136,7 +136,7 @@ describe('Update User Credentials - edith.ferneda', () => {
       expect(result.length).toBe(1);
       
       // Validar senha
-      const isPasswordValid = verifyPassword('R1514@', result[0].password);
+      const isPasswordValid = await verifyPassword('R1514@', result[0].password);
       expect(isPasswordValid).toBe(true);
       
       console.log('✅ Login credentials verified');

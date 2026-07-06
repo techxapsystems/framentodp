@@ -38,7 +38,8 @@ export const authRouter = router({
         }
       }
 
-      if (!verifyPassword(input.password, user.password)) {
+      const passwordMatch = await verifyPassword(input.password, user.password);
+      if (!passwordMatch) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Email ou senha inválidos",
@@ -136,10 +137,11 @@ export const authRouter = router({
       }
 
       try {
+        const hashedPassword = await hashPassword(input.password);
         const result = await db.createUser({
           email: input.email,
           name: input.name,
-          password: hashPassword(input.password),
+          password: hashedPassword,
           role: input.role,
           modulos: JSON.stringify(input.modulos),
           status: "ativo",
@@ -185,7 +187,7 @@ export const authRouter = router({
 
       const updates: any = {};
       if (input.name) updates.name = input.name;
-      if (input.password) updates.password = hashPassword(input.password);
+      if (input.password) updates.password = await hashPassword(input.password);
       if (input.role && ctx.user.role === "admin") updates.role = input.role;
       if (input.modulos) updates.modulos = JSON.stringify(input.modulos);
       if (input.status && ctx.user.role === "admin") updates.status = input.status;
