@@ -126,11 +126,12 @@ export const userRouter = router({
         // Criar usuário com openId temporário (será atualizado no primeiro login)
         const openId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+        const hashedPassword = await hashPassword(input.password);
         const result = await db.insert(users).values({
           openId,
           name: input.name,
           email: input.email,
-          password: hashPassword(input.password),
+          password: hashedPassword,
           role: input.role,
           department: input.department,
           modules: JSON.stringify(input.modules),

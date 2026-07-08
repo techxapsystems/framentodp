@@ -267,7 +267,7 @@ export const authRouter = router({
       if (!user) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
-      const hashed = hashPassword(input.newPassword);
+      const hashed = await hashPassword(input.newPassword);
       await db.updateUserById(user.id, { password: hashed });
       return { success: true, message: "Password reset" };
     }),

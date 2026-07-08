@@ -199,10 +199,13 @@ export async function createUser(data: any) {
   if (!db) throw new Error("Database not available");
 
   try {
+    // Ensure password is a string (not a Promise)
+    const password = typeof data.password === 'string' ? data.password : String(data.password);
+    
     const result = await db.insert(users).values({
       email: data.email,
       name: data.name,
-      password: data.password,
+      password: password,
       role: data.role || "user",
       modules: data.modules || JSON.stringify([]),
       status: data.status || "ativo",
