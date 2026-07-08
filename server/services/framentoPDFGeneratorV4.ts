@@ -305,21 +305,15 @@ function quebrarTexto(texto: string, maxWidth: number, fontSize: number): string
 export async function gerarZIPComPDFs(
   warnings: WarningResult[],
   options: PDFGeneratorOptions = {}
-): Promise<Map<string, { buffer: Buffer; url: string }>> {
-  const { storagePut } = await import('../storage');
-  const pdfs = new Map<string, { buffer: Buffer; url: string }>();
+): Promise<Map<string, Buffer>> {
+  const pdfs = new Map<string, Buffer>();
 
   for (const warning of warnings) {
     // Apenas gerar PDF para ADVERTENCIA (não para EM_REVISAO ou CONFERENCIA_MANUAL)
     if (warning.status === 'ADVERTENCIA') {
       const pdf = await gerarPDFAdvertencia(warning, options);
       const nomeArquivo = `Advertencia_${warning.cpf.replace(/\D/g, '')}_${warning.numeroProtocolo || 'SN'}.pdf`;
-      
-      // Salvar em S3 para dry run
-      const s3Key = `dry-run-pdfs/${Date.now()}/${nomeArquivo}`;
-      const { url } = await storagePut(s3Key, pdf, 'application/pdf');
-      
-      pdfs.set(nomeArquivo, { buffer: pdf, url });
+      pdfs.set(nomeArquivo, pdf);
     }
   }
 

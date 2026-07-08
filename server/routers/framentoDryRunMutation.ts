@@ -36,7 +36,7 @@ export const framentoDryRunMutation = protectedProcedure
       }
 
       // Gerar PDFs (sem salvar no BD)
-      const pdfMap = await gerarZIPComPDFs(resultado.warnings, {
+      const pdfs = await gerarZIPComPDFs(resultado.warnings, {
         cnpj: input.cnpj,
         empresa: input.empresa,
         endereco: input.endereco,
@@ -47,12 +47,6 @@ export const framentoDryRunMutation = protectedProcedure
         (w) => w.status === 'ADVERTENCIA'
       );
 
-      // Converter Map para array com URLs
-      const pdfs = Array.from(pdfMap.entries()).map(([name, data]) => ({
-        name,
-        url: data.url,
-      }));
-
       return {
         success: true,
         dryRun: true,
@@ -60,7 +54,7 @@ export const framentoDryRunMutation = protectedProcedure
         advertenciasQueSeriaoCriadas: wouldBeCreated.length,
         emRevisao: resultado.resumo.emRevisao,
         conferencia: resultado.resumo.conferencia,
-        pdfs,
+        pdfs: Array.from(pdfs.keys()),
         abaSelecionada: resultado.abaSelecionada,
         erros: resultado.erros,
         avisoImportante:
