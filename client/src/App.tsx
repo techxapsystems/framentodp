@@ -26,6 +26,7 @@ import WarningAuditLog from "./pages/WarningAuditLog";
 import AnaliseGifBrf from "./pages/AnaliseGifBrf";
 import ComparisonReport from "./pages/ComparisonReport";
 import ImportAdministrative from "./pages/ImportAdministrative";
+import BulkImportDryRun from "./pages/BulkImportDryRun";
 
 
 function Router() {
@@ -101,6 +102,11 @@ function Router() {
         <Route path="/importacao" component={() => (
           <ProtectedRoute requiredModules={["operacional_jornada"]}>
             <Import />
+          </ProtectedRoute>
+        )} />
+        <Route path="/importacao-dry-run" component={() => (
+          <ProtectedRoute requiredModules={["operacional_jornada"]}>
+            <BulkImportDryRun />
           </ProtectedRoute>
         )} />
         <Route path="/importacao-administrativos" component={() => (

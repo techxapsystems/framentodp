@@ -283,7 +283,8 @@ export function encontrarColuna(headers: string[], procurar: string): number {
  */
 export function validarLinha(
   row: ParsedRow,
-  rowIndex: number
+  rowIndex: number,
+  numeroProtocolo?: number
 ): { valid: boolean; warning?: WarningResult; error?: string } {
   // Validar CPF
   const cpfValidation = normalizeCPF(row.cpf);
@@ -345,6 +346,7 @@ export function validarLinha(
     infracos: infracoes,
     textoAdvertencia,
     matricula: row.matricula,
+    numeroProtocolo,
   };
 
   return { valid: true, warning };

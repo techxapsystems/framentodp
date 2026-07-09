@@ -282,7 +282,7 @@ export async function processarArquivoExcel(
         };
 
         // Validar e gerar advertência
-        const validacao = validarLinha(parsedRow, numeroProtocolo);
+        const validacao = validarLinha(parsedRow, i + 1, numeroProtocolo);
         if (validacao.valid && validacao.warning) {
           const warning = validacao.warning;
           // Se mesmo CPF aparecer múltiplas vezes, agrupar
@@ -298,7 +298,7 @@ export async function processarArquivoExcel(
           // Contar por status
           if (warning.status === 'ADVERTENCIA') {
             resultado.resumo.advertencias++;
-            numeroProtocolo++;
+            numeroProtocolo++; // Incrementar para próxima advertência
           } else if (warning.status === 'EM_REVISAO') {
             resultado.resumo.emRevisao++;
           } else {

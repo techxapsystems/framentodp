@@ -5,6 +5,8 @@
 
 import { PDFDocument, PDFPage, rgb, degrees } from 'pdf-lib';
 import { WarningResult } from './framentoRulesEngineV4';
+import { storagePut } from '../storage';
+import { randomUUID } from 'crypto';
 
 export interface PDFGeneratorOptions {
   cnpj?: string;
@@ -318,4 +320,33 @@ export async function gerarZIPComPDFs(
   }
 
   return pdfs;
+}
+
+/**
+ * Gera múltiplos PDFs e faz upload para S3
+ * Retorna Map com nome do arquivo e URL pública
+ */
+export async function gerarPDFsComUploadS3(
+  warnings: WarningResult[],
+  options: PDFGeneratorOptions = {}
+): Promise<Map<string, { url: string; fileName: string }>> {
+  const pdfsUrls = new Map<string, { url: string; fileName: string }>();
+
+  for (const warning of warnings) {
+    // Apenas gerar PDF para ADVERTENCIA (não para EM_REVISAO ou CONFERENCIA_MANUAL)
+    if (warning.status === 'ADVERTENCIA') {
+      const pdf = await gerarPDFAdvertencia(warning, options);
+      const cpfLimpo = warning.cpf.replace(/\D/g, '');
+      const protocolo = warning.numeroProtocolo || 'SN';
+      const nomeArquivo = `Advertencia_${cpfLimpo}_${protocolo}.pdf`;
+      
+      // Upload para S3 com path aleatório para evitar enumeração
+      const s3Path = `pdfs/advertencias/${randomUUID()}/${nomeArquivo}`;
+      const { url } = await storagePut(s3Path, pdf, 'application/pdf');
+      
+      pdfsUrls.set(nomeArquivo, { url, fileName: nomeArquivo });
+    }
+  }
+
+  return pdfsUrls;
 }

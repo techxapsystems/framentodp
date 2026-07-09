@@ -35,8 +35,11 @@ export const framentoDryRunMutation = protectedProcedure
         });
       }
 
-      // Gerar PDFs (sem salvar no BD)
-      const pdfs = await gerarZIPComPDFs(resultado.warnings, {
+      // Gerar PDFs e fazer upload para S3 (sem salvar no BD)
+      const { gerarPDFsComUploadS3 } = await import(
+        '../services/framentoPDFGeneratorV4'
+      );
+      const pdfsMap = await gerarPDFsComUploadS3(resultado.warnings, {
         cnpj: input.cnpj,
         empresa: input.empresa,
         endereco: input.endereco,
@@ -47,6 +50,12 @@ export const framentoDryRunMutation = protectedProcedure
         (w) => w.status === 'ADVERTENCIA'
       );
 
+      // Converter Map para array de objetos com URL
+      const pdfsArray = Array.from(pdfsMap.values()).map(pdf => ({
+        fileName: pdf.fileName,
+        url: pdf.url,
+      }));
+
       return {
         success: true,
         dryRun: true,
@@ -54,7 +63,7 @@ export const framentoDryRunMutation = protectedProcedure
         advertenciasQueSeriaoCriadas: wouldBeCreated.length,
         emRevisao: resultado.resumo.emRevisao,
         conferencia: resultado.resumo.conferencia,
-        pdfs: Array.from(pdfs.keys()),
+        pdfs: pdfsArray,
         abaSelecionada: resultado.abaSelecionada,
         erros: resultado.erros,
         avisoImportante:

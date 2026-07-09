@@ -18,7 +18,7 @@ interface DryRunResult {
   advertenciasQueSeriaoCriadas: number;
   emRevisao: number;
   conferencia: number;
-  pdfs: string[];
+  pdfs: Array<{ fileName: string; url: string }>;
   abaSelecionada: string;
   erros: Array<{ erro: string }>;
   avisoImportante: string;
@@ -279,13 +279,13 @@ export default function BulkImportDryRun() {
                         key={i}
                         className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
                       >
-                        <span className="text-sm font-mono">{pdf}</span>
+                        <span className="text-sm font-mono">{pdf.fileName}</span>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              setSelectedPdf({ name: pdf });
+                              setSelectedPdf({ name: pdf.fileName, url: pdf.url });
                               setPdfViewerOpen(true);
                             }}
                             className="gap-1 text-blue-600 hover:text-blue-700"
